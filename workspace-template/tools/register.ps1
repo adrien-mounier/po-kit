@@ -176,6 +176,7 @@ function Get-PendingProposal {
     $operations = @()
     try { $operations = @((Read-JsonFile $ProposalPath).operations | Where-Object { $null -ne $_ }) }
     catch { $reasons += 'The proposal is not valid JSON written as UTF-8.' }
+    if (-not $reasons) { $reasons += @(Test-PendingCollect | ForEach-Object { "$_." }) }
     if (-not $reasons -and -not $operations) { $reasons += 'The proposal holds no operation.' }
 
     $line = 0
@@ -194,6 +195,75 @@ function Get-PendingProposal {
     }
     if ($reasons) { Stop-Run (@('Proposal refused. Nothing was written.') + @($reasons | ForEach-Object { "- $_" })) }
     $operations
+}
+
+# --- Collect ------------------------------------------------------------------------------------
+# A proposal that comes from a collect says, beside its operations, what the collect read:
+#   "collected_at": "2026-03-02T08:30:00+01:00",
+#   "sources_read": [ { "source": "mail", "cutoff": "2026-03-02T08:12:00+01:00", "items": 14 } ],
+#   "sources_not_covered": [ "tracker" ],
+#   "notes_processed": [ "steering committee.md" ],
+#   "unclassified": [ { "source": "mail from the tech lead, 2026-02-27", "text": "..." } ]
+# collected_at is the time of the collect. A cutoff is how far a source was read. A note is named
+# by its file name in the inbox.
+
+$CollectDefinition = @'
+{ "type": "object", "fields": {
+    "collected_at": { "type": "text" },
+    "sources_read": { "type": "list", "items": { "type": "object", "fields": {
+        "source": { "type": "text", "required": true },
+        "cutoff": { "type": "text", "required": true },
+        "items": { "type": "integer", "required": true } } } },
+    "sources_not_covered": { "type": "list", "items": { "type": "text" } },
+    "notes_processed": { "type": "list", "items": { "type": "text" } },
+    "unclassified": { "type": "list", "items": { "type": "object", "fields": {
+        "source": { "type": "text", "required": true },
+        "text": { "type": "text", "required": true } } } }
+} }
+'@ | ConvertFrom-Json
+
+function Get-PendingCollect {
+    # What the pending proposal says of its collect, every part present. Nothing when the
+    # proposal comes from no collect.
+    $proposal = Read-JsonFile $ProposalPath
+    if ($proposal -is [System.Management.Automation.PSCustomObject] -and $proposal.collected_at) {
+        Complete-Value $CollectDefinition $proposal
+    }
+}
+
+function Test-PendingCollect {
+    # What is wrong with what the pending proposal says of its collect: one reason per problem.
+    $collect = Get-PendingCollect
+    foreach ($note in $collect.notes_processed) {
+        if ($note -match '[\\/:]' -or -not (Test-Path -LiteralPath (Join-Path $Workspace "inbox\$note") -PathType Leaf)) {
+            "the note '$note' is not in the inbox"
+        }
+    }
+}
+
+function Save-Collect {
+    # Settles the collect of the pending proposal, and says what it did, one line per thing.
+    $collect = Get-PendingCollect
+    if (-not $collect) { return }
+    $inbox = Join-Path $Workspace 'inbox'
+    $done = Join-Path $inbox "done\$($Today.Substring(0, 7))"
+    New-Item -ItemType Directory -Path $done -Force | Out-Null
+    foreach ($note in $collect.notes_processed) {
+        [IO.File]::Move((Join-Path $inbox $note), (Join-Path $done $note))
+        "file note $note"
+    }
+
+    $statePath = Join-Path $Workspace 'state\last-collect.json'
+    $state = [ordered]@{ collected_at = $collect.collected_at; sources = [ordered]@{}; not_covered = $collect.sources_not_covered }
+    if (Test-Path -LiteralPath $statePath) {
+        foreach ($source in (Read-JsonFile $statePath).sources.PSObject.Properties) { $state.sources[$source.Name] = $source.Value }
+    }
+    foreach ($read in $collect.sources_read) {
+        $state.sources[$read.source] = [ordered]@{ cutoff = $read.cutoff; items = $read.items; collected_at = $collect.collected_at }
+        "read $($read.source) up to $($read.cutoff): $($read.items) item(s)"
+    }
+    Write-JsonFile $statePath $state
+    if ($state.not_covered) { "not covered: $($state.not_covered -join ', ')" }
 }
 
 # --- Run the command ----------------------------------------------------------------------------
