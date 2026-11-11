@@ -302,6 +302,28 @@ function Test-Subject([string]$Subject, [int]$Line, $Operations) {
     if (-not $exists) { "subject '$Subject' exists neither in the register nor earlier in this proposal (the subject that line N creates is named 'line N')" }
 }
 
+function Get-WaitingLines($Operations) {
+    # The lines of a valid proposal that wait for the PO when the plain facts are applied without
+    # asking ("apply plain"), in the order of the proposal:
+    # - an interpreted line;
+    # - a record attached to the subject that a waiting line creates;
+    # - a line that updates or supersedes a record of the register which a waiting line also updates
+    #   or supersedes: what the lines of a proposal leave of a record is judged together
+    #   (Test-ProposalResult), so they are applied together.
+    $changed = { param($Operation) if ($Operation.op -ceq 'update') { $Operation.id } else { $Operation.fields.supersedes } }
+    $waiting = @()
+    do {
+        $found = $waiting.Count
+        $records = @($waiting | ForEach-Object { & $changed $Operations[$_ - 1] } | Where-Object { $_ })
+        for ($line = 1; $line -le $Operations.Count; $line++) {
+            $operation = $Operations[$line - 1]
+            if ($waiting -notcontains $line -and ($operation.interpreted -or $waiting -contains (Get-LineNamed $operation.fields.subject) -or
+                    $records -ccontains (& $changed $operation))) { $waiting += $line }
+        }
+    } while ($waiting.Count -ne $found)
+    $waiting | Sort-Object
+}
+
 # An update changes fields of one record of the register, named by its identifier:
 #   { "op": "update", "id": "C-2026-001", "interpreted": true,
 #     "source": { "where": "...", "read_on": "yyyy-mm-dd" }, "fields": { "due_date": "2026-04-10" } }
@@ -452,7 +474,8 @@ function Get-PendingProposal {
 # cutoff is how far a source was read. A source is named as in connections.json. A note is named
 # by its file name in the inbox. A proposal may hold a collect and no operation.
 #
-# apply settles the collect, whichever lines are kept:
+# apply settles the collect, whichever lines are kept. It does so once: the lines that "apply plain"
+# leaves pending are a proposal that no longer holds a collect. To settle it:
 # - the notes processed move to inbox\done\yyyy-mm, the month of the run. No note is ever deleted
 #   or replaced.
 # - state\last-collect.json, the collect state, says how far each source was read:
@@ -872,6 +895,11 @@ if ($Command -cnotmatch '^[a-z]+$' -or -not (Test-Path -LiteralPath $commandFile
     Stop-Run "Unknown command '$Command'. Commands: $known."
 }
 $Settings = Read-JsonFile (Join-Path $Workspace 'settings.json')
+# The validation mode says what a routine has applied without asking the PO: nothing (all), or the
+# plain facts of a proposal (interpreted). A routine reads it in what preview prints.
+if ('all', 'interpreted' -cnotcontains $Settings.validation_mode) {
+    Stop-Run "The validation mode must be 'all' or 'interpreted', not '$($Settings.validation_mode)'. Nothing was done. It is validation_mode in settings.json."
+}
 # An exit inside a command file only leaves that file, so the exit code is carried over here.
 $ExitCode = 0
 . $commandFile

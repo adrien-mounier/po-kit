@@ -1,0 +1,21 @@
+{
+  "routine": "collect",
+  "prompt": "Collect.",
+  "expect": [
+    { "record": "C-{year}-002", "field": "owner", "is": "the architect" },
+    { "record": "C-{year}-002", "field": "due_date", "is": "2026-03-26" },
+    { "record": "C-{year}-002", "field": "source.where", "is": "inbox/pilot-preparation.md" },
+    { "records": "commitments", "count": 2 },
+    { "records": "decisions", "count": 0 },
+    { "records": "risks", "count": 0 },
+    { "file": "state/proposal.json", "field": "operations[0].type", "is": "decision" },
+    { "file": "state/proposal.json", "field": "operations[0].interpreted", "is": true },
+    { "file": "state/proposal.json", "field": "operations[0].fields.status", "is": "pending" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.needed_from", "is": "the sponsor" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.needed_by", "is": "2026-03-27" },
+    { "file": "state/proposal.json", "field": "operations[1]", "is": null },
+    { "file": "state/proposal.json", "field": "notes_processed", "is": null },
+    { "file": "inbox/pilot-preparation.md", "absent": true },
+    { "file": "inbox/done/{month}/pilot-preparation.md" }
+  ]
+}

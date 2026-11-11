@@ -136,11 +136,14 @@ Done when the proposal holds one operation per change found in step 4, and every
 ## 6. Preview, then apply once the PO accepts
 
 1. Run the register tool's `preview`. When it refuses the proposal, it lists its reasons: correct the proposal and preview again. A reason the notes cannot settle is a question for the PO.
-2. Copy into your answer the table that `preview` printed, unchanged, every line and every column: the PO reads there the evidence level and the interpreted mark of each line, and names lines by their number. Then wait for the answer. An acceptance given ahead, with the request, counts.
-3. Do as the PO says:
+2. An answer the PO gave ahead, with the request, counts: go to 4. Otherwise the last line of `preview` states the validation mode the PO chose in the settings:
+   - `Validation mode: all.` Every line waits for the PO, and the table to show is the one `preview` printed.
+   - `Validation mode: interpreted.` The PO accepted the plain facts ahead: run `apply plain`. It records them, files the notes, and prints under `Waiting for the PO` the table of the lines that still wait, numbered again from 1: that table is the one to show. Tell the PO first what was recorded without asking: each record with its identifier, the notes filed, what went to unclassified, what the check found. When it prints no such table, no line waits.
+3. Copy the table into your answer, unchanged, every line and every column: the PO reads there the evidence level and the interpreted mark of each line, and names lines by their number. Say that these lines wait for the PO, then wait for the answer.
+4. Do as the PO says:
    - The PO accepts: run `apply`.
    - The PO drops lines: run `apply` with the numbers of the lines kept. `apply 1 3` keeps lines 1 and 3; the others are dropped for good.
-   - The PO drops every line: rewrite the proposal with `"operations": []`, then run `apply`. The notes are filed and nothing is recorded.
+   - The PO drops every line: run `apply none`. Nothing more is recorded, the notes not yet filed are filed, and no proposal stays pending.
    - The PO wants a line changed: correct the proposal and preview again.
 
-Done when the register tool has answered `Applied and committed`, and you have told the PO each record written with its identifier, the notes filed, what went to unclassified, and what the check found.
+Done when every line is recorded, dropped, or shown to the PO as waiting for them, and you have told the PO each record written with its identifier, the notes filed, what went to unclassified, and what the check found.

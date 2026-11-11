@@ -3,6 +3,9 @@
 #
 #   apply          every line of the proposal
 #   apply 1 3      lines 1 and 3 only, numbered as preview shows them; the others are dropped
+#   apply none     no line: every line is dropped
+#   apply plain    the plain facts only: the lines that wait for the PO (Get-WaitingLines) stay
+#                  pending, as a proposal of their own, and are shown
 
 function New-Identifier([string]$Title, [string]$Folder) {
     # A readable slug of the title, made distinct from the records already filed.
@@ -48,9 +51,15 @@ $labels = Get-Labels $Settings.languages.default
 $operations = @(Get-PendingProposal)
 $lines = @(for ($line = 1; $line -le $operations.Count; $line++) { "$line" })
 $selection = @($Arguments | ForEach-Object { $_ -split '[,\s]+' } | Where-Object { $_ })
-$dropped = @(if ($selection) { $lines | Where-Object { $selection -notcontains $_ } })
+# A selection is the numbers of the lines kept, or one word: none or plain.
+$word = if ('none', 'plain' -ccontains "$selection") { "$selection" }
+$kept = @(if (-not $word) { $selection })
+# The lines this run does not apply: dropped for good, or left pending because they wait for the PO.
+$dropped = @(if ($word -eq 'none') { $lines } elseif ($kept) { $lines | Where-Object { $kept -notcontains $_ } })
+$waiting = @(if ($word -eq 'plain') { Get-WaitingLines $operations | ForEach-Object { "$_" } })
+$left = $dropped + $waiting
 $wrong = @(
-    $selection | Where-Object { $lines -notcontains $_ } |
+    $kept | Where-Object { $lines -notcontains $_ } |
         ForEach-Object { "'$_' is not a line of the proposal, which has $(if ($lines) { "lines 1 to $($lines.Count)" } else { 'no line' })" }
     # A record kept needs its subject: the line that creates it cannot be dropped.
     foreach ($line in $lines | Where-Object { $dropped -notcontains $_ }) {
@@ -58,9 +67,19 @@ $wrong = @(
         if ($dropped -contains $named) { "Line $line is attached to the subject that line $named creates, and the selection drops line $named" }
     }
 )
-# The proposal was validated with every line: what the lines kept leave must hold on its own.
-if (-not $wrong -and $dropped) { $wrong = @(Test-ProposalResult $operations ($lines | Where-Object { $dropped -notcontains $_ })) }
+# The proposal was validated with every line: what the lines applied leave must hold on its own.
+if (-not $wrong -and $left) { $wrong = @(Test-ProposalResult $operations ($lines | Where-Object { $left -notcontains $_ })) }
 if ($wrong) { Stop-Run (@('Selection refused. Nothing was written.') + @($wrong | ForEach-Object { "- $_." })) }
+
+if ($left.Count -eq $lines.Count -and -not (Get-PendingCollect)) {
+    # No line to apply and no collect to settle: nothing is written, so nothing is committed.
+    if ($waiting) { "No plain fact to record: the $($waiting.Count) line(s) of the proposal wait for the PO." }
+    else {
+        Remove-Item -LiteralPath $ProposalPath
+        "Dropped: line $($dropped -join ', '). Nothing was recorded, and no proposal is pending."
+    }
+    return
+}
 
 # The notes are filed first, all or none, so that a note that cannot be moved stops the run before
 # anything is written.
@@ -71,7 +90,7 @@ $line = 0
 $identifiers = @{}
 $applied = @(foreach ($operation in $operations) {
         $line++
-        if ($dropped -contains $line) { continue }
+        if ($left -contains $line) { continue }
         if ($operation.op -ceq 'update') {
             $found = Find-Record $operation.id
             Update-Record $found $operation.fields $operation.source
@@ -112,8 +131,19 @@ Write-PortfolioView $labels
 # So is the check report. What the check finds never undoes the apply: it is said, and committed.
 $check = Write-CheckReport $labels
 Invoke-Git add views/portfolio.md views/check-report.md
-Invoke-Git commit -q -m "Apply proposal: $($operations.Count - $dropped.Count) operation(s)" -m ($applied -join "`n")
-Remove-Item -LiteralPath $ProposalPath
+Invoke-Git commit -q -m "Apply proposal: $($operations.Count - $left.Count) operation(s)" -m ($applied -join "`n")
+if ($waiting) {
+    # The lines that wait become the pending proposal, numbered again from 1. Each one still names
+    # its subject: by the identifier the subject received, or by the new number of the line that
+    # creates it. The collect is settled, so the proposal no longer holds it.
+    foreach ($line in $waiting) {
+        $fields = $operations[$line - 1].fields
+        $named = Get-LineNamed $fields.subject
+        if ($named) { $fields.subject = if ($identifiers[$named]) { $identifiers[$named] } else { "line $($waiting.IndexOf("$named") + 1)" } }
+    }
+    Write-JsonFile $ProposalPath @{ operations = @($waiting | ForEach-Object { $operations[$_ - 1] }) }
+}
+else { Remove-Item -LiteralPath $ProposalPath }
 
 'Applied and committed:'
 $applied | ForEach-Object { "- $_" }
@@ -121,3 +151,9 @@ if ($dropped) { "Dropped: line $($dropped -join ', ')." }
 'Portfolio view regenerated: views\portfolio.md'
 $check.summary
 Push-ToBackup
+if ($waiting) {
+    # The lines that wait are shown as preview shows any pending proposal, which validates them too.
+    ''
+    "Waiting for the PO: $($waiting.Count) line(s), still pending."
+    . (Join-Path $Tools 'commands\preview.ps1')
+}

@@ -47,3 +47,7 @@ if ($collect) {
         if ($part.Value) { "$($part.Key):"; $part.Value | ForEach-Object { "- $_" } } else { "$($part.Key): none" }
     }
 }
+
+# Last, the validation mode of the settings: a routine reads here what waits for the PO.
+''
+"Validation mode: $($Settings.validation_mode)."

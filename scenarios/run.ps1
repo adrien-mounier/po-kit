@@ -23,7 +23,7 @@
 #     "prompt": "...",         all that the PO says: nobody answers a question of the agent
 #     "expect": [ ... ] }      the expected facts
 # and, when the scenario needs them, a folder workspace: its own files (notes for the inbox, a
-# pending proposal), laid over the Example Bank workspace.
+# pending proposal, settings of its own), laid over the Example Bank workspace.
 #
 # An expected fact is one of:
 #   { "record": "<identifier>" }                                    the register holds the record

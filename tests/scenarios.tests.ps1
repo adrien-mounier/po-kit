@@ -187,6 +187,27 @@ Test 'the scenario "collect waits for the PO" passes when the proposal stays pen
     Assert-Equal 1 $run.ExitCode 'exit code when the proposal is applied unasked'
 }
 
+Test 'the scenario "collect records the plain facts" passes when the commitment is recorded without asking and the decision still waits, and fails when the decision is recorded too' {
+    $note = 'pilot-preparation.md'
+    $awaited = New-NoteOperation decision $note @{ title = 'Choose the branches of the pilot'; needed_from = 'the sponsor'; needed_by = '2026-03-27'; date_of_fact = '2026-03-12' }
+    $awaited.interpreted = $true
+    $operations = (New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }), $awaited
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $operations -Do '-Plain') collect-records-plain-facts
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    record C-$Year-002: owner is `"the architect`"" 'the plain fact is in the register'
+    foreach ($fact in 'operations\[0\]\.type is "decision"', 'operations\[0\]\.interpreted is true', 'operations\[1\] is null', 'notes_processed is null') {
+        Assert-Match $run.Output "  ok    file state/proposal\.json: $fact" 'expected fact reported as passed'
+    }
+    Assert-Match $run.Output "  ok    file inbox/done/$Month/pilot-preparation\.md is there" 'the note is filed'
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $operations) collect-records-plain-facts
+
+    Assert-Match $run.Output '  FAIL  register/decisions holds 0 record\(s\)\n        found: 1 record\(s\)' 'the interpreted line recorded before the PO accepted'
+    Assert-Equal 1 $run.ExitCode 'exit code when the whole proposal is applied'
+}
+
 Test 'the scenario "collect and drop a line" passes when the line kept is recorded alone and the note is filed, and fails when the line dropped is recorded too' {
     $note = 'pilot-preparation.md'
     $kept = New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }
@@ -342,8 +363,10 @@ Test 'without the command that starts the agent, the runner explains itself and 
     Assert-True ($run.Output -notmatch 'subject-create') "a scenario was run: $($run.Output)"
 }
 
-Test 'the Example Bank settings carry every setting of the template, so the register tool reads them as it reads any workspace' {
+Test 'the Example Bank settings carry every setting of the template, so the register tool reads them as it reads any workspace; so do the settings a scenario lays over them' {
     $names = { param($Path) ((Read-Json $Path).PSObject.Properties | ForEach-Object { $_.Name }) -join ', ' }
 
-    Assert-Equal (& $names (Join-Path $KitRoot 'workspace-template\settings.json')) (& $names (Join-Path $KitRoot 'scenarios\example-bank\workspace\settings.json')) 'settings of Example Bank'
+    foreach ($settings in Get-ChildItem (Join-Path $KitRoot 'scenarios\*\workspace\settings.json')) {
+        Assert-Equal (& $names (Join-Path $KitRoot 'workspace-template\settings.json')) (& $names $settings.FullName) "settings of $($settings.Directory.Parent.Name)"
+    }
 }
