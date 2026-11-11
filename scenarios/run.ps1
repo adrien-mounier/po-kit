@@ -172,8 +172,9 @@ function Invoke-Scenario([string]$Scenario, [string]$Folder) {
     # Runs one scenario in its temporary folder, and returns what Test-Fact returns for each
     # expected fact.
     $text = [IO.File]::ReadAllText((Join-Path $Scenario 'scenario.json'))
+    $day = Get-Date
     foreach ($part in @{ '{year}' = 'yyyy'; '{month}' = 'yyyy-MM'; '{today}' = 'yyyy-MM-dd' }.GetEnumerator()) {
-        $text = $text.Replace($part.Key, (Get-Date).ToString($part.Value, [Globalization.CultureInfo]::InvariantCulture))
+        $text = $text.Replace($part.Key, $day.ToString($part.Value, [Globalization.CultureInfo]::InvariantCulture))
     }
     $definition = $text | ConvertFrom-Json
     New-ExampleBankWorkspace $Folder $Scenario

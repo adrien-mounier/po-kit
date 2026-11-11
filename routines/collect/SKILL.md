@@ -120,7 +120,7 @@ Write `state/proposal.json` as UTF-8 without a byte order mark:
       "source": { "where": "inbox/call with the lending analyst.md", "read_on": "2026-03-02" },
       "fields": {
         "clearance": "out of frame",
-        "gates": [ { "name": "architecture review", "state": "done" }, { "name": "security review", "state": "missing" } ] } }
+        "gates": [ { "name": "architecture review", "state": "missing" }, { "name": "security review", "state": "not required" } ] } }
   ]
 }
 ```
@@ -136,7 +136,7 @@ Done when the proposal holds one operation per change found in step 4, and every
 ## 6. Preview, then apply once the PO accepts
 
 1. Run the register tool's `preview`. When it refuses the proposal, it lists its reasons: correct the proposal and preview again. A reason the notes cannot settle is a question for the PO.
-2. Show the PO the table that `preview` printed, and wait for the answer. An acceptance given ahead, with the request, counts.
+2. Copy into your answer the table that `preview` printed, unchanged, every line and every column: the PO reads there the evidence level and the interpreted mark of each line, and names lines by their number. Then wait for the answer. An acceptance given ahead, with the request, counts.
 3. Do as the PO says:
    - The PO accepts: run `apply`.
    - The PO drops lines: run `apply` with the numbers of the lines kept. `apply 1 3` keeps lines 1 and 3; the others are dropped for good.
