@@ -56,10 +56,14 @@ Test 'every subject is under its own horizon, the horizons come as Now, Next, La
     Assert-Equal 'Card dispute handling [card-dispute-handling] | Product | None |  | ' (Get-Rows $view 'Later') 'subjects under Later'
 }
 
-Test 'a closed subject does not appear in the portfolio view' {
-    $ws = New-TestWorkspaceWithSubjects @{ title = 'Paper statements'; status = 'closed' }, @{ title = 'Mobile onboarding' }
+Test 'a closed subject does not appear in the portfolio view: it leaves the view at the apply that closes it' {
+    $ws = New-TestWorkspaceWithSubjects @{ title = 'Paper statements' }, @{ title = 'Mobile onboarding' }
+    Assert-Match (Read-View $ws) 'paper-statements' 'the view before the subject is closed'
+    Set-Proposal $ws @{ operations = @(@{ op = 'update'; id = 'paper-statements'; interpreted = $true; fields = @{ status = 'closed' }
+                source = @{ where = 'conversation with the PO'; read_on = '2026-03-03' } })
+    }
 
-    $run = Invoke-Register $ws view -Now $Morning
+    $run = Invoke-Register $ws apply -Now 2026-03-03T09:15:00+01:00
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     $view = Read-View $ws
