@@ -46,8 +46,9 @@ function Write-TextFile([string]$Path, [string]$Text) {
 }
 
 function Write-JsonFile([string]$Path, $Value) {
-    # ponytail: the shell's own JSON layout is wide and writes an apostrophe as '. It is valid,
-    # and the PO reads views, not records. Write a formatter here if records must read well.
+    # ponytail: the shell's own JSON layout is wide and writes an apostrophe as a unicode escape.
+    # It is valid, and the PO reads views, not records. Write a formatter here if records must
+    # read well.
     Write-TextFile $Path ((ConvertTo-Json -InputObject $Value -Depth 20) + [Environment]::NewLine)
 }
 
