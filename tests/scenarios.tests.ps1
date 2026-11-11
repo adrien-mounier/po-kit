@@ -99,6 +99,122 @@ Test 'the scenario "collect an action" passes when the note becomes a commitment
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
 }
 
+Test 'the scenario "collect a decision" passes when the decision supersedes the commitment to present, and the portfolio view stops announcing the presentation' {
+    $note = 'call-with-the-sponsor.md'
+    $agent = New-CollectAgent $note @(
+        (New-NoteOperation decision $note @{ title = 'Suspend the presentation of the target journey'; status = 'taken'; decided_by = 'the sponsor'; date_of_fact = '2026-03-09'; supersedes = "C-$Year-001" }),
+        (New-UpdateOperation 'mobile-onboarding' @{ next_step = '' })
+    )
+
+    $run = Invoke-Scenarios -Agent $agent collect-decision
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    foreach ($fact in 'status is "taken"', 'decided_by is "the sponsor"', "supersedes is `"C-$Year-001`"", 'subject is "mobile-onboarding"') {
+        Assert-Match $run.Output "  ok    record D-$Year-001: $fact" 'expected fact reported as passed'
+    }
+    Assert-Match $run.Output "  ok    record C-$Year-001: status is `"superseded`"" 'the commitment to present is superseded'
+    Assert-Match $run.Output "  ok    record C-$Year-001: superseded_by is `"D-$Year-001`"" 'the commitment is linked to the decision'
+    Assert-Match $run.Output '  ok    file views/portfolio\.md has no line containing "Present the target journey"' 'the portfolio view no longer announces the presentation'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
+Test 'the scenario "collect a missing gate" passes when the subject gets its gate missing and goes out of frame, as the portfolio view shows' {
+    $note = 'security-review.md'
+    $gates = @{ name = 'architecture review'; state = 'done' }, @{ name = 'security review'; state = 'missing' }
+    $agent = New-CollectAgent $note @(New-UpdateOperation 'mobile-onboarding' @{ clearance = 'out of frame'; gates = $gates })
+
+    $run = Invoke-Scenarios -Agent $agent collect-missing-gate
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    foreach ($fact in 'gates\[0\]\.state is "done"', 'gates\[1\]\.state is "missing"', 'clearance is "out of frame"') {
+        Assert-Match $run.Output "  ok    record mobile-onboarding: $fact" 'expected fact reported as passed'
+    }
+    Assert-Match $run.Output '  ok    file views/portfolio\.md has a line containing "\*\*Out of frame\*\*"' 'the portfolio view shows the subject out of frame'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
+Test 'the scenario "collect a position" passes when the position is recorded as reported and the guess at its motives as hypothesis' {
+    $note = 'call-with-the-head-of-payments.md'
+    $said = @{ subject = 'payments-api-contribution'; date_of_fact = '2026-03-12' }
+    $agent = New-CollectAgent $note @(
+        (New-NoteOperation risk $note ($said + @{ title = 'The head of payments is against the contribution'; evidence_level = 'reported' })),
+        (New-NoteOperation risk $note ($said + @{ title = 'The head of payments may fear the blame for an incident'; evidence_level = 'hypothesis' }))
+    )
+
+    $run = Invoke-Scenarios -Agent $agent collect-position
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    record R-$Year-001: evidence_level is `"reported`"" 'the position'
+    Assert-Match $run.Output "  ok    record R-$Year-002: evidence_level is `"hypothesis`"" 'the guess'
+    Assert-Match $run.Output '  ok    register/risks holds 2 record\(s\)' 'nothing else is recorded, as a fact or otherwise'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
+Test 'the scenario "collect an action without a due date" passes when the commitment is recorded all the same, and the check report lists it' {
+    $note = 'call-with-the-architect.md'
+    $agent = New-CollectAgent $note @(
+        New-NoteOperation commitment $note @{ title = 'Share the sequence diagrams of the onboarding journey'; owner = 'the architect'; owed_to = 'the PO'; date_of_fact = '2026-03-11' }
+    )
+
+    $run = Invoke-Scenarios -Agent $agent collect-no-due-date
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    record C-$Year-002: owner is `"the architect`"" 'the owner'
+    Assert-Match $run.Output "  ok    record C-$Year-002: due_date is null" 'no due date'
+    Assert-Match $run.Output '  ok    file views/check-report\.md has a line containing "### Open commitment without due date"' 'the rule in the check report'
+    Assert-Match $run.Output "  ok    file views/check-report\.md has a line containing `"\[C-$Year-002\] \(owner: the architect\)`"" 'the commitment under that rule'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
+Test 'the scenario "collect waits for the PO" passes when the proposal stays pending, each line marked interpreted or plain fact, and fails when it is applied unasked' {
+    $note = 'pilot-preparation.md'
+    $awaited = New-NoteOperation decision $note @{ title = 'Choose the branches of the pilot'; needed_from = 'the sponsor'; needed_by = '2026-03-27'; date_of_fact = '2026-03-12' }
+    $awaited.interpreted = $true
+    $operations = (New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }), $awaited
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $operations -Do '-Pending') collect-waits-for-the-po
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    foreach ($fact in 'operations\[0\]\.interpreted is false', 'operations\[1\]\.interpreted is true', 'operations\[1\]\.fields\.status is "pending"',
+        'operations\[1\]\.fields\.needed_from is "the sponsor"', 'operations\[1\]\.fields\.needed_by is "2026-03-27"') {
+        Assert-Match $run.Output "  ok    file state/proposal\.json: $fact" 'expected fact reported as passed'
+    }
+    Assert-Match $run.Output '  ok    file inbox/pilot-preparation\.md is there' 'the note waits in the inbox'
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $operations) collect-waits-for-the-po
+
+    Assert-Match $run.Output '  FAIL  register/commitments holds 1 record\(s\)\n        found: 2 record\(s\)' 'the commitment recorded before the PO accepted'
+    Assert-Equal 1 $run.ExitCode 'exit code when the proposal is applied unasked'
+}
+
+Test 'the scenario "collect with a pending proposal" passes when the pending proposal is left as it is, and fails when the collect replaces it' {
+    $run = Invoke-Scenarios -Agent $FakeAgent collect-pending-proposal
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[0\]\.fields\.title is "Book the committee room"' 'the pending proposal'
+
+    $note = 'corridor-chat.md'
+    $agent = New-CollectAgent $note @(New-NoteOperation commitment $note @{ title = 'Send the test plan of the pilot'; owner = 'the tech lead' }) -Do '-Pending'
+    $run = Invoke-Scenarios -Agent $agent collect-pending-proposal
+
+    Assert-Match $run.Output '  FAIL  file state/proposal\.json: operations\[0\]\.fields\.title is "Book the committee room"\n        found: "Send the test plan of the pilot"' 'the pending proposal overwritten'
+    Assert-Equal 1 $run.ExitCode 'exit code when the pending proposal is overwritten'
+}
+
+Test 'the scenario "collect a pasted text" passes when the text is saved as an inbox note, which the record names as its source and which is then filed' {
+    $note = "pasted-$Day.md"
+    $agent = New-CollectAgent $note @(
+        New-NoteOperation commitment $note @{ title = 'Send the corrected opening hours of the pilot branches'; subject = 'branch-opening-hours-page'; owner = 'the branch network manager'; owed_to = 'the PO'; due_date = '2026-03-31'; date_of_fact = '2026-03-13' }
+    ) -Do "-Note $note"
+
+    $run = Invoke-Scenarios -Agent $agent collect-pasted-text
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    record C-$Year-002: source\.where is `"inbox/pasted-$Day\.md`"" 'the record names the note'
+    Assert-Match $run.Output "  ok    file inbox/done/$Month/pasted-$Day\.md has a line containing `"corrected opening hours`"" 'the note holds the pasted text, and is filed'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
 Test 'when the agent does nothing, each fact is reported as passed or failed with what was found, the folder is kept and the run fails' {
     $run = Invoke-Scenarios -Agent $FakeAgent subject-modify
 

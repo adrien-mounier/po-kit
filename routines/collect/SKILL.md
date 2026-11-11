@@ -35,7 +35,7 @@ Done when you have read every note of the inbox.
 
 Run the register tool's `export` with today's date, as `export 2026-03-02`. It lists the active subjects, the open commitments, the pending decisions and the open risks: one line per record, its identifier in brackets.
 
-The record of a subject is `register/subjects/<identifier>.json`. Read it when you need its watch list to tell which subject a note is about, or its gates before you change one.
+The record of a subject is `register/subjects/<identifier>.json`. Read the record of each subject a note is about: it gives the next step and the gates that the note may change. A watch list tells which subject a note is about when the note does not name it.
 
 Done when you know the subject each note is about, and the records of the register that a note changes or replaces.
 
@@ -80,6 +80,8 @@ A person's position and a guess at their motives are two records, in that order:
 In doubt, `true`.
 
 **A record that replaces another.** When a note makes a commitment, a decision or a risk of the register obsolete (a plan suspended or abandoned, a decision reversed), the record you create names it in `supersedes`. The register tool then marks the old record `superseded` and links the two: write no update for it.
+
+**A next step that no longer holds.** When a note cancels, suspends or completes what a subject gives as its `next_step`, update the subject too: `next_step` becomes what the note says comes next, or an empty text when it says nothing.
 
 **A gate that did not take place.** When a note says that a gate of a subject never took place, update the subject: `gates` given whole, with that gate `missing`, and `clearance` `out of frame`.
 

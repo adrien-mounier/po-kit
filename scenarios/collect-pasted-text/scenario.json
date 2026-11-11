@@ -1,0 +1,14 @@
+{
+  "routine": "collect",
+  "prompt": "Collect this, which I typed during a call with the branch network manager on 13 March 2026:\n\nBranch opening hours page. The branch network manager will send the corrected opening hours of the six pilot branches to the PO by 31 March 2026.\n\nI accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "record": "C-{year}-002", "field": "subject", "is": "branch-opening-hours-page" },
+    { "record": "C-{year}-002", "field": "owner", "is": "the branch network manager" },
+    { "record": "C-{year}-002", "field": "due_date", "is": "2026-03-31" },
+    { "record": "C-{year}-002", "field": "source.where", "is": "inbox/pasted-{today}.md" },
+    { "records": "commitments", "count": 2 },
+    { "file": "inbox/done/{month}/pasted-{today}.md", "line": "corrected opening hours" },
+    { "file": "inbox/pasted-{today}.md", "absent": true },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

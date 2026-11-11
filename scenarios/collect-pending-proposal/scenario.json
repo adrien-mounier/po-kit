@@ -1,0 +1,10 @@
+{
+  "routine": "collect",
+  "prompt": "Collect.",
+  "expect": [
+    { "file": "state/proposal.json", "field": "operations[0].fields.title", "is": "Book the committee room" },
+    { "file": "state/proposal.json", "field": "operations[1]", "is": null },
+    { "file": "inbox/corridor-chat.md" },
+    { "records": "commitments", "count": 1 }
+  ]
+}

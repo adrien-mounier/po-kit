@@ -1,0 +1,15 @@
+{
+  "routine": "collect",
+  "prompt": "Collect. I accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "record": "C-{year}-002", "field": "subject", "is": "mobile-onboarding" },
+    { "record": "C-{year}-002", "field": "owner", "is": "the architect" },
+    { "record": "C-{year}-002", "field": "due_date", "is": null },
+    { "record": "C-{year}-002", "field": "status", "is": "open" },
+    { "records": "commitments", "count": 2 },
+    { "file": "views/check-report.md", "line": "### Open commitment without due date" },
+    { "file": "views/check-report.md", "line": "[C-{year}-002] (owner: the architect)" },
+    { "file": "inbox/done/{month}/call-with-the-architect.md" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

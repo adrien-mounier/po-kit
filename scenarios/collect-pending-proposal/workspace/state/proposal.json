@@ -1,0 +1,18 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "type": "commitment",
+      "interpreted": false,
+      "fields": {
+        "title": "Book the committee room",
+        "subject": "mobile-onboarding",
+        "date_of_fact": "2026-03-05",
+        "owner": "the PO",
+        "due_date": "2026-03-13",
+        "evidence_level": "fact",
+        "source": { "where": "conversation with the PO", "read_on": "2026-03-05" }
+      }
+    }
+  ]
+}
