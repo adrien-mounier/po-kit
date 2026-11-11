@@ -99,7 +99,7 @@ Write `state/proposal.json` as UTF-8 without a byte order mark:
   "sources_read": [ { "source": "notes", "cutoff": "2026-03-02T08:30:00+01:00", "items": 1 } ],
   "sources_not_covered": [ "mail", "tracker" ],
   "notes_processed": [ "call with the lending analyst.md" ],
-  "unclassified": [ { "source": "inbox/call with the lending analyst.md", "text": "The branch in Lyon asks who owns the queue screens." } ],
+  "unclassified": [ { "source": "inbox/call with the lending analyst.md", "text": "The branch network asks who owns the queue screens." } ],
   "operations": [
     { "op": "create", "type": "commitment", "interpreted": false,
       "fields": {
