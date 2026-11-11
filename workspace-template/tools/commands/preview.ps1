@@ -41,3 +41,20 @@ $rows = @(foreach ($operation in $operations) {
 "Pending proposal: $($operations.Count) operation(s). Nothing is written until it is applied."
 ''
 Write-Table '#', 'Operation', 'Type', 'Title', 'Subject', 'Evidence', 'Interpreted', 'Details' $rows
+
+# Under the table, what applying the proposal settles of its collect.
+$collect = Get-PendingCollect
+if ($collect) {
+    $parts = [ordered]@{
+        'Notes to file'       = $collect.notes_processed
+        'Sources read'        = @($collect.sources_read | ForEach-Object { "$($_.source): $($_.items) item(s), up to $($_.cutoff)" })
+        'Sources not covered' = $collect.sources_not_covered
+        'Unclassified items'  = @($collect.unclassified | ForEach-Object { "$(Format-Value $_.source) | $(Format-Value $_.text)" })
+    }
+    ''
+    "Collect of $($collect.collected_at). It is settled when the proposal is applied, whichever lines are kept."
+    foreach ($part in $parts.GetEnumerator()) {
+        ''
+        if ($part.Value) { "$($part.Key):"; $part.Value | ForEach-Object { "- $_" } } else { "$($part.Key): none" }
+    }
+}

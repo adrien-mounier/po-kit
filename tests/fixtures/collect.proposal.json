@@ -1,0 +1,15 @@
+{
+  "collected_at": "2026-03-02T08:30:00+01:00",
+  "sources_read": [
+    { "source": "notes", "cutoff": "2026-03-02T08:30:00+01:00", "items": 1 }
+  ],
+  "sources_not_covered": ["mail", "tracker"],
+  "operations": [],
+  "notes_processed": ["comité de pilotage.md"],
+  "unclassified": [
+    {
+      "source": "note « comité de pilotage »",
+      "text": "Qui porte le pilote des bornes en agence chez Example Bank ?"
+    }
+  ]
+}

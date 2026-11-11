@@ -118,7 +118,8 @@ Test 'apply files the notes listed as processed in the done folder of the curren
     Add-InboxNote $ws 'not read yet.md'
     $notes = 'steering committee.md', 'call with the sponsor.txt'
     $hashes = $notes | ForEach-Object { (Get-FileHash -LiteralPath (Join-Path $ws "inbox\$_")).Hash }
-    Set-Proposal $ws @{ collected_at = '2026-02-28T18:00:00+01:00'; operations = @(New-SubjectOperation); notes_processed = $notes }
+    # A note listed twice is filed once.
+    Set-Proposal $ws @{ collected_at = '2026-02-28T18:00:00+01:00'; operations = @(New-SubjectOperation); notes_processed = $notes + 'Steering Committee.md' }
 
     $run = Invoke-Register $ws apply -Today 2026-03-02
 
@@ -130,6 +131,42 @@ Test 'apply files the notes listed as processed in the done folder of the curren
         Assert-True (-not (Test-Path -LiteralPath (Join-Path $ws "inbox\$($notes[$index])"))) "$($notes[$index]) is still in the inbox"
     }
     Assert-True (Test-Path -LiteralPath (Join-Path $ws 'inbox\not read yet.md')) 'a note the proposal does not list left the inbox'
+}
+
+Test 'a note with the name of a note already filed this month is filed beside it: no note is ever replaced' {
+    $ws = New-TestWorkspace
+    Add-InboxNote $ws 'notes.md' 'Monday: the sponsor asks for a date.'
+    Set-Proposal $ws (New-CollectProposal @{ notes_processed = @('notes.md') })
+    $first = Invoke-Register $ws apply -Today 2026-03-02
+    Add-InboxNote $ws 'notes.md' 'Tuesday: no date is confirmed.'
+    Set-Proposal $ws (New-CollectProposal @{ collected_at = '2026-03-03T08:30:00+01:00'; notes_processed = @('notes.md') })
+
+    $run = Invoke-Register $ws apply -Today 2026-03-03
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Equal 'Monday: the sponsor asks for a date.' ([IO.File]::ReadAllText((Join-Path $ws 'inbox\done\2026-03\notes.md'))) 'note filed on Monday'
+    Assert-Equal 'Tuesday: no date is confirmed.' ([IO.File]::ReadAllText((Join-Path $ws 'inbox\done\2026-03\notes-2.md'))) 'note filed on Tuesday'
+    Assert-Match $run.Output 'file note notes\.md as notes-2\.md' 'output'
+    Assert-True (-not (Test-Path (Join-Path $ws 'inbox\notes.md'))) 'the note is still in the inbox'
+}
+
+Test 'when a note cannot be filed, apply writes nothing and every note stays in the inbox' {
+    $ws = New-TestWorkspace
+    Add-InboxNote $ws 'a first note.md'
+    Add-InboxNote $ws 'b note open elsewhere.md'
+    Set-Proposal $ws (New-CollectProposal @{
+            notes_processed = @('a first note.md', 'b note open elsewhere.md')
+            operations      = @(New-SubjectOperation)
+        })
+    $before = Get-WorkspaceSnapshot $ws
+
+    # Another program holds the second note open.
+    $held = [IO.File]::Open((Join-Path $ws 'inbox\b note open elsewhere.md'), 'Open', 'Read', 'None')
+    try { $run = Invoke-Register $ws apply -Today 2026-03-02 } finally { $held.Close() }
+
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "The note 'b note open elsewhere\.md' could not be filed, so nothing was written" 'output'
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
 }
 
 Test 'a note listed as processed that is not in the inbox makes the proposal refused before any write' {
@@ -204,6 +241,19 @@ Test 'a time of the collect or a cutoff that does not carry its UTC offset is re
         "field 'collected_at' $kind, not '2026-03-02T08:30:00'",
         "field 'sources_read.cutoff' $kind, not '2026-03-02'",
         "field 'sources_read.cutoff' $kind, not '2026-02-30T08:12:00\+01:00'"
+    )
+}
+
+Test 'a source that the connections do not declare is refused, whether read or not covered' {
+    $ws = New-TestWorkspace
+    Set-Proposal $ws (New-CollectProposal @{
+            sources_read        = @(@{ source = 'email'; cutoff = '2026-03-02T08:12:00+01:00'; items = 14 })
+            sources_not_covered = @('tracker', 'chat')
+        })
+
+    Assert-Refused $ws @(
+        "source 'email' is not declared in connections\.json, which declares: notes, mail, tracker",
+        "source 'chat' is not declared in connections\.json, which declares: notes, mail, tracker"
     )
 }
 
@@ -321,6 +371,69 @@ Test 'the records, the filed notes, the collect state and the unclassified list 
         Assert-True ($committed -contains $path) "the last commit lacks $path; it holds: $($committed -join ', ')"
     }
     Assert-True ($committed -notcontains 'state/proposal.json') 'the proposal was committed'
+    Assert-Equal '' (@(git -C $ws status --porcelain) -join ' ') 'changes left out of the commit'
+}
+
+Test 'preview shows, under the operations table, the notes that will be filed, the sources read with their counts, the sources not covered and the unclassified items' {
+    $ws = New-TestWorkspace
+    Add-InboxNote $ws 'steering committee.md'
+    Set-Proposal $ws (New-CollectProposal @{
+            notes_processed = @('steering committee.md')
+            unclassified    = @(@{ source = 'mail from the tech lead, 2026-02-27'; text = "Asks who owns`r`nthe branch kiosk pilot." })
+            operations      = @(New-SubjectOperation)
+        })
+    $before = Get-WorkspaceSnapshot $ws
+
+    $run = Invoke-Register $ws preview
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $under = ($run.Output -split '(?m)^\| 1 .*$', 2)[1]
+    Assert-Match $under 'Collect of 2026-03-02T08:30:00\+01:00' 'under the table'
+    Assert-Match $under 'Notes to file:\s*\n- steering committee\.md' 'under the table'
+    Assert-Match $under 'Sources read:\s*\n- notes: 2 item\(s\), up to 2026-03-02T08:30:00\+01:00\s*\n- mail: 14 item\(s\), up to 2026-03-02T08:12:00\+01:00' 'under the table'
+    Assert-Match $under 'Sources not covered:\s*\n- tracker' 'under the table'
+    Assert-Match $under 'Unclassified items:\s*\n- mail from the tech lead, 2026-02-27 \| Asks who owns the branch kiosk pilot\.' 'under the table'
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+}
+
+Test 'a collect that filed no note, read no source and held nothing unclassified is previewed as such and settled' {
+    $ws = New-TestWorkspace
+    Set-Proposal $ws @{ collected_at = '2026-03-02T08:30:00+01:00' }
+
+    $preview = Invoke-Register $ws preview
+    $run = Invoke-Register $ws apply -Today 2026-03-02
+
+    Assert-Equal 0 $preview.ExitCode "exit code of preview, with output: $($preview.Output)"
+    foreach ($part in 'Notes to file', 'Sources read', 'Sources not covered', 'Unclassified items') {
+        Assert-Match $preview.Output "${part}: none" 'output of preview'
+    }
+    Assert-Equal 0 $run.ExitCode "exit code of apply, with output: $($run.Output)"
+    Assert-Equal '2026-03-02T08:30:00+01:00' (Read-Json (Join-Path $ws 'state\last-collect.json')).collected_at 'time of the collect'
+    Assert-Equal '' (@(git -C $ws status --porcelain) -join ' ') 'changes left out of the commit'
+}
+
+Test 'a collect with accents is previewed and settled with its accents intact, in files written as UTF-8 without a byte order mark' {
+    $ws = New-TestWorkspace
+    $proposed = Read-Json (Join-Path $Fixtures 'collect.proposal.json')
+    $note = $proposed.notes_processed[0]
+    Add-InboxNote $ws $note
+    Set-Proposal $ws 'collect.proposal.json'
+
+    $preview = Invoke-Register $ws preview
+    $run = Invoke-Register $ws apply -Today 2026-03-02
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $preview.Output ([regex]::Escape("- $note")) 'note shown by preview'
+    Assert-Match $preview.Output ([regex]::Escape("- $($proposed.unclassified[0].source) | $($proposed.unclassified[0].text)")) 'unclassified item shown by preview'
+    Assert-True (Test-Path -LiteralPath (Join-Path $ws "inbox\done\2026-03\$note")) 'the note is not filed'
+    $strictUtf8 = New-Object System.Text.UTF8Encoding $false, $true
+    foreach ($file in 'state\unclassified.md', 'state\last-collect.json') {
+        $bytes = [IO.File]::ReadAllBytes((Join-Path $ws $file))
+        Assert-True (-not ($bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF)) "$file starts with a byte order mark"
+        $text = $strictUtf8.GetString($bytes)
+    }
+    $list = $strictUtf8.GetString([IO.File]::ReadAllBytes((Join-Path $ws 'state\unclassified.md')))
+    Assert-Equal "- 2026-03-02 | $($proposed.unclassified[0].source) | $($proposed.unclassified[0].text)" $list.Trim() 'unclassified list'
     Assert-Equal '' (@(git -C $ws status --porcelain) -join ' ') 'changes left out of the commit'
 }
 

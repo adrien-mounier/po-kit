@@ -1,4 +1,8 @@
-# apply: validates the pending proposal again, writes its records, commits and pushes to the backup.
+# apply: validates the pending proposal again, settles its collect, writes its records, commits
+# and pushes to the backup.
+#
+#   apply          every line of the proposal
+#   apply 1 3      lines 1 and 3 only, numbered as preview shows them; the others are dropped
 
 function New-Identifier([string]$Title, [string]$Folder) {
     # A readable slug of the title, made distinct from the records already filed.
@@ -26,8 +30,6 @@ function New-NumberedIdentifier([string]$Prefix, [string]$Folder) {
 
 Assert-RegisterCommitted
 
-# A selection keeps some lines only, numbered as preview shows them: apply 1 3
-# The other lines are dropped with the proposal.
 $operations = @(Get-PendingProposal)
 $lines = @(for ($line = 1; $line -le $operations.Count; $line++) { "$line" })
 $selection = @($Arguments | ForEach-Object { $_ -split '[,\s]+' } | Where-Object { $_ })
@@ -37,12 +39,14 @@ $wrong = @(
         ForEach-Object { "'$_' is not a line of the proposal, which has $(if ($lines) { "lines 1 to $($lines.Count)" } else { 'no line' })" }
     # A record kept needs its subject: the line that creates it cannot be dropped.
     foreach ($line in $lines | Where-Object { $dropped -notcontains $_ }) {
-        $named = Get-LineNamed $operations[$line - 1].fields.subject
+        $named = Get-LineNamed ($operations[$line - 1].fields.subject)
         if ($dropped -contains $named) { "Line $line is attached to the subject that line $named creates, and the selection drops line $named" }
     }
 )
 if ($wrong) { Stop-Run (@('Selection refused. Nothing was written.') + @($wrong | ForEach-Object { "- $_." })) }
 
+# The notes are filed first, all or none, so that a note that cannot be moved stops the run before
+# anything is written.
 $settled = @(Save-Collect)
 
 # A line keeps the number preview gave it, whatever the selection.
@@ -69,7 +73,8 @@ $applied = @(foreach ($operation in $operations) {
     }) + $settled
 
 # The proposal stays pending until the commit is made, so that a failed run can be applied again
-# from the last commit.
+# from the last commit. The commit holds all that the run wrote: the records, the notes filed, the
+# collect state and the unclassified list, and never the proposal.
 Invoke-Git add -A register inbox state ':(exclude)state/proposal.json'
 Invoke-Git commit -q -m "Apply proposal: $($operations.Count - $dropped.Count) operation(s)" -m ($applied -join "`n")
 Remove-Item -LiteralPath $ProposalPath

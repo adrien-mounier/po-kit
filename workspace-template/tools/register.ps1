@@ -304,8 +304,23 @@ function Get-PendingProposal {
 #   "sources_not_covered": [ "tracker" ],
 #   "notes_processed": [ "steering committee.md" ],
 #   "unclassified": [ { "source": "mail from the tech lead, 2026-02-27", "text": "..." } ]
-# collected_at is the time of the collect. A cutoff is how far a source was read. A note is named
-# by its file name in the inbox.
+# collected_at is the time of the collect, required as soon as one of the others is given. A
+# cutoff is how far a source was read. A source is named as in connections.json. A note is named
+# by its file name in the inbox. A proposal may hold a collect and no operation.
+#
+# apply settles the collect, whichever lines are kept:
+# - the notes processed move to inbox\done\yyyy-mm, the month of the run. No note is ever deleted
+#   or replaced.
+# - state\last-collect.json, the collect state, says how far each source was read:
+#     { "collected_at": "2026-03-02T08:30:00+01:00",
+#       "sources": { "mail": { "cutoff": "2026-03-02T08:12:00+01:00", "items": 14,
+#                              "collected_at": "2026-03-02T08:30:00+01:00" } },
+#       "not_covered": [ "tracker" ] }
+#   collected_at and not_covered are those of the last collect. A source keeps its entry, with the
+#   time of the collect that read it, until a later collect reads it again.
+# - state\unclassified.md gains one line per unclassified item:
+#     - 2026-03-02 | mail from the tech lead, 2026-02-27 | ...
+#   the date it was collected, its source, its text. The PO edits this list by hand.
 
 $CollectDefinition = @'
 { "type": "object", "fields": {
@@ -341,8 +356,15 @@ function Test-PendingCollect {
     Test-Value $CollectDefinition $collect ''
     $parts = @($said.Keys | Where-Object { $_ -ne 'collected_at' -and $CollectDefinition.fields.PSObject.Properties[$_] })
     if ($parts -and -not $collect.collected_at) { "missing required field 'collected_at'" }
+    # The collect state is kept per source: a source under another name would lose its cutoff.
+    $declared = @((Read-JsonFile (Join-Path $Workspace 'connections.json')).PSObject.Properties | ForEach-Object { $_.Name })
+    $named = @($collect.sources_read | ForEach-Object { $_.source }) + @($collect.sources_not_covered)
+    foreach ($source in $named | Where-Object { $_ -is [string] -and $declared -cnotcontains $_ }) {
+        "source '$source' is not declared in connections.json, which declares: $($declared -join ', ')"
+    }
     if ($collect.notes_processed -is [array]) {
-        foreach ($note in $collect.notes_processed) {
+        # A note is a file of the inbox itself: a name that is a path would reach outside it.
+        foreach ($note in $collect.notes_processed | Where-Object { $_ -is [string] }) {
             if ($note -match '[\\/:]' -or -not (Test-Path -LiteralPath (Join-Path $Workspace "inbox\$note") -PathType Leaf)) {
                 "the note '$note' is not in the inbox"
             }
@@ -352,21 +374,37 @@ function Test-PendingCollect {
 
 function Save-Collect {
     # Settles the collect of the pending proposal, and says what it did, one line per thing.
+    # Nothing when the proposal comes from no collect.
     $collect = Get-PendingCollect
     if (-not $collect) { return }
-    $inbox = Join-Path $Workspace 'inbox'
-    $done = Join-Path $inbox "done\$($Today.Substring(0, 7))"
-    New-Item -ItemType Directory -Path $done -Force | Out-Null
-    foreach ($note in $collect.notes_processed) {
-        [IO.File]::Move((Join-Path $inbox $note), (Join-Path $done $note))
-        "file note $note"
-    }
-
     $statePath = Join-Path $Workspace 'state\last-collect.json'
     $state = [ordered]@{ collected_at = $collect.collected_at; sources = [ordered]@{}; not_covered = $collect.sources_not_covered }
     if (Test-Path -LiteralPath $statePath) {
         foreach ($source in (Read-JsonFile $statePath).sources.PSObject.Properties) { $state.sources[$source.Name] = $source.Value }
     }
+    "settle the collect of $($collect.collected_at)"
+
+    $inbox = Join-Path $Workspace 'inbox'
+    $done = Join-Path $inbox "done\$($Today.Substring(0, 7))"
+    New-Item -ItemType Directory -Path $done -Force | Out-Null
+    $filed = [ordered]@{}
+    foreach ($note in $collect.notes_processed | Sort-Object -Unique) {
+        # A note already filed this month under the same name stays: the new one is filed beside it.
+        $name = $note
+        for ($n = 2; Test-Path -LiteralPath (Join-Path $done $name); $n++) {
+            $name = [IO.Path]::GetFileNameWithoutExtension($note) + "-$n" + [IO.Path]::GetExtension($note)
+        }
+        try { [IO.File]::Move((Join-Path $inbox $note), (Join-Path $done $name)) }
+        catch {
+            # All the notes or none: the notes are filed before anything else is written, and
+            # those already filed go back to the inbox, so that apply can simply be run again.
+            foreach ($back in $filed.Keys) { [IO.File]::Move((Join-Path $done $filed[$back]), (Join-Path $inbox $back)) }
+            Stop-Run "The note '$note' could not be filed, so nothing was written: $($_.Exception.GetBaseException().Message) Close it if it is open in another program, then apply again."
+        }
+        $filed[$note] = $name
+        "file note $note$(if ($name -ne $note) { " as $name" })"
+    }
+
     foreach ($read in $collect.sources_read) {
         $state.sources[$read.source] = [ordered]@{ cutoff = $read.cutoff; items = $read.items; collected_at = $collect.collected_at }
         "read $($read.source) up to $($read.cutoff): $($read.items) item(s)"
@@ -375,8 +413,7 @@ function Save-Collect {
     if ($state.not_covered) { "not covered: $($state.not_covered -join ', ')" }
 
     if ($collect.unclassified) {
-        # One line per item: the date it was collected, its source, its text. The list is added
-        # to and never rewritten: the PO edits it by hand.
+        # The list is added to and never rewritten, so that what the PO wrote in it stays as it is.
         $listPath = Join-Path $Workspace 'state\unclassified.md'
         $items = @($collect.unclassified | ForEach-Object {
                 "- $($collect.collected_at.Substring(0, 10)) | $(($_.source -replace '\s+', ' ').Trim()) | $(($_.text -replace '\s+', ' ').Trim())"
