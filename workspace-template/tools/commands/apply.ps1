@@ -28,6 +28,18 @@ function New-NumberedIdentifier([string]$Prefix, [string]$Folder) {
     $start + ($highest + 1).ToString('000')
 }
 
+function Update-Record($Found, $Fields, $Source) {
+    # Rewrites a record found by Find-Record with the fields that change. Each one adds an entry to
+    # the history of the record, and the date updated moves.
+    $record = $Found.record
+    foreach ($change in @(Get-Changes $Found $Fields)) {
+        $record.history = @($record.history) + [ordered]@{ date = $Today; field = $change.field; previous = $change.previous; new = $change.new; source = $Source }
+        $record.($change.field) = $change.new
+    }
+    $record.date_updated = $Today
+    Write-JsonFile $Found.path $record
+}
+
 Assert-RegisterCommitted
 # The portfolio view is regenerated in the default language. Its labels are read before anything
 # is written, so that a language without labels refuses the run whole.
@@ -58,6 +70,12 @@ $identifiers = @{}
 $applied = @(foreach ($operation in $operations) {
         $line++
         if ($dropped -contains $line) { continue }
+        if ($operation.op -ceq 'update') {
+            $found = Find-Record $operation.id
+            Update-Record $found $operation.fields $operation.source
+            "update $($found.type) $($operation.id)"
+            continue
+        }
         $definition = Get-Definition $operation.type
         $folder = Join-Path $Workspace $definition.folder
         if ($definition.folder_per_year) { $folder = Join-Path $folder $Today.Substring(0, 4) }
@@ -72,7 +90,14 @@ $applied = @(foreach ($operation in $operations) {
         $record.date_recorded = $Today
         $record.date_updated = $Today
         Write-JsonFile (Join-Path $folder "$($record.id).json") $record
-        "$($operation.op) $($operation.type) $($record.id)"
+        $said = "$($operation.op) $($operation.type) $($record.id)"
+        if ($record.supersedes) {
+            # The record superseded is kept: it is marked and linked to the new one, and its history
+            # shows it, with the source of the new record as the source of the change.
+            Update-Record (Find-Record $record.supersedes) ([pscustomobject]@{ status = 'superseded'; superseded_by = $record.id }) $record.source
+            $said += ", which supersedes $($record.supersedes)"
+        }
+        $said
     }) + $settled
 
 # The proposal stays pending until the commit is made, so that a failed run can be applied again
