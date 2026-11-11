@@ -341,7 +341,7 @@ function Get-PendingCollect {
     # What the pending proposal says of its collect, every part present. Nothing when the
     # proposal comes from no collect.
     $proposal = Read-JsonFile $ProposalPath
-    if ($proposal -is [System.Management.Automation.PSCustomObject] -and $proposal.collected_at) {
+    if ($proposal -is [System.Management.Automation.PSCustomObject] -and "$($proposal.collected_at)".Trim()) {
         Complete-Value $CollectDefinition $proposal
     }
 }
@@ -355,7 +355,7 @@ function Test-PendingCollect {
     $collect = [pscustomobject]$said
     Test-Value $CollectDefinition $collect ''
     $parts = @($said.Keys | Where-Object { $_ -ne 'collected_at' -and $CollectDefinition.fields.PSObject.Properties[$_] })
-    if ($parts -and -not $collect.collected_at) { "missing required field 'collected_at'" }
+    if ($parts -and -not "$($collect.collected_at)".Trim()) { "missing required field 'collected_at'" }
     # The collect state is kept per source: a source under another name would lose its cutoff.
     $declared = @((Read-JsonFile (Join-Path $Workspace 'connections.json')).PSObject.Properties | ForEach-Object { $_.Name })
     $named = @($collect.sources_read | ForEach-Object { $_.source }) + @($collect.sources_not_covered)

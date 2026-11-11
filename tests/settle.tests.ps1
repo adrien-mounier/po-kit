@@ -337,8 +337,10 @@ Test 'a proposal with no operation but with notes, cutoffs or unclassified items
 
 Test 'a proposal with no operation and no collect to settle is refused, and so is a selection of lines it does not have' {
     $ws = New-TestWorkspace
-    Set-Proposal $ws @{ operations = @() }
-    Assert-Refused $ws @('The proposal holds no operation and settles no collect')
+    foreach ($empty in @{ operations = @() }, @{ collected_at = ' ' }) {
+        Set-Proposal $ws $empty
+        Assert-Refused $ws @('The proposal holds no operation and settles no collect')
+    }
 
     Set-Proposal $ws (New-CollectProposal)
     $before = Get-WorkspaceSnapshot $ws
