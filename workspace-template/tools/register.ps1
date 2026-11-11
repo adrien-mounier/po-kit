@@ -254,6 +254,21 @@ function Test-Subject([string]$Subject, [int]$Line, $Operations) {
     if (-not $exists) { "subject '$Subject' exists neither in the register nor earlier in this proposal (the subject that line N creates is named 'line N')" }
 }
 
+# An update changes fields of one record of the register, named by its identifier:
+#   { "op": "update", "id": "C-2026-001", "interpreted": true,
+#     "source": { "where": "...", "read_on": "yyyy-mm-dd" }, "fields": { "due_date": "2026-04-10" } }
+# "fields" gives each field to change with its whole new value, and "source" the source of the
+# change, written as the source of a record. For each field whose value changes, apply adds an
+# entry to the history of the record, and it moves the date updated:
+#   { "date": "2026-03-10", "field": "due_date", "previous": "2026-03-20", "new": "2026-04-10", "source": { ... } }
+# Closing a subject is an update of its status. No operation deletes a record.
+#
+# A created record supersedes a record of the register, of any type but subject, by naming its
+# identifier in the field "supersedes". apply then marks the old record as an update would, with
+# the source of the new record: the status "superseded", and the identifier of the new record in
+# "superseded_by". Only the register tool does this: a proposal neither gives that status nor
+# updates a superseded record.
+
 function Get-Changes($Found, $Fields) {
     # The fields of a record found by Find-Record that would change, each with its previous and its
     # new value. A field given with the value the record already holds is not a change.
@@ -269,10 +284,37 @@ function Get-Changes($Found, $Fields) {
     }
 }
 
-function Test-Update($Operation) {
-    # What is wrong with an update: nothing when it can be applied.
+function Test-StatusProposed([string]$Type, $Fields) {
+    # Only the register tool marks a record as superseded. A subject is never superseded: its
+    # definition already refuses that status.
+    if ($Type -ne 'subject' -and $Fields.status -ceq 'superseded') {
+        "the status 'superseded' is set by the register tool, on the record that a created record names in 'supersedes'"
+    }
+}
+
+function Test-Superseding($Operation, [int]$Line, [hashtable]$Superseded) {
+    # What is wrong with what a created record says about superseding: nothing when it names no
+    # record to supersede, or a record of the register that can be superseded. $Superseded then
+    # remembers that this line supersedes it.
+    Test-StatusProposed $Operation.type $Operation.fields
+    $old = $Operation.fields.supersedes
+    if ($old -isnot [string] -or -not $old.Trim()) { return }
+    if ($Operation.type -eq 'subject') { 'a subject supersedes no record'; return }
+    $found = Find-Record $old
+    if (-not $found) { "record '$old' to supersede does not exist in the register" }
+    elseif ($found.type -eq 'subject') { "'$old' is a subject: a subject is closed, not superseded" }
+    elseif ($found.record.status -ceq 'superseded') { "record '$old' is already superseded by '$($found.record.superseded_by)'" }
+    elseif ($Superseded[$old]) { "record '$old' is already superseded by line $($Superseded[$old])" }
+    else { $Superseded[$old] = $Line }
+}
+
+function Test-Update($Operation, [hashtable]$Superseded) {
+    # What is wrong with an update: nothing when it can be applied. $Superseded holds the records
+    # that earlier lines of the proposal supersede.
     $found = if ($Operation.id -is [string]) { Find-Record $Operation.id }
     if (-not $found) { "record '$($Operation.id)' does not exist in the register (an update names its record in 'id')"; return }
+    $by = if ($found.record.status -ceq 'superseded') { "'$($found.record.superseded_by)'" } elseif ($Superseded[$Operation.id]) { "line $($Superseded[$Operation.id])" }
+    if ($by) { "record '$($Operation.id)' is superseded by ${by}: it is no longer updated"; return }
     $record = (Get-Definition $found.type).record
     $fields = $Operation.fields
     $problems = @(
@@ -283,6 +325,8 @@ function Test-Update($Operation) {
             if ($record.fields.subject -and $fields.subject -is [string] -and $fields.subject.Trim() -and (Find-Record $fields.subject).type -ne 'subject') {
                 "subject '$($fields.subject)' does not exist in the register"
             }
+            Test-StatusProposed $found.type $fields
+            if ($fields.PSObject.Properties['supersedes']) { "field 'supersedes' is given when a record is created: an update cannot change it" }
         }
     )
     $problems
@@ -300,11 +344,12 @@ function Get-PendingProposal {
     if (-not $reasons -and -not $operations) { $reasons += 'The proposal holds no operation.' }
 
     $line = 0
+    $superseded = @{}
     foreach ($operation in $operations) {
         $line++
         $problems = @(
             if ($operation.interpreted -isnot [bool]) { 'the operation must state "interpreted": true when it is interpreted, false when it is a plain fact' }
-            if ($operation.op -ceq 'update') { Test-Update $operation }
+            if ($operation.op -ceq 'update') { Test-Update $operation $superseded }
             elseif ($operation.op -cne 'create') { "unknown operation '$($operation.op)'; allowed: create, update" }
             elseif ("$($operation.type)" -cnotmatch '^[a-z]+$' -or $operation.type -eq 'common' -or
                 -not (Test-Path -LiteralPath (Join-Path $Tools "definitions\$($operation.type).json"))) {
@@ -316,6 +361,7 @@ function Get-PendingProposal {
                 Test-Value $record $operation.fields ''
                 $subject = $operation.fields.subject
                 if ($record.fields.subject -and $subject -is [string] -and $subject.Trim()) { Test-Subject $subject $line $operations }
+                Test-Superseding $operation $line $superseded
             }
         )
         foreach ($problem in $problems) { $reasons += "Line ${line}: $problem." }

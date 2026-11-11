@@ -61,7 +61,14 @@ $applied = @(foreach ($operation in @(Get-PendingProposal)) {
         $record.date_recorded = $Today
         $record.date_updated = $Today
         Write-JsonFile (Join-Path $folder "$($record.id).json") $record
-        "$($operation.op) $($operation.type) $($record.id)"
+        $said = "$($operation.op) $($operation.type) $($record.id)"
+        if ($record.supersedes) {
+            # The record superseded is kept: it is marked and linked to the new one, and its history
+            # shows it, with the source of the new record as the source of the change.
+            Update-Record (Find-Record $record.supersedes) ([pscustomobject]@{ status = 'superseded'; superseded_by = $record.id }) $record.source
+            $said += ", which supersedes $($record.supersedes)"
+        }
+        $said
     })
 
 # The proposal stays pending until the commit is made, so that a failed run can be applied again
