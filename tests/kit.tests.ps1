@@ -69,6 +69,16 @@ Test 'the workspace rules say how the settings list the gates and the objectives
     Assert-Match $rules '`objectives`: .*\{ "number": 1, "title": "[^"]+" \}' 'how objectives are listed'
 }
 
+Test 'the workspace rules say how the connections declare a source: off, read from a folder, or read through a connector with what its verification gave' {
+    $rules = Get-Content -LiteralPath (Join-Path $Template 'AGENTS.md') -Raw -Encoding UTF8
+
+    Assert-Match $rules '\{ "mode": "off" \}' 'a source that is off'
+    Assert-Match $rules '\{ "mode": "folder", "folder": "[^"]+" \}' 'a source read from a folder'
+    Assert-Match $rules '\{ "mode": "connector", "connector": "[^"]+" \}' 'a source read through a connector'
+    Assert-Match $rules '"verified": \{ "result": "ok", "on": "\d{4}-\d\d-\d\d" \}' 'what the verification of a connector gave, and when'
+    Assert-Match $rules '"result": "failed"' 'a verification that failed'
+}
+
 Test 'every script of the kit is plain ASCII, so Windows PowerShell 5.1 reads it right' {
     $scripts = @(git -C $KitRoot ls-files --cached --others --exclude-standard -- '*.ps1')
     Assert-True ($scripts.Count -gt 0) 'no script found'

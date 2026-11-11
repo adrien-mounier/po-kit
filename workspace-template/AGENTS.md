@@ -34,3 +34,13 @@ Each command is one file under `tools/commands`; its first line says what it doe
 - `objectives`: the PO's objectives, each as `{ "number": 1, "title": "Halve the time to open an account" }`. A record names an objective by its number.
 
 When the PO names a gate or an objective that is not listed, the PO adds it there first.
+
+## The connections
+
+`connections.json` is the PO's too: it says how each source is read on this machine. A source goes by the name it is declared under there (`notes`, `mail`, `tracker`), in one of three modes:
+
+- `{ "mode": "off" }`: the source is not read.
+- `{ "mode": "folder", "folder": "exports/mail" }`: the source is read from the files of that folder, named from this folder or by its full path.
+- `{ "mode": "connector", "connector": "<name>" }`: the source is read through the connector that the agent of this machine knows under that name, for reading only. The collect verifies a connector once, with a harmless read, and writes in the entry what it gave and when: `"verified": { "result": "ok", "on": "2026-03-02" }`, or `"result": "failed"` with the reason in `"detail"`.
+
+A routine names a source as the connections do, and reads it as its mode says.
