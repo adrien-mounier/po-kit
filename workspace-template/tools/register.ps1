@@ -67,7 +67,8 @@ function Assert-RegisterCommitted {
     if (-not $changes) { return }
     $files = $changes | ForEach-Object {
         # A line of git status: two letters for what happened to the file, a space, its path.
-        $happened = if ($_ -match '^(\?\?|.?A)') { 'added' } elseif ($_ -match '^.?D') { 'deleted' } else { 'modified' }
+        $letters = $_.Substring(0, 2)
+        $happened = if ($letters -match '[?A]') { 'added' } elseif ($letters -match 'D') { 'deleted' } else { 'modified' }
         "- ${happened}: $($_.Substring(3))"
     }
     Stop-Run (@('The register differs from its last commit: these files were changed outside the register tool, or left by a run that failed. Nothing was done.') +
