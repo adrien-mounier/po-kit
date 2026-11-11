@@ -305,7 +305,7 @@ Test 'a proposal the register tool cannot read as operations is refused' {
     $unknownOperation.op = 'delete'
     $unknownType = New-SubjectOperation
     $unknownType.type = 'project'
-    Set-Proposal $ws @{ operations = @($unknownOperation, $unknownType, @{ op = 'create'; type = 'subject' }) }
+    Set-Proposal $ws @{ operations = @($unknownOperation, $unknownType, @{ op = 'create'; type = 'subject'; interpreted = $false }) }
     Assert-Refused $ws @(
         "Line 1: unknown operation 'delete'; allowed: create",
         "Line 2: unknown record type 'project'",

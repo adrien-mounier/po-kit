@@ -58,6 +58,43 @@ function Invoke-Git {
     if ($LASTEXITCODE -ne 0) { Stop-Run "git $($args[0]) failed. The last commit of the workspace is the recovery point." }
 }
 
+function Assert-RegisterCommitted {
+    # The refusal shared by the commands that must not run on a register edited outside the
+    # register tool. preview and apply call it before anything else, and so does any command added
+    # later that validates or writes records. When a file under the register differs from the last
+    # commit, the run ends with the list of these files and a failure code.
+    $changes = @(Invoke-Git status --porcelain --untracked-files=all register)
+    if (-not $changes) { return }
+    $files = $changes | ForEach-Object {
+        # A line of git status: two letters for what happened to the file, a space, its path.
+        $letters = $_.Substring(0, 2)
+        $happened = if ($letters -match '[?A]') { 'added' } elseif ($letters -match 'D') { 'deleted' } else { 'modified' }
+        "- ${happened}: $($_.Substring(3))"
+    }
+    Stop-Run (@('The register differs from its last commit: these files were changed outside the register tool, or left by a run that failed. Nothing was done.') +
+        $files + 'Put them back as they are in the last commit, then run the command again. A change that is wanted goes through a proposal.')
+}
+
+function Push-ToBackup {
+    # Pushes the last commit to the PO's backup: every remote of the workspace. The commit is what
+    # saves the register, so a push that fails is a warning and never a failed run.
+    #
+    # git push reports on its error stream even when all goes well. Captured, each of these lines
+    # is an error for Windows PowerShell 5.1, and would stop the run: errors may continue, in this
+    # function only.
+    $ErrorActionPreference = 'Continue'
+    $remotes = @(Invoke-Git remote)
+    if (-not $remotes) { 'Not pushed: the workspace has no remote.' }
+    foreach ($remote in $remotes) {
+        $said = @(& git -C $Workspace push $remote HEAD 2>&1 | ForEach-Object { if ($_ -is [string]) { $_ } else { $_.Exception.Message } })
+        if ($LASTEXITCODE -eq 0) { "Pushed to '$remote'." }
+        else {
+            "Warning: the push to '$remote' failed, so this backup is behind the workspace. The commit is saved in the workspace; the next apply pushes again. git said:"
+            $said | Where-Object { $_ } | ForEach-Object { "  $_" }
+        }
+    }
+}
+
 function Test-IsoDate([string]$Text) {
     $parsed = [DateTime]::MinValue
     [DateTime]::TryParseExact($Text, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None, [ref]$parsed)
@@ -87,11 +124,19 @@ function Format-Timestamp([DateTimeOffset]$Moment) {
 #   type          text, date, timestamp, boolean, integer, list or object
 #   required      true when a proposal must give it
 #   allowed       the values accepted
-#   allowed_from  the name of the list in settings.json that holds the values accepted
+#   allowed_from  the list in settings.json that holds the values accepted: its name, or
+#                 name.field when the list holds groups of fields (objectives.number)
 #   default       the value recorded when a proposal gives none
 #   set_by        "tool" when only the register tool writes it
 #   items         the definition of each item of a list
 #   fields        the definitions of the fields of an object
+#
+# A type's file also says how its records are filed and identified:
+#   folder             the folder of the type, in the workspace
+#   folder_per_year    true when its records are filed in one folder per year recorded
+#   identifier_prefix  the letter that opens its identifiers: C gives C-2026-001, the year recorded
+#                      then a number. A type without one is identified by a slug of the title.
+# An identifier equals the file name, so a record is found from its identifier alone.
 
 $KindsOfValue = @{
     text = 'text'; date = 'an ISO date (yyyy-mm-dd)'; boolean = 'true or false'; integer = 'a whole number'
@@ -107,7 +152,10 @@ function Get-Definition([string]$Type) {
     foreach ($part in (Read-JsonFile (Join-Path $Tools 'definitions\common.json')), $own) {
         foreach ($field in $part.fields.PSObject.Properties) { $fields[$field.Name] = $field.Value }
     }
-    @{ folder = $own.folder; record = [pscustomobject]@{ type = 'object'; fields = [pscustomobject]$fields } }
+    @{
+        folder = $own.folder; folder_per_year = $own.folder_per_year; identifier_prefix = $own.identifier_prefix
+        record = [pscustomobject]@{ type = 'object'; fields = [pscustomobject]$fields }
+    }
 }
 
 function Test-Value($Definition, $Value, [string]$Name) {
@@ -156,7 +204,9 @@ function Test-Value($Definition, $Value, [string]$Name) {
         "field '$Name' is '$Value'; allowed: $($Definition.allowed -join ', ')"
     }
     if ($Definition.allowed_from) {
-        $listed = @($Settings.($Definition.allowed_from))
+        $listed = $Settings
+        foreach ($part in $Definition.allowed_from.Split('.')) { $listed = $listed.$part }
+        $listed = @($listed | Where-Object { $null -ne $_ })
         if ($listed -cnotcontains $Value) {
             "field '$Name' is '$Value'; settings.json lists under '$($Definition.allowed_from)': $(if ($listed) { $listed -join ', ' } else { 'nothing' })"
         }
@@ -186,8 +236,31 @@ function Complete-Value($Definition, $Value) {
 
 # --- Proposals ----------------------------------------------------------------------------------
 # A routine never writes a record. It leaves one proposal in state\proposal.json:
-#   { "operations": [ { "op": "create", "type": "subject", "fields": { ... } } ] }
-# A line of a proposal is an operation, numbered from 1 as preview shows it.
+#   { "operations": [ { "op": "create", "type": "subject", "interpreted": false, "fields": { ... } } ] }
+# A line of a proposal is an operation, numbered from 1 as preview shows it. Each one states
+# "interpreted": true when the routine interpreted its source (a decision, a status change, an
+# inferred deadline), false when it is a plain fact quoted from the source.
+#
+# A record other than a subject names its subject in the field "subject": the identifier of a
+# subject of the register, or "line N" for the subject that line N, an earlier line of the same
+# proposal, creates. apply records the identifier that subject received.
+
+function Get-LineNamed($Subject) {
+    # N when a record names "line N" as its subject, nothing when it names a subject of the register.
+    if ($Subject -is [string] -and $Subject -cmatch '^line ([1-9][0-9]{0,5})$') { [int]$Matches[1] }
+}
+
+function Test-Subject([string]$Subject, [int]$Line, $Operations) {
+    # What is wrong with the subject named by the record of a line: nothing when it exists.
+    $named = Get-LineNamed $Subject
+    $exists = if ($named) { $named -lt $Line -and $Operations[$named - 1].op -ceq 'create' -and $Operations[$named - 1].type -ceq 'subject' }
+    else {
+        # Identifiers of subjects are slugs: anything else is not looked for among the files.
+        $Subject -cmatch '^[a-z0-9]+(-[a-z0-9]+)*$' -and
+        (Test-Path -LiteralPath (Join-Path $Workspace "$((Get-Definition 'subject').folder)\$Subject.json"))
+    }
+    if (-not $exists) { "subject '$Subject' exists neither in the register nor earlier in this proposal (the subject that line N creates is named 'line N')" }
+}
 
 function Get-PendingProposal {
     # The operations of the pending proposal, validated in full. Any problem refuses the proposal
@@ -204,13 +277,19 @@ function Get-PendingProposal {
     foreach ($operation in $operations) {
         $line++
         $problems = @(
+            if ($operation.interpreted -isnot [bool]) { 'the operation must state "interpreted": true when it is interpreted, false when it is a plain fact' }
             if ($operation.op -cne 'create') { "unknown operation '$($operation.op)'; allowed: create" }
             elseif ("$($operation.type)" -cnotmatch '^[a-z]+$' -or $operation.type -eq 'common' -or
                 -not (Test-Path -LiteralPath (Join-Path $Tools "definitions\$($operation.type).json"))) {
                 "unknown record type '$($operation.type)'"
             }
             elseif ($operation.fields -isnot [System.Management.Automation.PSCustomObject]) { 'the operation gives no fields' }
-            else { Test-Value (Get-Definition $operation.type).record $operation.fields '' }
+            else {
+                $record = (Get-Definition $operation.type).record
+                Test-Value $record $operation.fields ''
+                $subject = $operation.fields.subject
+                if ($record.fields.subject -and $subject -is [string] -and $subject.Trim()) { Test-Subject $subject $line $operations }
+            }
         )
         foreach ($problem in $problems) { $reasons += "Line ${line}: $problem." }
     }
