@@ -17,7 +17,7 @@ It works on the workspace it sits in. From this folder:
     powershell -NoProfile -File tools\register.ps1 <command>
 
 - `preview` shows the pending proposal as a numbered table and writes nothing.
-- `apply` validates the pending proposal again and writes it to the register.
+- `apply` validates the pending proposal again, writes it to the register and settles its collect. `apply 1 3` keeps lines 1 and 3 of the preview and drops the others.
 
 A refused proposal lists its reasons and writes nothing: correct the proposal and preview again.
 
