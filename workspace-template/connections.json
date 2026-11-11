@@ -1,0 +1,12 @@
+{
+  "notes": {
+    "mode": "folder",
+    "folder": "inbox"
+  },
+  "mail": {
+    "mode": "off"
+  },
+  "tracker": {
+    "mode": "off"
+  }
+}

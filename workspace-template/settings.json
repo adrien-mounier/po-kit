@@ -1,0 +1,20 @@
+{
+  "format_version": 1,
+  "delays_in_days": {
+    "subject": 7,
+    "inbox_note": 2,
+    "source": 3
+  },
+  "validation_mode": "all",
+  "languages": {
+    "default": "en",
+    "sponsor": "en"
+  },
+  "per_source_cap": 50,
+  "gates": [],
+  "objectives": [],
+  "sponsor": {
+    "name": "",
+    "email": ""
+  }
+}
