@@ -26,6 +26,7 @@ function Write-Table([string[]]$Header, [object[]]$Rows) {
     }
 }
 
+Assert-RegisterCommitted
 $operations = @(Get-PendingProposal)
 $number = 0
 $rows = @(foreach ($operation in $operations) {

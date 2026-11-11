@@ -1,4 +1,4 @@
-# apply: validates the pending proposal again, writes its records and commits.
+# apply: validates the pending proposal again, writes its records, commits and pushes to the backup.
 
 function New-Identifier([string]$Title, [string]$Folder) {
     # A readable slug of the title, made distinct from the records already filed.
@@ -24,6 +24,7 @@ function New-NumberedIdentifier([string]$Prefix, [string]$Folder) {
     $start + ($highest + 1).ToString('000')
 }
 
+Assert-RegisterCommitted
 $line = 0
 $identifiers = @{}
 $applied = @(foreach ($operation in @(Get-PendingProposal)) {
@@ -53,3 +54,4 @@ Remove-Item -LiteralPath $ProposalPath
 
 'Applied and committed:'
 $applied | ForEach-Object { "- $_" }
+Push-ToBackup

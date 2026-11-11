@@ -58,6 +58,43 @@ function Invoke-Git {
     if ($LASTEXITCODE -ne 0) { Stop-Run "git $($args[0]) failed. The last commit of the workspace is the recovery point." }
 }
 
+function Assert-RegisterCommitted {
+    # The refusal shared by the commands that must not run on a register edited outside the
+    # register tool. preview and apply call it before anything else, and so does any command added
+    # later that validates or writes records. When a file under the register differs from the last
+    # commit, the run ends with the list of these files and a failure code.
+    $changes = @(Invoke-Git status --porcelain --untracked-files=all register)
+    if (-not $changes) { return }
+    $files = $changes | ForEach-Object {
+        # A line of git status: two letters for what happened to the file, a space, its path.
+        $letters = $_.Substring(0, 2)
+        $happened = if ($letters -match '[?A]') { 'added' } elseif ($letters -match 'D') { 'deleted' } else { 'modified' }
+        "- ${happened}: $($_.Substring(3))"
+    }
+    Stop-Run (@('The register differs from its last commit: these files were changed outside the register tool, or left by a run that failed. Nothing was done.') +
+        $files + 'Put them back as they are in the last commit, then run the command again. A change that is wanted goes through a proposal.')
+}
+
+function Push-ToBackup {
+    # Pushes the last commit to the PO's backup: every remote of the workspace. The commit is what
+    # saves the register, so a push that fails is a warning and never a failed run.
+    #
+    # git push reports on its error stream even when all goes well. Captured, each of these lines
+    # is an error for Windows PowerShell 5.1, and would stop the run: errors may continue, in this
+    # function only.
+    $ErrorActionPreference = 'Continue'
+    $remotes = @(Invoke-Git remote)
+    if (-not $remotes) { 'Not pushed: the workspace has no remote.' }
+    foreach ($remote in $remotes) {
+        $said = @(& git -C $Workspace push $remote HEAD 2>&1 | ForEach-Object { if ($_ -is [string]) { $_ } else { $_.Exception.Message } })
+        if ($LASTEXITCODE -eq 0) { "Pushed to '$remote'." }
+        else {
+            "Warning: the push to '$remote' failed, so this backup is behind the workspace. The commit is saved in the workspace; the next apply pushes again. git said:"
+            $said | Where-Object { $_ } | ForEach-Object { "  $_" }
+        }
+    }
+}
+
 function Test-IsoDate([string]$Text) {
     $parsed = [DateTime]::MinValue
     [DateTime]::TryParseExact($Text, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None, [ref]$parsed)
