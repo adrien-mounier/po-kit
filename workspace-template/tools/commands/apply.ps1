@@ -24,11 +24,29 @@ function New-NumberedIdentifier([string]$Prefix, [string]$Folder) {
     $start + ($highest + 1).ToString('000')
 }
 
+function Update-Record($Found, $Fields, $Source) {
+    # Rewrites a record found by Find-Record with the fields that change. Each one adds an entry to
+    # the history of the record, and the date updated moves.
+    $record = $Found.record
+    foreach ($change in @(Get-Changes $Found $Fields)) {
+        $record.history = @($record.history) + [ordered]@{ date = $Today; field = $change.field; previous = $change.previous; new = $change.new; source = $Source }
+        $record.($change.field) = $change.new
+    }
+    $record.date_updated = $Today
+    Write-JsonFile $Found.path $record
+}
+
 Assert-RegisterCommitted
 $line = 0
 $identifiers = @{}
 $applied = @(foreach ($operation in @(Get-PendingProposal)) {
         $line++
+        if ($operation.op -ceq 'update') {
+            $found = Find-Record $operation.id
+            Update-Record $found $operation.fields $operation.source
+            "update $($found.type) $($operation.id)"
+            continue
+        }
         $definition = Get-Definition $operation.type
         $folder = Join-Path $Workspace $definition.folder
         if ($definition.folder_per_year) { $folder = Join-Path $folder $Today.Substring(0, 4) }

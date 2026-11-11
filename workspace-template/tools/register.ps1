@@ -139,9 +139,10 @@ function Get-Definition([string]$Type) {
     }
 }
 
-function Test-Value($Definition, $Value, [string]$Name) {
+function Test-Value($Definition, $Value, [string]$Name, [switch]$Partial) {
     # What is wrong with a proposed value, against its definition: one reason per problem, and
-    # nothing when the value is valid.
+    # nothing when the value is valid. -Partial accepts a group that leaves required fields out:
+    # the fields an update names.
     if ($null -eq $Value -or ($Value -is [string] -and -not $Value.Trim())) {
         if ($Definition.required) { "missing required field '$Name'" }
         return
@@ -168,7 +169,7 @@ function Test-Value($Definition, $Value, [string]$Name) {
             else { Test-Value $field.Value $given.Value $path }
         }
         foreach ($field in $Definition.fields.PSObject.Properties) {
-            if ($field.Value.required -and -not $Value.PSObject.Properties[$field.Name]) {
+            if ($field.Value.required -and -not $Partial -and -not $Value.PSObject.Properties[$field.Name]) {
                 "missing required field '$("$Name.$($field.Name)".TrimStart('.'))'"
             }
         }
@@ -213,6 +214,22 @@ function Complete-Value($Definition, $Value) {
     $Value
 }
 
+function Find-Record([string]$Id) {
+    # The record of the register that carries an identifier: its type, its file (path) and its
+    # content (record). Nothing when the register holds no such record. The identifier alone says
+    # where to look: its shape names the type, and its year the folder.
+    foreach ($file in Get-ChildItem (Join-Path $Tools 'definitions\*.json') -Exclude common.json) {
+        $filed = Read-JsonFile $file.FullName
+        $shape = if ($filed.identifier_prefix) { "^$($filed.identifier_prefix)-([0-9]{4})-[0-9]+$" } else { '^[a-z0-9]+(-[a-z0-9]+)*$' }
+        if ($Id -cmatch $shape) {
+            $folder = Join-Path $Workspace $filed.folder
+            if ($filed.folder_per_year) { $folder = Join-Path $folder $Matches[1] }
+            $path = Join-Path $folder "$Id.json"
+            if (Test-Path -LiteralPath $path) { return @{ type = $file.BaseName; path = $path; record = Read-JsonFile $path } }
+        }
+    }
+}
+
 # --- Proposals ----------------------------------------------------------------------------------
 # A routine never writes a record. It leaves one proposal in state\proposal.json:
 #   { "operations": [ { "op": "create", "type": "subject", "interpreted": false, "fields": { ... } } ] }
@@ -233,12 +250,43 @@ function Test-Subject([string]$Subject, [int]$Line, $Operations) {
     # What is wrong with the subject named by the record of a line: nothing when it exists.
     $named = Get-LineNamed $Subject
     $exists = if ($named) { $named -lt $Line -and $Operations[$named - 1].op -ceq 'create' -and $Operations[$named - 1].type -ceq 'subject' }
-    else {
-        # Identifiers of subjects are slugs: anything else is not looked for among the files.
-        $Subject -cmatch '^[a-z0-9]+(-[a-z0-9]+)*$' -and
-        (Test-Path -LiteralPath (Join-Path $Workspace "$((Get-Definition 'subject').folder)\$Subject.json"))
-    }
+    else { (Find-Record $Subject).type -eq 'subject' }
     if (-not $exists) { "subject '$Subject' exists neither in the register nor earlier in this proposal (the subject that line N creates is named 'line N')" }
+}
+
+function Get-Changes($Found, $Fields) {
+    # The fields of a record found by Find-Record that would change, each with its previous and its
+    # new value. A field given with the value the record already holds is not a change.
+    $definition = (Get-Definition $Found.type).record.fields
+    foreach ($given in $Fields.PSObject.Properties) {
+        $field = $definition.($given.Name)
+        $previous = $Found.record.($given.Name)
+        $new = Complete-Value $field $given.Value
+        # Compared as they would be recorded, so that a list or a group of fields compares by content.
+        if ((ConvertTo-Json -InputObject (Complete-Value $field $previous) -Depth 20 -Compress) -cne (ConvertTo-Json -InputObject $new -Depth 20 -Compress)) {
+            @{ field = $given.Name; previous = $previous; new = $new }
+        }
+    }
+}
+
+function Test-Update($Operation) {
+    # What is wrong with an update: nothing when it can be applied.
+    $found = if ($Operation.id -is [string]) { Find-Record $Operation.id }
+    if (-not $found) { "record '$($Operation.id)' does not exist in the register (an update names its record in 'id')"; return }
+    $record = (Get-Definition $found.type).record
+    $fields = $Operation.fields
+    $problems = @(
+        Test-Value $record.fields.source $Operation.source 'source'
+        if ($fields -isnot [System.Management.Automation.PSCustomObject]) { 'the operation gives no fields' }
+        else {
+            Test-Value $record $fields '' -Partial
+            if ($record.fields.subject -and $fields.subject -is [string] -and $fields.subject.Trim() -and (Find-Record $fields.subject).type -ne 'subject') {
+                "subject '$($fields.subject)' does not exist in the register"
+            }
+        }
+    )
+    $problems
+    if (-not $problems -and -not @(Get-Changes $found $fields)) { 'the update changes nothing: the record already holds every value given' }
 }
 
 function Get-PendingProposal {
@@ -256,7 +304,8 @@ function Get-PendingProposal {
         $line++
         $problems = @(
             if ($operation.interpreted -isnot [bool]) { 'the operation must state "interpreted": true when it is interpreted, false when it is a plain fact' }
-            if ($operation.op -cne 'create') { "unknown operation '$($operation.op)'; allowed: create" }
+            if ($operation.op -ceq 'update') { Test-Update $operation }
+            elseif ($operation.op -cne 'create') { "unknown operation '$($operation.op)'; allowed: create, update" }
             elseif ("$($operation.type)" -cnotmatch '^[a-z]+$' -or $operation.type -eq 'common' -or
                 -not (Test-Path -LiteralPath (Join-Path $Tools "definitions\$($operation.type).json"))) {
                 "unknown record type '$($operation.type)'"
