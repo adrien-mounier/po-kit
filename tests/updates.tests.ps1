@@ -322,6 +322,53 @@ Test 'a subject is closed by an update: its record and the records attached to i
     }
 }
 
+Test 'a selection applies the corrections and the superseding it keeps, and leaves the record of each dropped line as it was' {
+    $ws = New-TestWorkspaceWithRecords
+    Set-Proposal $ws @{ operations = @(
+            (New-UpdateOperation 'C-2026-001' @{ owner = 'the PO' }),
+            (New-UpdateOperation 'R-2026-001' @{ severity = 'urgent' }),
+            (New-RecordOperation decision @{ title = 'Open the pilot to twenty branches'; status = 'taken'; supersedes = 'D-2026-001' }),
+            (New-RecordOperation commitment @{ title = 'Present the onboarding pilot to the retail steering committee of April'; supersedes = 'C-2026-001' }),
+            (New-UpdateOperation 'mobile-onboarding' @{ horizon = 'next' })
+        )
+    }
+    $untouched = 'register\risks\R-2026-001.json', 'register\decisions\2026\D-2026-001.json'
+    $before = $untouched | ForEach-Object { (Get-FileHash -LiteralPath (Join-Path $ws $_)).Hash }
+
+    $run = Invoke-Register $ws apply 1 4 5 -Today 2026-03-10
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Equal 'register\commitments\2026\C-2026-001.json register\commitments\2026\C-2026-002.json register\decisions\2026\D-2026-001.json register\risks\R-2026-001.json register\subjects\mobile-onboarding.json' ((Get-RecordFiles $ws) -join ' ') 'record files'
+    $commitment = Read-Json (Join-Path $ws 'register\commitments\2026\C-2026-001.json')
+    Assert-Equal 'the PO superseded C-2026-002' "$($commitment.owner) $($commitment.status) $($commitment.superseded_by)" 'the commitment, corrected then superseded'
+    Assert-Equal 'owner status superseded_by' (($commitment.history | ForEach-Object { $_.field }) -join ' ') 'history of the commitment'
+    Assert-Equal 'C-2026-001' (Read-Json (Join-Path $ws 'register\commitments\2026\C-2026-002.json')).supersedes 'record that the new commitment supersedes'
+    Assert-Equal 'next' (Read-Json (Join-Path $ws 'register\subjects\mobile-onboarding.json')).horizon 'horizon of the subject'
+    Assert-Equal ($before -join ' ') (($untouched | ForEach-Object { (Get-FileHash -LiteralPath (Join-Path $ws $_)).Hash }) -join ' ') 'records of the dropped lines'
+
+    $committed = @(git -C $ws show --name-only --format= HEAD | Sort-Object)
+    Assert-Equal 'register/commitments/2026/C-2026-001.json register/commitments/2026/C-2026-002.json register/subjects/mobile-onboarding.json' ($committed -join ' ') 'files of the last commit'
+    Assert-Match $run.Output 'Dropped: line 2, 3\.' 'output'
+    Assert-True (-not (Test-Path (Join-Path $ws 'state\proposal.json'))) 'the proposal is still pending'
+}
+
+Test 'corrections of one record kept by a selection are applied in the order of the proposal, and a dropped one leaves no trace in the history' {
+    $ws = New-TestWorkspaceWithRecords
+    Set-Proposal $ws @{ operations = @(
+            (New-UpdateOperation 'C-2026-001' @{ due_date = '2026-04-10' }),
+            (New-UpdateOperation 'C-2026-001' @{ due_date = '2026-04-24' }),
+            (New-UpdateOperation 'C-2026-001' @{ due_date = '2026-05-04' })
+        )
+    }
+
+    $run = Invoke-Register $ws apply '3,1' -Today 2026-03-10
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $record = Read-Json (Join-Path $ws 'register\commitments\2026\C-2026-001.json')
+    Assert-Equal '2026-05-04' $record.due_date 'due date'
+    Assert-Equal '2026-03-20 -> 2026-04-10, 2026-04-10 -> 2026-05-04' (($record.history | ForEach-Object { "$($_.previous) -> $($_.new)" }) -join ', ') 'history of the due date'
+}
+
 Test 'preview shows, for an update, each field that changes with its current and proposed values and, for a superseding record, the record that will be superseded' {
     $ws = New-TestWorkspaceWithRecords
     $update = New-UpdateOperation 'C-2026-001' @{ due_date = '2026-04-10'; owner = 'the tech lead'; status = 'open' }
