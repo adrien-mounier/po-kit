@@ -124,7 +124,7 @@ function Format-Timestamp([DateTimeOffset]$Moment) {
 # tools\definitions holds one data file per record type, plus common.json for the fields every
 # record carries. A field is defined by:
 #   type          text, date, timestamp, boolean, integer, list or object; any for a value of any kind
-#   required      true when a proposal must give it
+#   required      true when a record must hold it: a proposal gives it, unless the register tool sets it
 #   allowed       the values accepted
 #   allowed_from  the list in settings.json that holds the values accepted: its name, or
 #                 name.field when the list holds groups of fields (objectives.number)
