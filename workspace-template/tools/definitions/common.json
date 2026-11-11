@@ -15,7 +15,7 @@
         "read_on": { "type": "date", "required": true }
       }
     },
-    "objectives": { "type": "list", "items": { "type": "integer" } },
+    "objectives": { "type": "list", "items": { "type": "integer", "allowed_from": "objectives.number" } },
     "notes": { "type": "text" },
     "supersedes": { "type": "text" },
     "superseded_by": { "type": "text", "set_by": "tool" },

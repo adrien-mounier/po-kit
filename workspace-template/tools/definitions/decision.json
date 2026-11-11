@@ -1,0 +1,13 @@
+{
+  "folder": "register/decisions",
+  "folder_per_year": true,
+  "identifier_prefix": "D",
+  "fields": {
+    "status": { "type": "text", "required": true, "allowed": ["taken", "pending", "superseded"] },
+    "subject": { "type": "text", "required": true },
+    "date_of_fact": { "type": "date", "required": true },
+    "decided_by": { "type": "text" },
+    "needed_from": { "type": "text" },
+    "needed_by": { "type": "date" }
+  }
+}

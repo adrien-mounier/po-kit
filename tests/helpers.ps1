@@ -97,7 +97,34 @@ function New-SubjectOperation([hashtable]$Fields = @{}) {
     foreach ($name in $Fields.Keys) {
         if ($null -eq $Fields[$name]) { $subject.Remove($name) } else { $subject[$name] = $Fields[$name] }
     }
-    @{ op = 'create'; type = 'subject'; fields = $subject }
+    @{ op = 'create'; type = 'subject'; interpreted = $false; fields = $subject }
+}
+
+function New-RecordOperation([string]$Type, [hashtable]$Fields = @{}) {
+    # One valid operation creating a commitment, a decision or a risk of Example Bank, attached to
+    # the subject New-SubjectOperation creates. $Fields works as in New-SubjectOperation.
+    $record = @{
+        title          = "Send the onboarding figures to the sponsor ($Type)"
+        subject        = 'mobile-onboarding'
+        date_of_fact   = '2026-03-02'
+        evidence_level = 'fact'
+        source         = @{ where = 'inbox/steering-notes.md'; read_on = '2026-03-03' }
+    }
+    if ($Type -eq 'decision') { $record.status = 'pending' }
+    if ($Type -eq 'risk') { $record.severity = 'watch' }
+    foreach ($name in $Fields.Keys) {
+        if ($null -eq $Fields[$name]) { $record.Remove($name) } else { $record[$name] = $Fields[$name] }
+    }
+    @{ op = 'create'; type = $Type; interpreted = $false; fields = $record }
+}
+
+function New-TestWorkspaceWithSubject {
+    # A workspace whose register holds one subject: mobile-onboarding.
+    $workspace = New-TestWorkspace
+    Set-Proposal $workspace @{ operations = @(New-SubjectOperation) }
+    $run = Invoke-Register $workspace apply -Today 2026-03-02
+    Assert-Equal 0 $run.ExitCode "exit code when recording the subject, with output: $($run.Output)"
+    $workspace
 }
 
 function Assert-Refused([string]$Workspace, [string[]]$Reasons) {

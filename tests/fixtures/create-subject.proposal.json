@@ -3,6 +3,7 @@
     {
       "op": "create",
       "type": "subject",
+      "interpreted": false,
       "fields": {
         "title": "Refonte de l'entrée en relation",
         "kind": "product",

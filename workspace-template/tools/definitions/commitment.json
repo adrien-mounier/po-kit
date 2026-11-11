@@ -1,0 +1,13 @@
+{
+  "folder": "register/commitments",
+  "folder_per_year": true,
+  "identifier_prefix": "C",
+  "fields": {
+    "status": { "type": "text", "allowed": ["open", "done", "dropped", "superseded"], "default": "open" },
+    "subject": { "type": "text", "required": true },
+    "date_of_fact": { "type": "date", "required": true },
+    "owner": { "type": "text" },
+    "owed_to": { "type": "text" },
+    "due_date": { "type": "date" }
+  }
+}
