@@ -100,6 +100,19 @@ function New-SubjectOperation([hashtable]$Fields = @{}) {
     @{ op = 'create'; type = 'subject'; fields = $subject }
 }
 
+function Assert-Refused([string]$Workspace, [string[]]$Reasons) {
+    # The pending proposal must be refused by preview and by apply: every reason given (as a
+    # pattern), one reason per problem, a failure exit code and no file written.
+    $before = Get-WorkspaceSnapshot $Workspace
+    foreach ($command in 'preview', 'apply') {
+        $run = Invoke-Register $Workspace $command
+        Assert-Equal 1 $run.ExitCode "exit code of $command, with output: $($run.Output)"
+        foreach ($reason in $Reasons) { Assert-Match $run.Output $reason "reason given by $command" }
+        Assert-Equal $Reasons.Count @($run.Output -split "`n" | Where-Object { $_ -like '- *' }).Count "number of reasons given by $command, with output: $($run.Output)"
+        Assert-Equal $before (Get-WorkspaceSnapshot $Workspace) "files of the workspace after $command"
+    }
+}
+
 function Get-WorkspaceSnapshot([string]$Workspace) {
     # Every file of the workspace with its content hash, to assert that a command wrote nothing.
     $files = Get-ChildItem -LiteralPath $Workspace -Recurse -File -Force |

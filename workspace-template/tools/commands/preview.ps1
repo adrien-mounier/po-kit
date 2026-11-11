@@ -28,11 +28,11 @@ function Write-Table([string[]]$Header, [object[]]$Rows) {
 
 $operations = @(Get-PendingProposal)
 $number = 0
-$rows = foreach ($operation in $operations) {
-    $number++
-    $cells = "$number", $operation.op, $operation.type, (Format-Value $operation.fields.title), (Format-Fields $operation.fields 'title')
-    , @($cells | ForEach-Object { $_.Replace('|', '\|') })
-}
+$rows = @(foreach ($operation in $operations) {
+        $number++
+        $cells = "$number", $operation.op, $operation.type, (Format-Value $operation.fields.title), (Format-Fields $operation.fields 'title')
+        , @($cells | ForEach-Object { $_.Replace('|', '\|') })
+    })
 
 "Pending proposal: $($operations.Count) operation(s). Nothing is written until it is applied."
 ''

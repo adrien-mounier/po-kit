@@ -1,0 +1,34 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "type": "subject",
+      "fields": {
+        "title": "Refonte de l'entrée en relation",
+        "kind": "product",
+        "horizon": "now",
+        "clearance": "cleared",
+        "cleared_by": "the sponsor",
+        "cleared_on": "2026-02-20",
+        "evidence_level": "fact",
+        "source": {
+          "where": "conversation with the PO",
+          "read_on": "2026-03-02"
+        },
+        "notes": "Périmètre : les clients particuliers d'Example Bank.",
+        "owning_entity": "Example Bank Retail",
+        "sponsor": "the sponsor",
+        "decider": "the retail steering committee",
+        "next_step": "Présenter le parcours cible au comité",
+        "next_date": "2026-03-16",
+        "next_date_confirmed": true,
+        "watch_list": {
+          "people": ["the tech lead"],
+          "keywords": ["onboarding", "entrée en relation"],
+          "tracker_projects": ["ONB"]
+        },
+        "links": ["https://example.com/onboarding"]
+      }
+    }
+  ]
+}

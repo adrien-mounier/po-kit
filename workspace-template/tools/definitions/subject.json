@@ -1,0 +1,37 @@
+{
+  "folder": "register/subjects",
+  "fields": {
+    "status": { "type": "text", "allowed": ["active", "closed"], "default": "active" },
+    "kind": { "type": "text", "required": true, "allowed": ["product", "contribution", "service"] },
+    "horizon": { "type": "text", "required": true, "allowed": ["now", "next", "later"] },
+    "clearance": { "type": "text", "allowed": ["cleared", "pending", "out of frame", "none"], "default": "none" },
+    "cleared_by": { "type": "text" },
+    "cleared_on": { "type": "date" },
+    "owning_entity": { "type": "text" },
+    "sponsor": { "type": "text" },
+    "decider": { "type": "text" },
+    "gates": {
+      "type": "list",
+      "items": {
+        "type": "object",
+        "fields": {
+          "name": { "type": "text", "required": true, "allowed_from": "gates" },
+          "state": { "type": "text", "required": true, "allowed": ["unknown", "not required", "missing", "planned", "done"] },
+          "link": { "type": "text" }
+        }
+      }
+    },
+    "next_step": { "type": "text" },
+    "next_date": { "type": "date" },
+    "next_date_confirmed": { "type": "boolean", "default": false },
+    "watch_list": {
+      "type": "object",
+      "fields": {
+        "people": { "type": "list", "items": { "type": "text" } },
+        "keywords": { "type": "list", "items": { "type": "text" } },
+        "tracker_projects": { "type": "list", "items": { "type": "text" } }
+      }
+    },
+    "links": { "type": "list", "items": { "type": "text" } }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "fields": {
+    "id": { "type": "text", "set_by": "tool" },
+    "type": { "type": "text", "set_by": "tool" },
+    "title": { "type": "text", "required": true },
+    "status": { "type": "text" },
+    "date_recorded": { "type": "date", "set_by": "tool" },
+    "date_updated": { "type": "date", "set_by": "tool" },
+    "evidence_level": { "type": "text", "required": true, "allowed": ["fact", "reported", "hypothesis"] },
+    "source": {
+      "type": "object",
+      "required": true,
+      "fields": {
+        "where": { "type": "text", "required": true },
+        "read_on": { "type": "date", "required": true }
+      }
+    },
+    "objectives": { "type": "list", "items": { "type": "integer" } },
+    "notes": { "type": "text" },
+    "supersedes": { "type": "text" },
+    "superseded_by": { "type": "text", "set_by": "tool" },
+    "history": { "type": "list", "set_by": "tool" }
+  }
+}
