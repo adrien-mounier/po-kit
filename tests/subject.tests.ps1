@@ -226,7 +226,8 @@ Test 'a gate is accepted when the workspace settings name it, in any of the five
     Write-Json (Join-Path $ws 'settings.json') $settings
     $gates = @($states | ForEach-Object { @{ name = "review $_"; state = $_ } })
     $gates[4].link = 'https://example.com/review-minutes'
-    Set-Proposal $ws @{ operations = @(New-SubjectOperation @{ gates = $gates }) }
+    # A subject under Now with a missing gate is out of frame: the check makes it an error otherwise.
+    Set-Proposal $ws @{ operations = @(New-SubjectOperation @{ gates = $gates; clearance = 'out of frame' }) }
 
     $run = Invoke-Register $ws apply
 

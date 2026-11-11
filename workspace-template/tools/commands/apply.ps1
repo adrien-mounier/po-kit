@@ -1,5 +1,5 @@
 # apply: validates the pending proposal again, settles its collect, writes its records,
-# regenerates the portfolio view, commits and pushes to the backup.
+# regenerates the portfolio view, runs the check, commits and pushes to the backup.
 #
 #   apply          every line of the proposal
 #   apply 1 3      lines 1 and 3 only, numbered as preview shows them; the others are dropped
@@ -58,6 +58,8 @@ $wrong = @(
         if ($dropped -contains $named) { "Line $line is attached to the subject that line $named creates, and the selection drops line $named" }
     }
 )
+# The proposal was validated with every line: what the lines kept leave must hold on its own.
+if (-not $wrong -and $dropped) { $wrong = @(Test-ProposalResult $operations ($lines | Where-Object { $dropped -notcontains $_ })) }
 if ($wrong) { Stop-Run (@('Selection refused. Nothing was written.') + @($wrong | ForEach-Object { "- $_." })) }
 
 # The notes are filed first, all or none, so that a note that cannot be moved stops the run before
@@ -107,7 +109,9 @@ Invoke-Git add -A register inbox state ':(exclude)state/proposal.json'
 # The portfolio view is generated from the register as staged, and goes in the same commit: the
 # view of a commit is never behind its register.
 Write-PortfolioView $labels
-Invoke-Git add views/portfolio.md
+# So is the check report. What the check finds never undoes the apply: it is said, and committed.
+$check = Write-CheckReport $labels
+Invoke-Git add views/portfolio.md views/check-report.md
 Invoke-Git commit -q -m "Apply proposal: $($operations.Count - $dropped.Count) operation(s)" -m ($applied -join "`n")
 Remove-Item -LiteralPath $ProposalPath
 
@@ -115,4 +119,5 @@ Remove-Item -LiteralPath $ProposalPath
 $applied | ForEach-Object { "- $_" }
 if ($dropped) { "Dropped: line $($dropped -join ', ')." }
 'Portfolio view regenerated: views\portfolio.md'
+$check.summary
 Push-ToBackup

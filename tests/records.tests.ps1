@@ -102,7 +102,8 @@ Test 'each type accepts its own statuses only, a decision must give its status a
     $ws = New-TestWorkspaceWithSubject
     $accepted = @(
         'open', 'done', 'dropped' | ForEach-Object { New-RecordOperation commitment @{ status = $_ } }
-        'taken', 'pending' | ForEach-Object { New-RecordOperation decision @{ status = $_ } }
+        # A taken decision names its author: the check makes it an error otherwise.
+        'taken', 'pending' | ForEach-Object { New-RecordOperation decision @{ status = $_; decided_by = 'the sponsor' } }
         'open', 'closed' | ForEach-Object { New-RecordOperation risk @{ status = $_ } }
         'urgent', 'watch' | ForEach-Object { New-RecordOperation risk @{ severity = $_ } }
     )

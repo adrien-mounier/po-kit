@@ -37,6 +37,11 @@ function Get-Listed([string]$Report, [string]$Heading) {
         }) -join "`n"
 }
 
+function Get-Headings([string]$Report) {
+    # The headings of a check report, in their order.
+    @($Report -split '\r?\n' | Where-Object { $_ -like '#*' }) -join "`n"
+}
+
 Test 'check on a register in order writes the check report under its stamp, with no error and no warning, and succeeds' {
     $ws = New-CheckedWorkspace
 
@@ -88,7 +93,8 @@ Test 'a record that cannot be read is an error naming its file, and the check en
     $check = Invoke-Check $ws
 
     Assert-Equal 1 $check.ExitCode "exit code, with output: $($check.Output)"
-    Assert-Equal "Unreadable record: ``register/decisions/2026/D-2026-001.json```nUnreadable record: ``register/risks/R-2026-001.json``" (Get-Listed $check.Report '## Errors') 'errors'
+    Assert-Equal "# Check report`n## Errors`n### Unreadable record`n## Warnings" (Get-Headings $check.Report) 'headings of the check report'
+    Assert-Equal "``register/decisions/2026/D-2026-001.json```n``register/risks/R-2026-001.json``" (Get-Listed $check.Report '### Unreadable record') 'unreadable records'
     Assert-True ($check.Report -notmatch 'No error') 'the check report says there is no error'
     Assert-Match $check.Output '(?m)^Check: 2 error\(s\), 0 warning\(s\)\.' 'output'
 }
@@ -104,14 +110,14 @@ Test 'an unknown field, a value outside the allowed ones and a missing required 
 
     Assert-Equal 1 $check.ExitCode "exit code, with output: $($check.Output)"
     $commitment = 'Present the onboarding pilot to the retail steering committee [C-2026-001]'
-    $expected = "Unknown field or value: ${commitment}: field 'status' is 'late'; allowed: open, done, dropped, superseded",
-        "Unknown field or value: ${commitment}: field 'due_date' must be an ISO date (yyyy-mm-dd), not 'end of March'",
-        "Missing required field: Open the pilot to ten branches [D-2026-001]: missing required field 'date_updated'",
-        "Unknown field or value: Open the pilot to ten branches [D-2026-001]: field 'type' is 'commitment'; allowed: decision",
-        "Missing required field: [R-2026-001]: missing required field 'title'",
-        "Missing required field: [R-2026-001]: missing required field 'source.read_on'",
-        "Unknown field or value: Mobile onboarding [mobile-onboarding]: unknown field 'colour'"
-    Assert-Equal ($expected -join "`n") (Get-Listed $check.Report '## Errors') 'errors'
+    $unknown = "$commitment (field 'status' is 'late'; allowed: open, done, dropped, superseded)",
+        "$commitment (field 'due_date' must be an ISO date (yyyy-mm-dd), not 'end of March')",
+        "Open the pilot to ten branches [D-2026-001] (field 'type' is 'commitment'; allowed: decision)",
+        "Mobile onboarding [mobile-onboarding] (unknown field 'colour')"
+    Assert-Equal ($unknown -join "`n") (Get-Listed $check.Report '### Unknown field or value') 'unknown fields and values'
+    $missing = "Open the pilot to ten branches [D-2026-001] ('date_updated')", "[R-2026-001] ('title')", "[R-2026-001] ('source.read_on')"
+    Assert-Equal ($missing -join "`n") (Get-Listed $check.Report '### Missing required field') 'missing required fields'
+    Assert-Equal "# Check report`n## Errors`n### Unknown field or value`n### Missing required field`n## Warnings" (Get-Headings $check.Report) 'headings of the check report'
 }
 
 Test 'an identifier that differs from the file name, and a reference to a record the register does not hold, are errors' {
@@ -125,12 +131,12 @@ Test 'an identifier that differs from the file name, and a reference to a record
 
     Assert-Equal 1 $check.ExitCode "exit code, with output: $($check.Output)"
     $commitment = 'Present the onboarding pilot to the retail steering committee [C-2026-001]'
-    $expected = "Identifier differing from the file name: ``register/commitments/2026/C-2026-001.json``: 'C-2026-007'",
-        "Reference to a missing record: ${commitment}: subject 'branch-kiosks-pilot'",
-        "Reference to a missing record: Open the pilot to ten branches [D-2026-001]: supersedes 'D-2025-004'",
-        "Reference to a missing record: Open the pilot to ten branches [D-2026-001]: superseded_by 'D-2026-009'",
-        "Reference to a missing record: The pilot branches are not staffed [R-2026-001]: subject 'D-2026-001'"
-    Assert-Equal ($expected -join "`n") (Get-Listed $check.Report '## Errors') 'errors'
+    Assert-Equal "``register/commitments/2026/C-2026-001.json`` (id 'C-2026-007')" (Get-Listed $check.Report '### Identifier differing from the file name') 'identifiers differing from the file name'
+    $missing = "$commitment (subject 'branch-kiosks-pilot')",
+        "Open the pilot to ten branches [D-2026-001] (supersedes 'D-2025-004')",
+        "Open the pilot to ten branches [D-2026-001] (superseded_by 'D-2026-009')",
+        "The pilot branches are not staffed [R-2026-001] (subject 'D-2026-001')"
+    Assert-Equal ($missing -join "`n") (Get-Listed $check.Report '### Reference to a missing record') 'references to a missing record'
 }
 
 Test 'a cleared subject without a name and a date, a subject under Now with a missing gate that is not out of frame, and a taken decision without its author are errors' {
@@ -151,15 +157,10 @@ Test 'a cleared subject without a name and a date, a subject under Now with a mi
     $check = Invoke-Check $ws
 
     Assert-Equal 1 $check.ExitCode "exit code, with output: $($check.Output)"
-    $expected = 'Taken decision without its author: Open the pilot to ten branches [D-2026-001]',
-        'Cleared subject without a name and a date: Card dispute handling [card-dispute-handling]',
-        'Subject under Now with a missing gate and a clearance other than out of frame: Mobile onboarding [mobile-onboarding]: architecture review'
-    Assert-Equal ($expected -join "`n") (Get-Listed $check.Report '## Errors') 'errors'
-}
-
-function Get-Headings([string]$Report) {
-    # The headings of a check report, in their order.
-    @($Report -split '\r?\n' | Where-Object { $_ -like '#*' }) -join "`n"
+    Assert-Equal 'Card dispute handling [card-dispute-handling]' (Get-Listed $check.Report '### Cleared subject without a name and a date') 'cleared subjects without a name and a date'
+    Assert-Equal 'Mobile onboarding [mobile-onboarding] (architecture review)' (Get-Listed $check.Report '### Subject under Now with a missing gate and a clearance other than out of frame') 'subjects with a missing gate'
+    Assert-Equal 'Open the pilot to ten branches [D-2026-001]' (Get-Listed $check.Report '### Taken decision without its author') 'taken decisions without their author'
+    Assert-Match $check.Output '(?m)^Check: 3 error\(s\), 0 warning\(s\)\.' 'output'
 }
 
 Test 'an open commitment without owner or without due date is a warning under its rule, and the check succeeds with warnings only' {
@@ -185,7 +186,7 @@ Test 'a commitment past its due date is listed as overdue with its owner and its
     $check = Invoke-Check $ws 2026-03-20
 
     Assert-Equal 0 $check.ExitCode "exit code, with output: $($check.Output)"
-    Assert-Equal 'Send the pilot figures to the sponsor [C-2026-002] (due: 2026-03-10)' (Get-Listed $check.Report '### Overdue commitment') 'overdue commitments on the day the first one is due'
+    Assert-Equal 'Send the pilot figures to the sponsor [C-2026-002] (due: 2026-03-10)' (Get-Listed $check.Report '### Overdue commitment') 'overdue commitments on the day the commitment of the tech lead is due'
 
     $check = Invoke-Check $ws 2026-03-21
 
@@ -395,6 +396,178 @@ Test 'the three delays are read from the settings: changing one changes the verd
     $check = Invoke-Check $ws 2026-03-05
 
     Assert-Equal "# Check report`n## Errors`n## Warnings`n### Inbox note older than 1 day(s)`n### Source not read for more than 2 day(s)" (Get-Headings $check.Report) 'headings with a longer delay for subjects'
+}
+
+Test 'with errors and warnings, the check report lists the errors first, then the warnings, each under its rule, and the check fails' {
+    $ws = New-CheckedWorkspace @((New-RecordOperation commitment @{ title = 'Draft the target journey' }))
+    Edit-Record $ws 'decisions\2026\D-2026-001.json' { $args[0].decided_by = $null }
+    Edit-Record $ws 'commitments\2026\C-2026-001.json' { $args[0].status = 'late' }
+
+    $check = Invoke-Check $ws 2026-03-21
+
+    Assert-Equal 1 $check.ExitCode "exit code, with output: $($check.Output)"
+    Assert-Equal ("# Check report`n## Errors`n### Unknown field or value`n### Taken decision without its author`n" +
+        "## Warnings`n### Open commitment without owner`n### Open commitment without due date`n" +
+        "### Subject under Now not updated for more than 7 day(s)`n### Source not read for more than 3 day(s)") (Get-Headings $check.Report) 'headings of the check report'
+    # A record that is not valid is an error, and raises no warning on top: the commitment whose
+    # status is unknown is not listed as overdue.
+    Assert-True ($check.Report -notmatch 'No error|No warning|Overdue') "the check report says too much: $($check.Report)"
+    Assert-Match $check.Output '(?m)^Check: 2 error\(s\), 4 warning\(s\)\.' 'output'
+}
+
+# This file is plain ASCII: the accents of the French labels are written by their code.
+$e = [string][char]0xE9
+
+Test 'the check report is written in the default language of the settings, and what the records say stays as it is' {
+    $ws = New-CheckedWorkspace @((New-RecordOperation commitment @{ title = 'Send the pilot figures to the sponsor'; owner = 'the PO'; due_date = '2026-03-10' }))
+    Edit-JsonFile (Join-Path $ws 'settings.json') { $args[0].languages.default = 'fr' }
+    Edit-Record $ws 'decisions\2026\D-2026-001.json' { $args[0].decided_by = $null }
+
+    $check = Invoke-Check $ws 2026-03-11
+
+    Assert-Equal 1 $check.ExitCode "exit code, with output: $($check.Output)"
+    Assert-Match $check.Report "^# Rapport de contr$([char]0xF4)le\r?\n\r?\n> G${e}n${e}ration : 2026-03-11T" 'title and stamp'
+    Assert-Equal 'Open the pilot to ten branches [D-2026-001]' (Get-Listed $check.Report "### D${e}cision prise sans son auteur") 'taken decisions without their author'
+    Assert-Equal "Send the pilot figures to the sponsor [C-2026-002] (responsable : the PO, ${e}ch${e}ance : 2026-03-10)" (Get-Listed $check.Report '### Engagement en retard') 'overdue commitments'
+    Assert-Equal "notes (derni$([char]0xE8)re lecture : 2026-03-02T08:30:00+01:00)" (Get-Listed $check.Report '### Source non lue depuis plus de 3 jour(s)') 'sources not read'
+    Assert-Equal "# Rapport de contr$([char]0xF4)le`n## Erreurs`n### D${e}cision prise sans son auteur`n## Avertissements`n### Engagement en retard`n### Sujet sous Maintenant sans mise $([char]0xE0) jour depuis plus de 7 jour(s)`n### Source non lue depuis plus de 3 jour(s)" (Get-Headings $check.Report) 'headings of the check report'
+}
+
+Test 'check refuses to run when a record was changed outside the register tool, and writes nothing' {
+    $ws = New-CheckedWorkspace
+    $record = Join-Path $ws 'register\subjects\mobile-onboarding.json'
+    [IO.File]::WriteAllText($record, [IO.File]::ReadAllText($record).Replace('"now"', '"later"'), $Utf8)
+    [IO.File]::WriteAllText((Join-Path $ws 'register\risks\R-2026-002.json'), '{}')
+    $before = Get-WorkspaceSnapshot $ws
+
+    $run = Invoke-Register $ws check -Today 2026-03-03
+
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'The register differs from its last commit' 'output'
+    Assert-Match $run.Output '(?m)^- modified: register/subjects/mobile-onboarding\.json$' 'record modified'
+    Assert-Match $run.Output '(?m)^- added: register/risks/R-2026-002\.json$' 'record added'
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+}
+
+Test 'apply runs the check on the register it leaves and prints its summary; a warning does not undo the apply, and the check report goes in its commit' {
+    $ws = New-CheckedWorkspace
+    Set-Proposal $ws @{ operations = @(New-RecordOperation commitment @{ title = 'Draft the target journey' }) }
+
+    $run = Invoke-Register $ws apply -Now 2026-03-03T09:15:00+01:00
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '(?m)^Check: 0 error\(s\), 2 warning\(s\)\. Check report: views\\check-report\.md$' 'output'
+    Assert-True (Test-Path (Join-Path $ws 'register\commitments\2026\C-2026-002.json')) 'the commitment was not recorded'
+    Assert-True (-not (Test-Path (Join-Path $ws 'state\proposal.json'))) 'the proposal is still pending'
+    $report = Read-CheckReport $ws
+    Assert-Equal 'Draft the target journey [C-2026-002]' (Get-Listed $report '### Open commitment without owner') 'commitments without owner'
+    Assert-Equal 'Draft the target journey [C-2026-002]' (Get-Listed $report '### Open commitment without due date') 'commitments without due date'
+    $state = "$(git -C $ws rev-parse HEAD:register)".Substring(0, 12)
+    Assert-Match $report "^# Check report\r?\n\r?\n> Generated: 2026-03-03T09:15:00\+01:00\.\r?\n> Register state: $state\.\r?\n" 'stamp of the check report'
+    $committed = @(git -C $ws show --name-only --format= HEAD)
+    Assert-True ($committed -contains 'register/commitments/2026/C-2026-002.json') "the last commit lacks the record: $committed"
+    Assert-True ($committed -contains 'views/check-report.md') "the last commit lacks the check report: $committed"
+    Assert-Equal '' (@(git -C $ws status --porcelain) -join ' ') 'changes left out of the commit'
+}
+
+Test 'apply on a register that already holds an error applies the proposal, and its summary counts the error' {
+    $ws = New-CheckedWorkspace
+    Edit-Record $ws 'decisions\2026\D-2026-001.json' { $args[0].decided_by = $null }
+    Set-Proposal $ws @{ operations = @(New-RecordOperation risk @{ title = 'The committee room is not booked' }) }
+
+    $run = Invoke-Register $ws apply -Today 2026-03-03
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '(?m)^Check: 1 error\(s\), 0 warning\(s\)\.' 'output'
+    Assert-True (Test-Path (Join-Path $ws 'register\risks\R-2026-002.json')) 'the risk was not recorded'
+    Assert-Equal 'Open the pilot to ten branches [D-2026-001]' (Get-Listed (Read-CheckReport $ws) '### Taken decision without its author') 'taken decisions without their author'
+}
+
+$MissingGate = 'subject under Now with a missing gate \(architecture review\) and a clearance other than out of frame'
+
+function New-WorkspaceWithClearedSubject {
+    # A workspace whose settings name one gate, and whose register holds the subject
+    # mobile-onboarding under Now, cleared by the sponsor, and the pending decision D-2026-001.
+    $workspace = New-TestWorkspace
+    Edit-JsonFile (Join-Path $workspace 'settings.json') { $args[0].gates = @('architecture review') }
+    Set-Proposal $workspace @{ operations = @(
+            (New-SubjectOperation @{ clearance = 'cleared'; cleared_by = 'the sponsor'; cleared_on = '2026-02-20' }),
+            (New-RecordOperation decision @{ title = 'Choose the pilot branches'; subject = 'line 1'; needed_from = 'the sponsor' })
+        )
+    }
+    $run = Invoke-Register $workspace apply -Today 2026-03-02
+    Assert-Equal 0 $run.ExitCode "exit code when recording the subject, with output: $($run.Output)"
+    $workspace
+}
+
+Test 'a proposal that would leave a subject under Now with a missing gate still marked cleared is refused before any write, with the rule named' {
+    $ws = New-WorkspaceWithClearedSubject
+    $missing = @(@{ name = 'architecture review'; state = 'missing' })
+    Set-Proposal $ws @{ operations = @(
+            (New-UpdateOperation 'mobile-onboarding' @{ gates = $missing }),
+            (New-SubjectOperation @{ title = 'Branch kiosks pilot'; clearance = 'pending'; gates = $missing }),
+            # Under Next, or out of frame, a missing gate breaks no rule.
+            (New-SubjectOperation @{ title = 'Paper statements'; horizon = 'next'; gates = $missing }),
+            (New-SubjectOperation @{ title = 'Card dispute handling'; clearance = 'out of frame'; gates = $missing })
+        )
+    }
+
+    Assert-Refused $ws @("Line 1: ${MissingGate}: its clearance is 'cleared'", "Line 2: ${MissingGate}: its clearance is 'pending'")
+
+    Set-Proposal $ws @{ operations = @(New-UpdateOperation 'mobile-onboarding' @{ gates = $missing; clearance = 'out of frame' }) }
+    $run = Invoke-Register $ws apply -Today 2026-03-03
+
+    Assert-Equal 0 $run.ExitCode "exit code of the update that also sets the subject out of frame, with output: $($run.Output)"
+    Assert-Match $run.Output '(?m)^Check: 0 error\(s\)' 'summary of the check'
+}
+
+Test 'a proposal that would leave a taken decision without its author, or a cleared subject without a name and a date, is refused before any write' {
+    $ws = New-WorkspaceWithClearedSubject
+    Set-Proposal $ws @{ operations = @(
+            (New-RecordOperation decision @{ title = 'Open the pilot to ten branches'; status = 'taken' }),
+            (New-UpdateOperation 'D-2026-001' @{ status = 'taken' }),
+            (New-SubjectOperation @{ title = 'Branch kiosks pilot'; clearance = 'cleared'; cleared_by = 'the sponsor' }),
+            (New-UpdateOperation 'mobile-onboarding' @{ cleared_on = $null })
+        )
+    }
+
+    Assert-Refused $ws @(
+        "Line 1: taken decision without its author: a taken decision gives 'decided_by'",
+        "Line 2: taken decision without its author",
+        "Line 3: cleared subject without a name and a date: a cleared subject gives 'cleared_by' and 'cleared_on'",
+        "Line 4: cleared subject without a name and a date"
+    )
+
+    Set-Proposal $ws @{ operations = @(New-UpdateOperation 'D-2026-001' @{ status = 'taken'; decided_by = 'the sponsor' }) }
+    $run = Invoke-Register $ws apply -Today 2026-03-03
+
+    Assert-Equal 0 $run.ExitCode "exit code of the update that names the author, with output: $($run.Output)"
+}
+
+Test 'what the lines of a proposal leave together is what counts, and a selection that would break a rule on its own is refused' {
+    $ws = New-WorkspaceWithClearedSubject
+    Set-Proposal $ws @{ operations = @(
+            (New-UpdateOperation 'mobile-onboarding' @{ gates = @(@{ name = 'architecture review'; state = 'missing' }) }),
+            (New-UpdateOperation 'mobile-onboarding' @{ clearance = 'out of frame' })
+        )
+    }
+    $before = Get-WorkspaceSnapshot $ws
+
+    $preview = Invoke-Register $ws preview
+
+    Assert-Equal 0 $preview.ExitCode "exit code of preview, with output: $($preview.Output)"
+
+    $run = Invoke-Register $ws apply 1
+
+    Assert-Equal 1 $run.ExitCode "exit code of the selection, with output: $($run.Output)"
+    Assert-Match $run.Output '(?m)^Selection refused\. Nothing was written\.$' 'output of the selection'
+    Assert-Match $run.Output "(?m)^- Line 1: ${MissingGate}: its clearance is 'cleared'\.$" 'reason of the selection'
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace after the selection'
+
+    $run = Invoke-Register $ws apply -Today 2026-03-03
+
+    Assert-Equal 0 $run.ExitCode "exit code of apply, with output: $($run.Output)"
+    Assert-Equal 'out of frame' (Read-Json (Join-Path $ws 'register\subjects\mobile-onboarding.json')).clearance 'clearance recorded'
 }
 
 Test 'a register whose records were corrected, superseded and closed by the register tool is in order' {

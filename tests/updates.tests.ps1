@@ -319,7 +319,7 @@ Test 'a selection applies the corrections and the superseding it keeps, and leav
     Set-Proposal $ws @{ operations = @(
             (New-UpdateOperation 'C-2026-001' @{ owner = 'the PO' }),
             (New-UpdateOperation 'R-2026-001' @{ severity = 'urgent' }),
-            (New-RecordOperation decision @{ title = 'Open the pilot to twenty branches'; status = 'taken'; supersedes = 'D-2026-001' }),
+            (New-RecordOperation decision @{ title = 'Open the pilot to twenty branches'; status = 'taken'; decided_by = 'the sponsor'; supersedes = 'D-2026-001' }),
             (New-RecordOperation commitment @{ title = 'Present the onboarding pilot to the retail steering committee of April'; supersedes = 'C-2026-001' }),
             (New-UpdateOperation 'mobile-onboarding' @{ horizon = 'next' })
         )
@@ -367,7 +367,7 @@ Test 'preview shows, for an update, each field that changes with its current and
     $update.interpreted = $true
     Set-Proposal $ws @{ operations = @(
             $update,
-            (New-RecordOperation decision @{ title = 'Suspend the presentation of the pilot'; status = 'taken'; supersedes = 'C-2026-001' }),
+            (New-RecordOperation decision @{ title = 'Suspend the presentation of the pilot'; status = 'taken'; decided_by = 'the sponsor'; supersedes = 'C-2026-001' }),
             (New-UpdateOperation 'mobile-onboarding' @{ status = 'closed'; watch_list = @{ people = @('the tech lead', 'the sponsor') } })
         )
     }

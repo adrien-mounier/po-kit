@@ -18,6 +18,7 @@ It works on the workspace it sits in. From this folder:
 
 - `preview` shows the pending proposal as a numbered table and writes nothing.
 - `apply` validates the pending proposal again, writes it to the register, settles its collect and regenerates the portfolio view, `views\portfolio.md`. `apply 1 3` keeps lines 1 and 3 of the preview and drops the others.
+- `check` verifies the whole register and what has gone stale, and writes the check report, `views\check-report.md`. It fails on an error, not on a warning. `apply` runs it after every write and prints its summary, `Check: 0 error(s), 2 warning(s).`: when it counts anything, read the check report and tell the PO what it lists.
 
 A refused proposal lists its reasons and writes nothing: correct the proposal and preview again.
 

@@ -84,7 +84,9 @@ Test 'with no remote, apply does not try to push and says so without alarm' {
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output '(?m)^Not pushed: the workspace has no remote\.$' 'output'
-    Assert-True ($run.Output -notmatch '(?i)warning|fail|fatal|error') "the output is alarming: $($run.Output)"
+    # The summary of the check counts errors and warnings: it is not about the push.
+    $said = @($run.Output -split "`n" | Where-Object { $_ -notlike 'Check: *' }) -join "`n"
+    Assert-True ($said -notmatch '(?i)warning|fail|fatal|error') "the output is alarming: $said"
 }
 
 Test 'when the push fails, apply warns and still succeeds: the commit exists in the workspace' {

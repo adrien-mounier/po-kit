@@ -358,6 +358,26 @@ function Test-Update($Operation, [hashtable]$Superseded) {
     if (-not $problems -and -not @(Get-Changes $found $fields)) { 'the update changes nothing: the record already holds every value given' }
 }
 
+function Test-ProposalResult($Operations, [int[]]$Lines) {
+    # What the result of these lines of a proposal, each one valid, would break of the error rules
+    # of the check (Test-RecordRules): one reason per rule broken, on the last line that touches the
+    # record. A record that several lines update is judged as they leave it together.
+    $updated = [ordered]@{}
+    foreach ($line in $Lines) {
+        $operation = $Operations[$line - 1]
+        if ($operation.op -ceq 'create') {
+            $record = Complete-Value (Get-Definition $operation.type).record $operation.fields
+            Test-RecordRules $operation.type $record | ForEach-Object { "Line ${line}: $($_.reason)" }
+            continue
+        }
+        if (-not $updated[$operation.id]) { $updated[$operation.id] = Find-Record $operation.id }
+        $found = $updated[$operation.id]
+        foreach ($change in @(Get-Changes $found $operation.fields)) { $found.record.($change.field) = $change.new }
+        $found.line = $line
+    }
+    foreach ($found in $updated.Values) { Test-RecordRules $found.type $found.record | ForEach-Object { "Line $($found.line): $($_.reason)" } }
+}
+
 function Get-PendingProposal {
     # The operations of the pending proposal, validated in full. Any problem refuses the proposal
     # whole: the run ends with the reasons and a failure code, and nothing is written.
@@ -392,6 +412,8 @@ function Get-PendingProposal {
         )
         foreach ($problem in $problems) { $reasons += "Line ${line}: $problem." }
     }
+    # The error rules of the check guard the door: the result of a proposal breaks none of them.
+    if (-not $reasons -and $operations) { $reasons += @(Test-ProposalResult $operations (1..$operations.Count) | ForEach-Object { "$_." }) }
     if ($reasons) { Stop-Run (@('Proposal refused. Nothing was written.') + @($reasons | ForEach-Object { "- $_" })) }
     $operations
 }
@@ -624,7 +646,8 @@ function Write-PortfolioView($Labels) {
 #
 # A rule is named by a key, listed here in the order of the check report, and labelled under
 # check.rules in every language of tools\labels. Adding a rule means adding its key here, its
-# label, and the finding itself in Get-CheckFindings.
+# label, and the finding itself: in Get-CheckFindings, or in Test-RecordRules when a proposal whose
+# result would break the rule must be refused.
 
 $CheckRules = @{
     error   = 'unreadable_record', 'unknown_field_or_value', 'missing_required_field', 'identifier_differs_from_file_name', 'reference_to_missing_record',
@@ -701,11 +724,12 @@ function Get-CheckFindings($Labels) {
             if ($record.type -is [string] -and $record.type -cne $file.type) { "field 'type' is '$($record.type)'; allowed: $($file.type)" }
         )
         foreach ($problem in $invalid) {
-            $rule = if ($problem -like 'missing required field*') { 'missing_required_field' } else { 'unknown_field_or_value' }
-            @{ rule = $rule; about = $about; detail = $problem }
+            # A field that is missing is named alone, under its rule.
+            $field = $problem -replace '^missing required field '
+            @{ rule = $(if ($field -ne $problem) { 'missing_required_field' } else { 'unknown_field_or_value' }); about = $about; detail = $field }
         }
         if ($record.id -is [string] -and $record.id -cne $file.id) {
-            @{ rule = 'identifier_differs_from_file_name'; about = "``$($file.file)``"; detail = "'$($record.id)'" }
+            @{ rule = 'identifier_differs_from_file_name'; about = "``$($file.file)``"; detail = "id '$($record.id)'" }
         }
         foreach ($link in 'subject', 'supersedes', 'superseded_by') {
             $named = $record.$link
@@ -767,27 +791,29 @@ function Get-CheckFindings($Labels) {
 }
 
 function Write-CheckReport($Labels) {
-    # Runs the check and writes the check report, views\check-report.md: the errors, each with its
-    # rule, then the warnings grouped by rule. Gives the number of errors, and the summary that a
+    # Runs the check and writes the check report, views\check-report.md: the errors, then the
+    # warnings, each finding under its rule. Gives the number of errors, and the summary that a
     # command prints.
     $check = $Labels.check
     $findings = @(Get-CheckFindings $Labels)
-    $errors = @($findings | Where-Object { $CheckRules.error -contains $_.rule })
-    $warnings = @($findings | Where-Object { $CheckRules.warning -contains $_.rule })
-    $lines = @("# $($check.title)", '') + @(Get-Stamp $Labels) + '', "## $($check.errors)", ''
-    $lines += if ($errors) { $errors | ForEach-Object { "- $($check.rules.($_.rule)): $($_.about)$(if ($_.detail) { ": $($_.detail)" })" } } else { $check.no_error }
-    $lines += '', "## $($check.warnings)"
-    if (-not $warnings) { $lines += '', $check.no_warning }
     $delays = Get-CheckDelays
-    foreach ($rule in $CheckRules.warning) {
-        $found = @($warnings | Where-Object { $_.rule -eq $rule })
-        if (-not $found) { continue }
-        # The label of a staleness rule says its delay.
-        $lines += '', "### $($check.rules.$rule -f $delays[$rule])", ''
-        $lines += $found | ForEach-Object { "- $($_.about)$(if ($_.detail) { " ($($_.detail))" })" }
+    $count = @{}
+    $lines = @("# $($check.title)", '') + @(Get-Stamp $Labels)
+    foreach ($level in 'error', 'warning') {
+        $found = @($findings | Where-Object { $CheckRules.$level -contains $_.rule })
+        $count[$level] = $found.Count
+        $lines += '', "## $($check."${level}s")"
+        if (-not $found) { $lines += '', $check."no_$level" }
+        foreach ($rule in $CheckRules.$level) {
+            $listed = @($found | Where-Object { $_.rule -eq $rule })
+            if (-not $listed) { continue }
+            # The label of a staleness rule says its delay.
+            $lines += '', "### $($check.rules.$rule -f $delays[$rule])", ''
+            $lines += $listed | ForEach-Object { "- $($_.about)$(if ($_.detail) { " ($($_.detail))" })" }
+        }
     }
     Write-TextFile (Join-Path $Workspace 'views\check-report.md') (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
-    @{ errors = $errors.Count; summary = "Check: $($errors.Count) error(s), $($warnings.Count) warning(s). Check report: views\check-report.md" }
+    @{ errors = $count.error; summary = "Check: $($count.error) error(s), $($count.warning) warning(s). Check report: views\check-report.md" }
 }
 
 # --- Run the command ----------------------------------------------------------------------------
