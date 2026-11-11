@@ -41,6 +41,11 @@
 # A value or a text is compared exactly: a text with its case, a list with its order. Name the
 # fields of a group one by one.
 #
+# The register tool numbers a commitment, a decision or a risk in the year it is recorded, and
+# files a note under the month it is processed. Anywhere in scenario.json, {year}, {month} and
+# {today} stand for those of the day of the run, as 2026, 2026-03 and 2026-03-02: the record
+# C-{year}-002, the file inbox/done/{month}/workshop.md.
+#
 # For each scenario, in a temporary folder of its own, the runner:
 # 1. installs the kit: a workspace and a skills folder, as install.ps1 does on any machine;
 # 2. lays the Example Bank workspace over it: the files under example-bank\workspace, the register
@@ -166,7 +171,11 @@ function Test-Fact($Fact, [string]$Workspace) {
 function Invoke-Scenario([string]$Scenario, [string]$Folder) {
     # Runs one scenario in its temporary folder, and returns what Test-Fact returns for each
     # expected fact.
-    $definition = Read-Json (Join-Path $Scenario 'scenario.json')
+    $text = [IO.File]::ReadAllText((Join-Path $Scenario 'scenario.json'))
+    foreach ($part in @{ '{year}' = 'yyyy'; '{month}' = 'yyyy-MM'; '{today}' = 'yyyy-MM-dd' }.GetEnumerator()) {
+        $text = $text.Replace($part.Key, (Get-Date).ToString($part.Value, [Globalization.CultureInfo]::InvariantCulture))
+    }
+    $definition = $text | ConvertFrom-Json
     New-ExampleBankWorkspace $Folder $Scenario
     $workspace = Join-Path $Folder 'workspace'
     $routine = Join-Path $Folder "skills\$($definition.routine)\SKILL.md"

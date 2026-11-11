@@ -56,6 +56,49 @@ Test 'the scenario "missing answer" passes when the agent records nothing, and f
     Assert-Equal 1 $run.ExitCode 'exit code when the subject is recorded on a guess'
 }
 
+# --- The collect scenarios ----------------------------------------------------------------------
+# The register tool numbers a record in the year it is recorded and files a note under the month it
+# is processed: a scenario names them {year} and {month}, and {today} the day of the run.
+$Year, $Month, $Day = 'yyyy', 'yyyy-MM', 'yyyy-MM-dd' | ForEach-Object { (Get-Date).ToString($_, [Globalization.CultureInfo]::InvariantCulture) }
+
+function New-CollectAgent([string[]]$Notes, [object[]]$Operations, [string]$Do = '') {
+    # The command of a fake agent that collects: it leaves the proposal of a collect that read these
+    # notes of the inbox, with these operations, and has the register tool apply it. $Do adds
+    # options of the fake agent.
+    New-Item -ItemType Directory -Path $TestRoot -Force | Out-Null
+    $path = Join-Path $TestRoot ([Guid]::NewGuid().ToString('N').Substring(0, 8) + '.proposal.json')
+    Write-Json $path @{
+        collected_at        = '2026-03-12T08:30:00+01:00'
+        sources_read        = @(@{ source = 'notes'; cutoff = '2026-03-12T08:30:00+01:00'; items = $Notes.Count })
+        sources_not_covered = @('mail', 'tracker')
+        notes_processed     = $Notes
+        operations          = $Operations
+    }
+    "$FakeAgent -Proposal `"$path`" $Do"
+}
+
+function New-NoteOperation([string]$Type, [string]$Note, [hashtable]$Fields) {
+    # One operation creating a record from a note of the inbox, which its source names.
+    New-RecordOperation $Type (@{ source = @{ where = "inbox/$Note"; read_on = '2026-03-12' } } + $Fields)
+}
+
+Test 'the scenario "collect an action" passes when the note becomes a commitment with its owner and due date, attached to its subject, and is filed' {
+    $note = 'onboarding workshop.md'
+    $agent = New-CollectAgent $note @(
+        New-NoteOperation commitment $note @{ title = 'Send the list of the onboarding screens'; owner = 'the tech lead'; owed_to = 'the PO'; due_date = '2026-03-20'; date_of_fact = '2026-03-10' }
+    )
+
+    $run = Invoke-Scenarios -Agent $agent collect-action
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    foreach ($fact in 'owner is "the tech lead"', 'due_date is "2026-03-20"', 'subject is "mobile-onboarding"', 'source\.where is "inbox/onboarding workshop\.md"') {
+        Assert-Match $run.Output "  ok    record C-$Year-002: $fact" 'expected fact reported as passed'
+    }
+    Assert-Match $run.Output "  ok    file inbox/done/$Month/onboarding workshop\.md is there" 'the note is filed as processed'
+    Assert-Match $run.Output '  ok    file inbox/onboarding workshop\.md is absent' 'the note leaves the inbox'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
 Test 'when the agent does nothing, each fact is reported as passed or failed with what was found, the folder is kept and the run fails' {
     $run = Invoke-Scenarios -Agent $FakeAgent subject-modify
 

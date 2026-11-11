@@ -79,6 +79,21 @@
           "tracker_projects": []
         }
       }
+    },
+    {
+      "op": "create",
+      "type": "commitment",
+      "interpreted": false,
+      "fields": {
+        "title": "Present the target journey to the retail steering committee",
+        "subject": "line 1",
+        "date_of_fact": "2026-02-27",
+        "owner": "the PO",
+        "owed_to": "the retail steering committee",
+        "due_date": "2026-03-16",
+        "evidence_level": "fact",
+        "source": { "where": "conversation with the PO", "read_on": "2026-03-02" }
+      }
     }
   ]
 }

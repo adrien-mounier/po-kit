@@ -149,7 +149,8 @@ Test 'the workspace rules come from the kit and state the five rules and how to 
     Assert-Match $rules 'performance or career' "rule: no notes about people's performance or career"
     Assert-Match $rules '`reported`' 'rule: a stated position is reported'
     Assert-Match $rules '`hypothesis`' 'rule: a reading of motives is a hypothesis'
-    Assert-Match $rules 'powershell -NoProfile -File tools\\register\.ps1 <command>' 'how to call the register tool'
+    # With a forward slash, the command runs the same in a Unix-style shell, which eats a backslash.
+    Assert-Match $rules 'powershell -NoProfile -File tools/register\.ps1 <command>' 'how to call the register tool, in any shell'
 
     $companion = Get-Content -LiteralPath (Join-Path $to.Workspace 'CLAUDE.md') -Raw -Encoding UTF8
     Assert-Equal '@AGENTS.md' $companion.Trim() 'companion file'
