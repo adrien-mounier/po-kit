@@ -156,8 +156,8 @@ function Test-Fact($Fact, [string]$Workspace) {
     }
     if ($Fact.PSObject.Properties['line']) {
         $lines = @(if ($path) { [IO.File]::ReadAllLines($path) | Where-Object { $_.Contains($Fact.line) } })
-        if ($Fact.absent) { return @{ What = "$name has no line containing `"$($Fact.line)`""; Holds = (-not $lines); Found = ($lines -join "`n") } }
-        return @{ What = "$name has a line containing `"$($Fact.line)`""; Holds = [bool]$lines; Found = $(if ($path) { 'no such line' } else { 'nothing: it is absent' }) }
+        if ($Fact.absent) { return @{ What = "$name has no line containing `"$($Fact.line)`""; Holds = ($lines.Count -eq 0); Found = ($lines -join "`n") } }
+        return @{ What = "$name has a line containing `"$($Fact.line)`""; Holds = ($lines.Count -gt 0); Found = $(if ($path) { 'no such line' } else { 'nothing: it is absent' }) }
     }
     if ($Fact.absent) { return @{ What = "$name is absent"; Holds = (-not $path); Found = 'it is there' } }
     @{ What = "$name is there"; Holds = [bool]$path; Found = 'it is absent' }
