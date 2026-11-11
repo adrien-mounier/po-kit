@@ -67,6 +67,50 @@ Test 'the lines kept are applied in the order of the proposal, however the selec
     Assert-Equal 'service' (Read-Json (Join-Path $ws 'register\subjects\mobile-onboarding-2.json')).kind 'kind of the second subject recorded'
 }
 
+Test 'a selection that keeps a record and drops the line creating its subject is refused whole, with the reason' {
+    $ws = New-TestWorkspace
+    Add-InboxNote $ws 'steering committee.md'
+    Set-Proposal $ws (New-CollectProposal @{
+            notes_processed = @('steering committee.md')
+            operations      = @(
+                (New-SubjectOperation),
+                (New-SubjectOperation @{ title = 'Branch appointment booking' }),
+                (New-RecordOperation commitment @{ subject = 'line 1' }),
+                (New-RecordOperation risk @{ subject = 'line 2' }),
+                (New-RecordOperation decision @{ subject = 'line 1' })
+            )
+        })
+    $before = Get-WorkspaceSnapshot $ws
+
+    $run = Invoke-Register $ws apply 2 3 4 5 -Today 2026-03-02
+
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'Selection refused\. Nothing was written\.' 'output'
+    Assert-Match $run.Output '- Line 3 is attached to the subject that line 1 creates, and the selection drops line 1\.' 'reason for line 3'
+    Assert-Match $run.Output '- Line 5 is attached to the subject that line 1 creates, and the selection drops line 1\.' 'reason for line 5'
+    Assert-Equal 2 @($run.Output -split "`n" | Where-Object { $_ -like '- *' }).Count "number of reasons, with output: $($run.Output)"
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+}
+
+Test 'a record kept with the line creating its subject is attached to that subject, whichever lines are dropped' {
+    $ws = New-TestWorkspace
+    Set-Proposal $ws @{ operations = @(
+            (New-SubjectOperation),
+            (New-RecordOperation commitment @{ subject = 'line 1' }),
+            (New-SubjectOperation @{ title = 'Branch appointment booking' }),
+            (New-RecordOperation risk @{ subject = 'line 3' })
+        )
+    }
+
+    $run = Invoke-Register $ws apply 3 4 -Today 2026-03-02
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $records = @(Get-ChildItem (Join-Path $ws 'register') -Recurse -File -Filter *.json | ForEach-Object { $_.BaseName } | Sort-Object)
+    Assert-Equal 'branch-appointment-booking R-2026-001' ($records -join ' ') 'records written'
+    Assert-Equal 'branch-appointment-booking' (Read-Json (Join-Path $ws 'register\risks\R-2026-001.json')).subject 'subject of the risk'
+    Assert-Match $run.Output 'Dropped: line 1, 2\.' 'output'
+}
+
 Test 'apply files the notes listed as processed in the done folder of the current month, content unchanged' {
     $ws = New-TestWorkspace
     Add-InboxNote $ws 'steering committee.md'
@@ -178,6 +222,106 @@ Test 'the collect state states every time one way, with its UTC offset' {
     Assert-Equal '2026-03-02T07:30:00+00:00' $state.collected_at 'time of the collect'
     Assert-Equal '2026-03-01T23:12:00-05:00' $state.sources.mail.cutoff 'cutoff of the mail'
     Assert-Equal '2026-03-02T07:30:00+00:00' $state.sources.mail.collected_at 'time of the collect that read the mail'
+}
+
+Test 'the unclassified items of a proposal are added to the unclassified list, each with its source and the date it was collected; earlier items stay' {
+    $ws = New-TestWorkspace
+    Set-Proposal $ws (New-CollectProposal @{
+            unclassified = @(
+                @{ source = 'mail from the tech lead, 2026-02-27'; text = 'Asks who owns the branch kiosk pilot.' },
+                @{ source = 'tracker ticket KSK-12'; text = "The kiosk vendor contract`r`n  is up for renewal in June." }
+            )
+        })
+    $first = Invoke-Register $ws apply -Today 2026-03-02
+    Set-Proposal $ws (New-CollectProposal @{
+            collected_at = '2026-03-03T23:30:00-05:00'
+            unclassified = @(@{ source = 'mail from the sponsor, 2026-03-03'; text = 'Mentions a possible merger of two branches.' })
+        })
+
+    $run = Invoke-Register $ws apply -Today 2026-03-04
+
+    Assert-Equal 0 $first.ExitCode "exit code of the first apply, with output: $($first.Output)"
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $items = @(Get-Content -LiteralPath (Join-Path $ws 'state\unclassified.md') -Encoding UTF8 | Where-Object { $_ })
+    Assert-Equal 3 $items.Count 'items of the unclassified list'
+    Assert-Equal '- 2026-03-02 | mail from the tech lead, 2026-02-27 | Asks who owns the branch kiosk pilot.' $items[0] 'first item'
+    Assert-Equal '- 2026-03-02 | tracker ticket KSK-12 | The kiosk vendor contract is up for renewal in June.' $items[1] 'second item'
+    Assert-Equal '- 2026-03-03 | mail from the sponsor, 2026-03-03 | Mentions a possible merger of two branches.' $items[2] 'third item'
+}
+
+Test 'an unclassified list the PO edited by hand keeps its content as it is, and the new items start on their own line' {
+    $ws = New-TestWorkspace
+    $edited = "Sorted on Monday.`r`n- 2026-02-27 | call with the sponsor | Asks about the kiosks."
+    [IO.File]::WriteAllText((Join-Path $ws 'state\unclassified.md'), $edited, $Utf8)
+    Set-Proposal $ws (New-CollectProposal @{
+            unclassified = @(@{ source = 'mail from the tech lead, 2026-02-27'; text = 'Asks who owns the branch kiosk pilot.' })
+        })
+
+    $run = Invoke-Register $ws apply -Today 2026-03-02
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $expected = $edited + "`r`n- 2026-03-02 | mail from the tech lead, 2026-02-27 | Asks who owns the branch kiosk pilot.`r`n"
+    Assert-Equal $expected ([IO.File]::ReadAllText((Join-Path $ws 'state\unclassified.md'))) 'unclassified list'
+}
+
+Test 'a proposal with no operation but with notes, cutoffs or unclassified items is valid and is settled the same way' {
+    $ws = New-TestWorkspace
+    Add-InboxNote $ws 'steering committee.md'
+    Set-Proposal $ws (New-CollectProposal @{
+            notes_processed = @('steering committee.md')
+            unclassified    = @(@{ source = 'inbox note steering committee.md'; text = 'Mentions a possible merger of two branches.' })
+        })
+
+    $preview = Invoke-Register $ws preview
+    $run = Invoke-Register $ws apply -Today 2026-03-02
+
+    Assert-Equal 0 $preview.ExitCode "exit code of preview, with output: $($preview.Output)"
+    Assert-Equal 0 $run.ExitCode "exit code of apply, with output: $($run.Output)"
+    Assert-True (Test-Path -LiteralPath (Join-Path $ws 'inbox\done\2026-03\steering committee.md')) 'the note is not filed'
+    Assert-Equal 14 (Read-Json (Join-Path $ws 'state\last-collect.json')).sources.mail.items 'items read from the mail'
+    Assert-Match ([IO.File]::ReadAllText((Join-Path $ws 'state\unclassified.md'))) 'a possible merger of two branches' 'unclassified list'
+    Assert-Equal 0 @(Get-ChildItem (Join-Path $ws 'register') -Recurse -File -Filter *.json).Count 'records written'
+    Assert-True (-not (Test-Path (Join-Path $ws 'state\proposal.json'))) 'the proposal is still pending'
+    Assert-Equal '' (@(git -C $ws status --porcelain) -join ' ') 'changes left out of the commit'
+}
+
+Test 'a proposal with no operation and no collect to settle is refused, and so is a selection of lines it does not have' {
+    $ws = New-TestWorkspace
+    Set-Proposal $ws @{ operations = @() }
+    Assert-Refused $ws @('The proposal holds no operation and settles no collect')
+
+    Set-Proposal $ws (New-CollectProposal)
+    $before = Get-WorkspaceSnapshot $ws
+    $run = Invoke-Register $ws apply 1
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "- '1' is not a line of the proposal, which has no line\." 'reason'
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+}
+
+Test 'the records, the filed notes, the collect state and the unclassified list of one apply are committed together' {
+    $ws = New-TestWorkspace
+    Add-InboxNote $ws 'steering committee.md'
+    git -C $ws add -A inbox
+    git -C $ws commit -q -m 'A note saved before it was read'
+    Add-InboxNote $ws 'call with the sponsor.txt'
+    Set-Proposal $ws (New-CollectProposal @{
+            notes_processed = @('steering committee.md', 'call with the sponsor.txt')
+            unclassified    = @(@{ source = 'inbox note call with the sponsor.txt'; text = 'Mentions a possible merger of two branches.' })
+            operations      = @(New-SubjectOperation)
+        })
+    $head = git -C $ws rev-parse HEAD
+
+    $run = Invoke-Register $ws apply -Today 2026-03-02
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Equal $head (git -C $ws rev-parse HEAD~1) 'the commit before the last one'
+    $committed = @(git -C $ws show --name-only --format= HEAD)
+    foreach ($path in 'register/subjects/mobile-onboarding.json', 'inbox/done/2026-03/steering committee.md',
+        'inbox/done/2026-03/call with the sponsor.txt', 'state/last-collect.json', 'state/unclassified.md') {
+        Assert-True ($committed -contains $path) "the last commit lacks $path; it holds: $($committed -join ', ')"
+    }
+    Assert-True ($committed -notcontains 'state/proposal.json') 'the proposal was committed'
+    Assert-Equal '' (@(git -C $ws status --porcelain) -join ' ') 'changes left out of the commit'
 }
 
 Test 'what a proposal says of its collect is validated like its operations: one reason per problem' {

@@ -31,12 +31,17 @@ Assert-RegisterCommitted
 $operations = @(Get-PendingProposal)
 $lines = @(for ($line = 1; $line -le $operations.Count; $line++) { "$line" })
 $selection = @($Arguments | ForEach-Object { $_ -split '[,\s]+' } | Where-Object { $_ })
-$wrong = @($selection | Where-Object { $lines -notcontains $_ })
-if ($wrong) {
-    Stop-Run (@('Selection refused. Nothing was written.') +
-        @($wrong | ForEach-Object { "- '$_' is not a line of the proposal, which has lines 1 to $($operations.Count)." }))
-}
 $dropped = @(if ($selection) { $lines | Where-Object { $selection -notcontains $_ } })
+$wrong = @(
+    $selection | Where-Object { $lines -notcontains $_ } |
+        ForEach-Object { "'$_' is not a line of the proposal, which has $(if ($lines) { "lines 1 to $($lines.Count)" } else { 'no line' })" }
+    # A record kept needs its subject: the line that creates it cannot be dropped.
+    foreach ($line in $lines | Where-Object { $dropped -notcontains $_ }) {
+        $named = Get-LineNamed $operations[$line - 1].fields.subject
+        if ($dropped -contains $named) { "Line $line is attached to the subject that line $named creates, and the selection drops line $named" }
+    }
+)
+if ($wrong) { Stop-Run (@('Selection refused. Nothing was written.') + @($wrong | ForEach-Object { "- $_." })) }
 
 $settled = @(Save-Collect)
 

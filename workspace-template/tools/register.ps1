@@ -271,7 +271,7 @@ function Get-PendingProposal {
     try { $operations = @((Read-JsonFile $ProposalPath).operations | Where-Object { $null -ne $_ }) }
     catch { $reasons += 'The proposal is not valid JSON written as UTF-8.' }
     if (-not $reasons) { $reasons += @(Test-PendingCollect | ForEach-Object { "$_." }) }
-    if (-not $reasons -and -not $operations) { $reasons += 'The proposal holds no operation.' }
+    if (-not $reasons -and -not $operations -and -not (Get-PendingCollect)) { $reasons += 'The proposal holds no operation and settles no collect.' }
 
     $line = 0
     foreach ($operation in $operations) {
@@ -373,6 +373,20 @@ function Save-Collect {
     }
     Write-JsonFile $statePath $state
     if ($state.not_covered) { "not covered: $($state.not_covered -join ', ')" }
+
+    if ($collect.unclassified) {
+        # One line per item: the date it was collected, its source, its text. The list is added
+        # to and never rewritten: the PO edits it by hand.
+        $listPath = Join-Path $Workspace 'state\unclassified.md'
+        $items = @($collect.unclassified | ForEach-Object {
+                "- $($collect.collected_at.Substring(0, 10)) | $(($_.source -replace '\s+', ' ').Trim()) | $(($_.text -replace '\s+', ' ').Trim())"
+            })
+        $text = ($items -join [Environment]::NewLine) + [Environment]::NewLine
+        $list = if (Test-Path -LiteralPath $listPath) { [IO.File]::ReadAllText($listPath) }
+        if ($list -and -not $list.EndsWith("`n")) { $text = [Environment]::NewLine + $text }
+        [IO.File]::AppendAllText($listPath, $text, $Utf8)
+        "add $($items.Count) unclassified item(s)"
+    }
 }
 
 # --- Run the command ----------------------------------------------------------------------------
