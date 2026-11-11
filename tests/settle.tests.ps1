@@ -393,6 +393,45 @@ Test 'preview shows, under the operations table, the notes that will be filed, t
     Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
 }
 
+Test 'a source whose cap was reached is shown as such by preview and by apply, and the collect state says so until a collect reads the source to its end' {
+    $ws = New-TestWorkspace
+    Set-Proposal $ws (New-CollectProposal @{
+            sources_read = @(
+                @{ source = 'notes'; cutoff = '2026-03-02T08:30:00+01:00'; items = 2 },
+                @{ source = 'mail'; cutoff = '2026-03-01T17:40:00+01:00'; items = 50; cap_reached = $true }
+            )
+        })
+
+    $preview = Invoke-Register $ws preview
+    $run = Invoke-Register $ws apply -Today 2026-03-02
+
+    $said = ', cap reached: the rest waits for the next collect'
+    Assert-Match $preview.Output "- notes: 2 item\(s\), up to 2026-03-02T08:30:00\+01:00\s*\n- mail: 50 item\(s\), up to 2026-03-01T17:40:00\+01:00$said" 'sources read, as preview shows them'
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "- read notes up to 2026-03-02T08:30:00\+01:00: 2 item\(s\)\s*\n- read mail up to 2026-03-01T17:40:00\+01:00: 50 item\(s\)$said" 'sources read, as apply says them'
+    $state = Read-Json (Join-Path $ws 'state\last-collect.json')
+    Assert-Equal 'True' "$($state.sources.mail.cap_reached)" 'cap reached for the mail'
+    Assert-Equal 'False' "$($state.sources.notes.cap_reached)" 'cap reached for the notes'
+
+    Set-Proposal $ws (New-CollectProposal @{
+            collected_at = '2026-03-03T08:30:00+01:00'
+            sources_read = @(@{ source = 'mail'; cutoff = '2026-03-03T08:30:00+01:00'; items = 7 })
+        })
+    $run = Invoke-Register $ws apply -Today 2026-03-03
+
+    Assert-Equal 0 $run.ExitCode "exit code of the next apply, with output: $($run.Output)"
+    Assert-Equal 'False' "$((Read-Json (Join-Path $ws 'state\last-collect.json')).sources.mail.cap_reached)" 'cap reached for the mail, once read to its end'
+}
+
+Test 'a cap reached that is not stated as true or false is refused' {
+    $ws = New-TestWorkspace
+    Set-Proposal $ws (New-CollectProposal @{
+            sources_read = @(@{ source = 'mail'; cutoff = '2026-03-01T17:40:00+01:00'; items = 50; cap_reached = 'yes' })
+        })
+
+    Assert-Refused $ws @("field 'sources_read\.cap_reached' must be true or false, not 'yes'")
+}
+
 Test 'a collect that filed no note, read no source and held nothing unclassified is previewed as such and settled' {
     $ws = New-TestWorkspace
     Set-Proposal $ws @{ collected_at = '2026-03-02T08:30:00+01:00' }

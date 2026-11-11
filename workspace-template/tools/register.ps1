@@ -444,13 +444,16 @@ function Get-PendingProposal {
 # --- Collect ------------------------------------------------------------------------------------
 # A proposal that comes from a collect says, beside its operations, what the collect read:
 #   "collected_at": "2026-03-02T08:30:00+01:00",
-#   "sources_read": [ { "source": "mail", "cutoff": "2026-03-02T08:12:00+01:00", "items": 14 } ],
+#   "sources_read": [ { "source": "mail", "cutoff": "2026-03-02T08:12:00+01:00", "items": 14,
+#                       "cap_reached": true } ],
 #   "sources_not_covered": [ "tracker" ],
 #   "notes_processed": [ "steering committee.md" ],
 #   "unclassified": [ { "source": "mail from the tech lead, 2026-02-27", "text": "..." } ]
 # collected_at is the time of the collect, required as soon as one of the others is given. A
-# cutoff is how far a source was read. A source is named as in connections.json. A note is named
-# by its file name in the inbox. A proposal may hold a collect and no operation.
+# cutoff is how far a source was read, and cap_reached, which may be left out, is true when the
+# collect stopped there at the per-source cap of the settings, with more to read. A source is
+# named as in connections.json. A note is named by its file name in the inbox. A proposal may hold
+# a collect and no operation.
 #
 # apply settles the collect, whichever lines are kept:
 # - the notes processed move to inbox\done\yyyy-mm, the month of the run. No note is ever deleted
@@ -458,7 +461,7 @@ function Get-PendingProposal {
 # - state\last-collect.json, the collect state, says how far each source was read:
 #     { "collected_at": "2026-03-02T08:30:00+01:00",
 #       "sources": { "mail": { "cutoff": "2026-03-02T08:12:00+01:00", "items": 14,
-#                              "collected_at": "2026-03-02T08:30:00+01:00" } },
+#                              "collected_at": "2026-03-02T08:30:00+01:00", "cap_reached": true } },
 #       "not_covered": [ "tracker" ] }
 #   collected_at and not_covered are those of the last collect. A source keeps its entry, with the
 #   time of the collect that read it, until a later collect reads it again.
@@ -472,7 +475,8 @@ $CollectDefinition = @'
     "sources_read": { "type": "list", "items": { "type": "object", "fields": {
         "source": { "type": "text", "required": true },
         "cutoff": { "type": "timestamp", "required": true },
-        "items": { "type": "integer", "required": true } } } },
+        "items": { "type": "integer", "required": true },
+        "cap_reached": { "type": "boolean", "default": false } } } },
     "sources_not_covered": { "type": "list", "items": { "type": "text" } },
     "notes_processed": { "type": "list", "items": { "type": "text" } },
     "unclassified": { "type": "list", "items": { "type": "object", "fields": {
@@ -480,6 +484,11 @@ $CollectDefinition = @'
         "text": { "type": "text", "required": true } } } }
 } }
 '@ | ConvertFrom-Json
+
+function Format-CapReached($Read) {
+    # What preview and apply add to a source read when the collect stopped at the cap.
+    if ($Read.cap_reached) { ', cap reached: the rest waits for the next collect' }
+}
 
 function Get-PendingCollect {
     # What the pending proposal says of its collect, every part present. Nothing when the
@@ -550,8 +559,8 @@ function Save-Collect {
     }
 
     foreach ($read in $collect.sources_read) {
-        $state.sources[$read.source] = [ordered]@{ cutoff = $read.cutoff; items = $read.items; collected_at = $collect.collected_at }
-        "read $($read.source) up to $($read.cutoff): $($read.items) item(s)"
+        $state.sources[$read.source] = [ordered]@{ cutoff = $read.cutoff; items = $read.items; collected_at = $collect.collected_at; cap_reached = $read.cap_reached }
+        "read $($read.source) up to $($read.cutoff): $($read.items) item(s)$(Format-CapReached $read)"
     }
     Write-JsonFile $statePath $state
     if ($state.not_covered) { "not covered: $($state.not_covered -join ', ')" }

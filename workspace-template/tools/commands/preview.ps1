@@ -36,7 +36,7 @@ $collect = Get-PendingCollect
 if ($collect) {
     $parts = [ordered]@{
         'Notes to file'       = $collect.notes_processed
-        'Sources read'        = @($collect.sources_read | ForEach-Object { "$($_.source): $($_.items) item(s), up to $($_.cutoff)" })
+        'Sources read'        = @($collect.sources_read | ForEach-Object { "$($_.source): $($_.items) item(s), up to $($_.cutoff)$(Format-CapReached $_)" })
         'Sources not covered' = $collect.sources_not_covered
         'Unclassified items'  = @($collect.unclassified | ForEach-Object { "$(Format-Value $_.source) | $(Format-Value $_.text)" })
     }
