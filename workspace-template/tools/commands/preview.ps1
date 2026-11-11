@@ -8,8 +8,8 @@ function Format-Value($Value) {
     "$Value" -replace '\s*\r?\n\s*', ' '
 }
 
-function Format-Fields($Fields, [string]$Except) {
-    $given = $Fields.PSObject.Properties | Where-Object { $_.Name -ne $Except -and $null -ne $_.Value }
+function Format-Fields($Fields, [string[]]$Except) {
+    $given = $Fields.PSObject.Properties | Where-Object { $Except -notcontains $_.Name -and $null -ne $_.Value }
     @($given | ForEach-Object { "$($_.Name): $(Format-Value $_.Value)" }) -join '; '
 }
 
@@ -30,10 +30,13 @@ $operations = @(Get-PendingProposal)
 $number = 0
 $rows = @(foreach ($operation in $operations) {
         $number++
-        $cells = "$number", $operation.op, $operation.type, (Format-Value $operation.fields.title), (Format-Fields $operation.fields 'title')
+        $fields = $operation.fields
+        $cells = "$number", $operation.op, $operation.type, (Format-Value $fields.title), (Format-Value $fields.subject),
+            (Format-Value $fields.evidence_level), $(if ($operation.interpreted) { 'yes' } else { 'no' }),
+            (Format-Fields $fields 'title', 'subject', 'evidence_level')
         , @($cells | ForEach-Object { $_.Replace('|', '\|') })
     })
 
 "Pending proposal: $($operations.Count) operation(s). Nothing is written until it is applied."
 ''
-Write-Table '#', 'Operation', 'Type', 'Title', 'Details' $rows
+Write-Table '#', 'Operation', 'Type', 'Title', 'Subject', 'Evidence', 'Interpreted', 'Details' $rows

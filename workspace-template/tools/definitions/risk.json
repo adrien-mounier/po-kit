@@ -1,0 +1,11 @@
+{
+  "folder": "register/risks",
+  "identifier_prefix": "R",
+  "fields": {
+    "status": { "type": "text", "allowed": ["open", "closed", "superseded"], "default": "open" },
+    "subject": { "type": "text", "required": true },
+    "date_of_fact": { "type": "date", "required": true },
+    "severity": { "type": "text", "required": true, "allowed": ["urgent", "watch"] },
+    "owner": { "type": "text" }
+  }
+}
