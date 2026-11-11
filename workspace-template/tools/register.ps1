@@ -746,6 +746,8 @@ function Get-CheckFindings($Labels) {
     # The type of every record the register holds, by identifier: identifiers differ by their case.
     $held = New-Object Collections.Hashtable ([StringComparer]::Ordinal)
     foreach ($file in $files) { $held[$file.id] = $file.type }
+    # The definition of each type is read once, whatever the number of records.
+    $definitions = @{}
 
     foreach ($file in $files) {
         $record = try { Read-JsonFile $file.path } catch { }
@@ -754,10 +756,11 @@ function Get-CheckFindings($Labels) {
             continue
         }
         # A record is named as the portfolio view names a subject, by the identifier that finds it.
-        $about = "$("$($record.title)" -replace '\s*\r?\n\s*', ' ') [$($file.id)]".Trim()
+        $about = "$(Format-Value $record.title) [$($file.id)]".Trim()
 
+        if (-not $definitions[$file.type]) { $definitions[$file.type] = (Get-Definition $file.type).record }
         $invalid = @(
-            Test-Value (Get-Definition $file.type).record $record '' -Stored
+            Test-Value $definitions[$file.type] $record '' -Stored
             if ($record.type -is [string] -and $record.type -cne $file.type) { "field 'type' is '$($record.type)'; allowed: $($file.type)" }
         )
         foreach ($problem in $invalid) {
@@ -780,16 +783,18 @@ function Get-CheckFindings($Labels) {
         # The warnings are about the records still in play, and read fields that must be valid.
         if ($invalid) { continue }
         if ($file.type -eq 'commitment' -and $record.status -ceq 'open') {
+            $owner = (Format-Value $record.owner).Trim()
             $said = @(
-                if ($record.owner) { $details.owner -f $record.owner }
+                if ($owner) { $details.owner -f $owner }
                 if ($record.due_date) { $details.due -f $record.due_date }
             ) -join ', '
-            if (-not $record.owner) { @{ rule = 'commitment_without_owner'; about = $about; detail = $said } }
+            if (-not $owner) { @{ rule = 'commitment_without_owner'; about = $about; detail = $said } }
             if (-not $record.due_date) { @{ rule = 'commitment_without_due_date'; about = $about; detail = $said } }
             elseif ($record.due_date -lt $Today) { @{ rule = 'commitment_overdue'; about = $about; detail = $said } }
         }
         if ($file.type -eq 'decision' -and $record.status -ceq 'pending' -and $record.needed_by -and $record.needed_by -lt $Today) {
-            $said = @(if ($record.needed_from) { $details.needed_from -f $record.needed_from }) + ($details.needed_by -f $record.needed_by) -join ', '
+            $from = (Format-Value $record.needed_from).Trim()
+            $said = @(if ($from) { $details.needed_from -f $from }) + ($details.needed_by -f $record.needed_by) -join ', '
             @{ rule = 'decision_past_its_date'; about = $about; detail = $said }
         }
         if ($file.type -eq 'subject' -and $record.status -ceq 'active' -and $record.horizon -ceq 'now' -and (Get-DaysSince $record.date_updated) -gt $delays.subject_stale) {
@@ -805,13 +810,10 @@ function Get-CheckFindings($Labels) {
 
     # A source is read by a collect: the collect state holds, per source, the time of the last
     # collect that read it. A source set to off is not expected to be read.
-    $collectPath = Join-Path $Workspace 'state\last-collect.json'
-    $sourcesRead = if (Test-Path -LiteralPath $collectPath) { (Read-JsonFile $collectPath).sources }
-    foreach ($source in (Read-JsonFile (Join-Path $Workspace 'connections.json')).PSObject.Properties) {
-        if ($source.Value.mode -ceq 'off') { continue }
-        $read = $sourcesRead.($source.Name).collected_at
-        if (-not $read) { @{ rule = 'source_stale'; about = $source.Name; detail = $details.never_read } }
-        elseif ((Get-DaysSince $read) -gt $delays.source_stale) { @{ rule = 'source_stale'; about = $source.Name; detail = $details.read -f $read } }
+    foreach ($source in Get-Coverage | Where-Object { $_.mode -cne 'off' }) {
+        $read = $source.read.collected_at
+        if (-not $read) { @{ rule = 'source_stale'; about = $source.source; detail = $details.never_read } }
+        elseif ((Get-DaysSince $read) -gt $delays.source_stale) { @{ rule = 'source_stale'; about = $source.source; detail = $details.read -f $read } }
     }
 
     # An unclassified item is a line of the list that opens with the date it was collected, as
