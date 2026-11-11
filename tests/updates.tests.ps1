@@ -1,14 +1,5 @@
 # A correction keeps its history, and a new record supersedes an old one.
 
-function New-UpdateOperation([string]$Id, [hashtable]$Fields) {
-    # One valid operation updating a record of Example Bank: the fields to change, and the source
-    # of the change.
-    @{
-        op = 'update'; id = $Id; interpreted = $false; fields = $Fields
-        source = @{ where = 'inbox/call-with-the-tech-lead.md'; read_on = '2026-03-10' }
-    }
-}
-
 function New-TestWorkspaceWithRecords {
     # A workspace whose register holds, recorded on 2026-03-03, the subject mobile-onboarding and,
     # attached to it, the commitment C-2026-001, the decision D-2026-001 and the risk R-2026-001.

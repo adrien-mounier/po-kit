@@ -118,6 +118,94 @@ function New-RecordOperation([string]$Type, [hashtable]$Fields = @{}) {
     @{ op = 'create'; type = $Type; interpreted = $false; fields = $record }
 }
 
+function New-UpdateOperation([string]$Id, [hashtable]$Fields) {
+    # One valid operation updating a record of Example Bank: the fields to change, and the source
+    # of the change.
+    @{
+        op = 'update'; id = $Id; interpreted = $false; fields = $Fields
+        source = @{ where = 'inbox/call-with-the-tech-lead.md'; read_on = '2026-03-10' }
+    }
+}
+
+function New-TestWorkspaceWithWeek {
+    # A workspace of Example Bank after two collects a week apart, as the weekly synthesis finds it.
+    # It is built once per run, then copied for each test.
+    #
+    # Applied on 2026-03-03, with the notes and the mail read: three subjects, and the records
+    # attached to them. Applied on 2026-03-10, with the notes read and the tracker not covered:
+    # - C-2026-003 has its due date moved, and C-2026-005 is done;
+    # - the decision D-2026-005 supersedes the commitment C-2026-001;
+    # - the commitment C-2026-006 is recorded;
+    # - the risk R-2026-003 is closed;
+    # - the risk R-2026-004 moves from the subject paper-statements to mobile-onboarding;
+    # - the subject paper-statements is closed, with the commitment C-2026-004 still attached to it.
+    # The settings list the objectives 1, 3 and 5. The mail is read from a folder, and the tracker
+    # is off.
+    $week = Join-Path $TestRoot 'week'
+    if (-not (Test-Path $week)) {
+        $built = New-TestWorkspace
+        $connections = Read-Json (Join-Path $built 'connections.json')
+        $connections.mail = @{ mode = 'folder'; folder = 'exports\mail' }
+        Write-Json (Join-Path $built 'connections.json') $connections
+        $settings = Read-Json (Join-Path $built 'settings.json')
+        $settings.objectives = @(
+            @{ number = 1; title = 'Halve the time to open an account' },
+            @{ number = 3; title = 'Bring the branch network on board' },
+            @{ number = 5; title = 'Retire the paper statements' }
+        )
+        Write-Json (Join-Path $built 'settings.json') $settings
+
+        Set-Proposal $built @{
+            collected_at = '2026-03-03T08:30:00+01:00'
+            sources_read = @(
+                @{ source = 'notes'; cutoff = '2026-03-03T08:12:00+01:00'; items = 4 },
+                @{ source = 'mail'; cutoff = '2026-03-03T08:20:00+01:00'; items = 14 }
+            )
+            operations   = @(
+                (New-SubjectOperation @{ clearance = 'cleared'; cleared_by = 'the sponsor'; cleared_on = '2026-02-20'; objectives = @(1) }),
+                (New-SubjectOperation @{ title = 'Branch kiosks pilot'; horizon = 'next'; clearance = 'out of frame'; evidence_level = 'reported' }),
+                (New-SubjectOperation @{ title = 'Paper statements'; horizon = 'later' }),
+                (New-RecordOperation commitment @{ title = 'Present the onboarding pilot to the retail steering committee'; subject = 'line 1'; owner = 'the PO'; due_date = '2026-03-20'; objectives = @(1) }),
+                (New-RecordOperation commitment @{ title = 'Send the onboarding figures to the sponsor'; subject = 'line 1'; evidence_level = 'reported' }),
+                (New-RecordOperation commitment @{ title = 'Order the kiosks'; subject = 'line 2'; owner = 'the tech lead'; due_date = '2026-04-02'; objectives = @(1, 3) }),
+                (New-RecordOperation commitment @{ title = 'Archive the paper statement templates'; subject = 'line 3'; owner = 'the PO'; objectives = @(5) }),
+                (New-RecordOperation commitment @{ title = 'Book the committee room'; subject = 'line 1'; owner = 'the PO'; due_date = '2026-03-06' }),
+                (New-RecordOperation decision @{ title = 'Choose the pilot branches'; subject = 'line 1'; needed_from = 'the sponsor'; needed_by = '2026-03-27' }),
+                (New-RecordOperation decision @{ title = 'Fund the kiosk maintenance'; subject = 'line 2'; needed_from = 'the tech lead' }),
+                (New-RecordOperation decision @{ title = 'Name the kiosk supplier'; subject = 'line 2'; needed_from = 'The sponsor' }),
+                (New-RecordOperation decision @{ title = 'Keep or drop the paper option at onboarding'; subject = 'line 1'; needed_by = '2026-04-30' }),
+                (New-RecordOperation risk @{ title = 'The pilot branches are not staffed'; subject = 'line 1'; evidence_level = 'hypothesis' }),
+                (New-RecordOperation risk @{ title = 'The kiosk supplier may withdraw'; subject = 'line 2'; severity = 'urgent'; owner = 'the tech lead' }),
+                (New-RecordOperation risk @{ title = 'The print contract renews in June'; subject = 'line 2'; objectives = @(3) }),
+                (New-RecordOperation risk @{ title = 'Customers keep asking for paper'; subject = 'line 3' })
+            )
+        }
+        $run = Invoke-Register $built apply -Today 2026-03-03
+        Assert-Equal 0 $run.ExitCode "exit code of the first apply of the week, with output: $($run.Output)"
+
+        Set-Proposal $built @{
+            collected_at        = '2026-03-10T08:30:00+01:00'
+            sources_read        = @(@{ source = 'notes'; cutoff = '2026-03-10T08:12:00+01:00'; items = 2 })
+            sources_not_covered = @('tracker')
+            operations          = @(
+                (New-UpdateOperation 'C-2026-003' @{ due_date = '2026-04-16' }),
+                (New-UpdateOperation 'C-2026-005' @{ status = 'done' }),
+                (New-RecordOperation decision @{ title = 'Suspend the presentation of the pilot'; status = 'taken'; decided_by = 'the sponsor'; date_of_fact = '2026-03-09'; supersedes = 'C-2026-001'; objectives = @(1) }),
+                (New-RecordOperation commitment @{ title = 'Brief the branch managers'; subject = 'branch-kiosks-pilot'; owner = 'the PO'; due_date = '2026-03-24'; date_of_fact = '2026-03-09' }),
+                (New-UpdateOperation 'R-2026-003' @{ status = 'closed' }),
+                (New-UpdateOperation 'R-2026-004' @{ subject = 'mobile-onboarding' }),
+                (New-UpdateOperation 'paper-statements' @{ status = 'closed' })
+            )
+        }
+        $run = Invoke-Register $built apply -Today 2026-03-10
+        Assert-Equal 0 $run.ExitCode "exit code of the second apply of the week, with output: $($run.Output)"
+        Move-Item $built $week
+    }
+    $workspace = Join-Path $TestRoot ([Guid]::NewGuid().ToString('N').Substring(0, 8))
+    Copy-Item $week $workspace -Recurse -Force
+    $workspace
+}
+
 function New-TestWorkspaceWithSubject {
     # A workspace whose register holds one subject: mobile-onboarding.
     $workspace = New-TestWorkspace

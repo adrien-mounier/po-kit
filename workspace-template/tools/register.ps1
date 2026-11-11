@@ -253,6 +253,29 @@ function Find-Record([string]$Id) {
     }
 }
 
+function Format-Value($Value) {
+    # A field value on one line: lists joined by commas, nested fields between parentheses.
+    if ($Value -is [array]) { return (@($Value | ForEach-Object { Format-Value $_ }) -join ', ') }
+    # A value completed by the register tool holds its nested fields as a dictionary.
+    if ($Value -is [System.Collections.IDictionary]) { $Value = [pscustomobject]$Value }
+    if ($Value -is [System.Management.Automation.PSCustomObject]) { return '(' + (Format-Fields $Value) + ')' }
+    if ($Value -is [bool]) { return "$Value".ToLower() }
+    "$Value" -replace '\s*\r?\n\s*', ' '
+}
+
+function Format-Fields($Fields, [string[]]$Except) {
+    # The fields that hold something: a record as it is recorded carries every field, most empty.
+    $given = $Fields.PSObject.Properties | Where-Object { $Except -notcontains $_.Name -and "$(Format-Value $_.Value)" }
+    @($given | ForEach-Object { "$($_.Name): $(Format-Value $_.Value)" }) -join '; '
+}
+
+function Format-Change($Change) {
+    # A field that changes, with its previous and its new value: a change that an update proposes,
+    # or an entry of the history of a record.
+    $previous, $new = foreach ($value in $Change.previous, $Change.new) { $text = Format-Value $value; if ($text -and $text -ne '()') { $text } else { '(none)' } }
+    "$($Change.field): $previous -> $new"
+}
+
 # --- Proposals ----------------------------------------------------------------------------------
 # A routine never writes a record. It leaves one proposal in state\proposal.json:
 #   { "operations": [ { "op": "create", "type": "subject", "interpreted": false, "fields": { ... } } ] }
@@ -523,6 +546,24 @@ function Save-Collect {
     }
 }
 
+function Get-Coverage {
+    # What the collect state says of each source declared in connections.json, in the order
+    # declared: its name (source), its mode, its entry of the collect state (read: nothing when it
+    # was never read) and whether the last collect covered it (covered).
+    #
+    # A source is not covered when the last collect did not read it, whether or not the collect
+    # said so. A source the last collect read carries the time of that collect.
+    $collectPath = Join-Path $Workspace 'state\last-collect.json'
+    $collect = if (Test-Path -LiteralPath $collectPath) { Read-JsonFile $collectPath }
+    foreach ($source in (Read-JsonFile (Join-Path $Workspace 'connections.json')).PSObject.Properties) {
+        $read = $collect.sources.($source.Name)
+        @{
+            source = $source.Name; mode = $source.Value.mode; read = $read
+            covered = $null -ne $read -and $collect.not_covered -cnotcontains $source.Name -and $read.collected_at -ceq $collect.collected_at
+        }
+    }
+}
+
 # --- Views --------------------------------------------------------------------------------------
 # A view is a document generated from the register, under views\. It is never edited, and it opens
 # with a stamp: the lines Get-Stamp gives.
@@ -536,7 +577,7 @@ function Get-Labels([string]$Language) {
     $file = Join-Path $Tools "labels\$Language.json"
     if ($Language -cnotmatch '^[a-z]+$' -or -not (Test-Path -LiteralPath $file)) {
         $known = (Get-ChildItem (Join-Path $Tools 'labels\*.json') | ForEach-Object { $_.BaseName }) -join ', '
-        Stop-Run "Unsupported language '$Language'. Nothing was written. Languages: $known. view takes the language as its argument; without one, and for apply, it is languages.default in settings.json."
+        Stop-Run "Unsupported language '$Language'. Nothing was written. Languages: $known. view and export take the language as an argument. Without one it is, in settings.json, languages.default for view and apply, and languages.sponsor for export."
     }
     Read-JsonFile $file
 }
@@ -560,12 +601,8 @@ function Get-Stamp($Labels) {
         $stamp.register_state -f "$(Invoke-Git write-tree --prefix=register/)".Substring(0, 12)
         $collectPath = Join-Path $Workspace 'state\last-collect.json'
         if (Test-Path -LiteralPath $collectPath) {
-            # A source is not covered when the last collect did not read it, whether or not the
-            # collect said so. A source the last collect read carries the time of that collect.
-            $collect = Read-JsonFile $collectPath
-            $declared = @((Read-JsonFile (Join-Path $Workspace 'connections.json')).PSObject.Properties | ForEach-Object { $_.Name })
-            $notCovered = @($declared | Where-Object { $collect.not_covered -ccontains $_ -or $collect.sources.$_.collected_at -cne $collect.collected_at })
-            $stamp.last_collect -f $collect.collected_at
+            $notCovered = @(Get-Coverage | Where-Object { -not $_.covered } | ForEach-Object { $_.source })
+            $stamp.last_collect -f (Read-JsonFile $collectPath).collected_at
             $stamp.not_covered -f $(if ($notCovered) { $notCovered -join ', ' } else { $stamp.none })
         }
         else { $stamp.no_collect }
