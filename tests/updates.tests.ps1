@@ -54,8 +54,9 @@ Test 'an update changes the named fields of one record, adds a history entry for
 
     $decision = Read-Json (Join-Path $ws 'register\decisions\2026\D-2026-001.json')
     Assert-True ($decision.date_updated -eq '2026-03-03' -and @($decision.history).Count -eq 0) 'a record the update does not name was changed'
-    $committed = @(git -C $ws show --name-only --format= HEAD)
-    Assert-Equal 'register/commitments/2026/C-2026-001.json' ($committed -join ' ') 'files of the last commit'
+    # The commit also holds the portfolio view, regenerated at every apply.
+    $committed = @(git -C $ws show --name-only --format= HEAD -- register)
+    Assert-Equal 'register/commitments/2026/C-2026-001.json' ($committed -join ' ') 'records of the last commit'
     Assert-True (-not (Test-Path (Join-Path $ws 'state\proposal.json'))) 'the proposal is still pending'
 }
 
@@ -221,8 +222,8 @@ Test 'a created record that names the record it supersedes marks it superseded a
     Assert-True ($null -eq $link.previous -and $link.new -eq 'C-2026-002') "history of the link: $($link | ConvertTo-Json -Compress)"
     Assert-Equal 0 @($new.history).Count 'history entries of the new record'
 
-    $committed = @(git -C $ws show --name-only --format= HEAD | Sort-Object)
-    Assert-Equal 'register/commitments/2026/C-2026-001.json register/commitments/2026/C-2026-002.json' ($committed -join ' ') 'files of the last commit'
+    $committed = @(git -C $ws show --name-only --format= HEAD -- register | Sort-Object)
+    Assert-Equal 'register/commitments/2026/C-2026-001.json register/commitments/2026/C-2026-002.json' ($committed -join ' ') 'records of the last commit'
     Assert-Match $run.Output '(?m)^- create commitment C-2026-002, which supersedes C-2026-001$' 'output'
 }
 
@@ -346,8 +347,8 @@ Test 'a selection applies the corrections and the superseding it keeps, and leav
     Assert-Equal 'next' (Read-Json (Join-Path $ws 'register\subjects\mobile-onboarding.json')).horizon 'horizon of the subject'
     Assert-Equal ($before -join ' ') (($untouched | ForEach-Object { (Get-FileHash -LiteralPath (Join-Path $ws $_)).Hash }) -join ' ') 'records of the dropped lines'
 
-    $committed = @(git -C $ws show --name-only --format= HEAD | Sort-Object)
-    Assert-Equal 'register/commitments/2026/C-2026-001.json register/commitments/2026/C-2026-002.json register/subjects/mobile-onboarding.json' ($committed -join ' ') 'files of the last commit'
+    $committed = @(git -C $ws show --name-only --format= HEAD -- register | Sort-Object)
+    Assert-Equal 'register/commitments/2026/C-2026-001.json register/commitments/2026/C-2026-002.json register/subjects/mobile-onboarding.json' ($committed -join ' ') 'records of the last commit'
     Assert-Match $run.Output 'Dropped: line 2, 3\.' 'output'
     Assert-True (-not (Test-Path (Join-Path $ws 'state\proposal.json'))) 'the proposal is still pending'
 }
