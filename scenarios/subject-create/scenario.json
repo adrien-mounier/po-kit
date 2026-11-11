@@ -13,6 +13,7 @@
     { "record": "savings-simulator", "field": "objectives", "is": [2] },
     { "record": "savings-simulator", "field": "status", "is": "active" },
     { "records": "subjects", "count": 4 },
+    { "file": "views/portfolio.md", "line": "Savings simulator [savings-simulator]" },
     { "file": "state/proposal.json", "absent": true }
   ]
 }

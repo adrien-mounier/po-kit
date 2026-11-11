@@ -10,6 +10,8 @@
     { "record": "branch-opening-hours-page", "field": "status", "is": "closed" },
     { "record": "mobile-onboarding", "field": "history", "is": [] },
     { "records": "subjects", "count": 3 },
+    { "file": "views/portfolio.md", "line": "Payments API contribution [payments-api-contribution]" },
+    { "file": "views/portfolio.md", "line": "Branch opening hours page", "absent": true },
     { "file": "state/proposal.json", "absent": true }
   ]
 }

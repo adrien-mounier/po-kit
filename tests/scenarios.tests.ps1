@@ -27,6 +27,7 @@ Test 'the scenario "create" passes when the agent records the subject the PO des
         Assert-Match $run.Output "  ok    record savings-simulator: $fact" 'expected fact reported as passed'
     }
     Assert-Match $run.Output '  ok    register/subjects holds 4 record\(s\)' 'the register gains one subject'
+    Assert-Match $run.Output '  ok    file views/portfolio\.md has a line containing "Savings simulator \[savings-simulator\]"' 'the portfolio view shows the new subject'
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
     Assert-Match $run.Output '1 scenario\(s\): 1 passed, 0 failed' 'verdict'
 }
@@ -40,6 +41,7 @@ Test 'the scenario "modify" passes when one subject moves to Now with a history 
     }
     Assert-Match $run.Output '  ok    record branch-opening-hours-page: status is "closed"' 'the closed subject is still a record'
     Assert-Match $run.Output '  ok    register/subjects holds 3 record\(s\)' 'no subject is added or lost'
+    Assert-Match $run.Output '  ok    file views/portfolio\.md has no line containing "Branch opening hours page"' 'the closed subject leaves the portfolio view'
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
 }
 

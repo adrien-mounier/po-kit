@@ -4,6 +4,7 @@
   "expect": [
     { "record": "card-dispute-portal", "absent": true },
     { "records": "subjects", "count": 3 },
+    { "file": "views/portfolio.md", "line": "Card dispute portal", "absent": true },
     { "file": "state/proposal.json", "absent": true }
   ]
 }
