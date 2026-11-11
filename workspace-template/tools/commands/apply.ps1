@@ -11,6 +11,7 @@ function New-Identifier([string]$Title, [string]$Folder) {
     $id
 }
 
+Assert-RegisterCommitted
 $applied = @(foreach ($operation in @(Get-PendingProposal)) {
         $definition = Get-Definition $operation.type
         $folder = Join-Path $Workspace $definition.folder
