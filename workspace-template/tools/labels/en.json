@@ -7,6 +7,41 @@
     "none": "none",
     "no_collect": "No collect has run yet: no source is covered."
   },
+  "check": {
+    "title": "Check report",
+    "errors": "Errors",
+    "warnings": "Warnings",
+    "no_error": "No error.",
+    "no_warning": "No warning.",
+    "rules": {
+      "unreadable_record": "Unreadable record",
+      "unknown_field_or_value": "Unknown field or value",
+      "missing_required_field": "Missing required field",
+      "identifier_differs_from_file_name": "Identifier differing from the file name",
+      "reference_to_missing_record": "Reference to a missing record",
+      "cleared_without_name_and_date": "Cleared subject without a name and a date",
+      "missing_gate_not_out_of_frame": "Subject under Now with a missing gate and a clearance other than out of frame",
+      "taken_decision_without_author": "Taken decision without its author",
+      "commitment_without_owner": "Open commitment without owner",
+      "commitment_without_due_date": "Open commitment without due date",
+      "commitment_overdue": "Overdue commitment",
+      "decision_past_its_date": "Pending decision past its date",
+      "subject_stale": "Subject under Now not updated for more than {0} day(s)",
+      "inbox_note_old": "Inbox note older than {0} day(s)",
+      "source_stale": "Source not read for more than {0} day(s)",
+      "unclassified_old": "Unclassified items older than {0} day(s)"
+    },
+    "details": {
+      "owner": "owner: {0}",
+      "due": "due: {0}",
+      "needed_from": "needed from: {0}",
+      "needed_by": "needed by: {0}",
+      "updated": "last updated: {0}",
+      "dated": "dated {0}",
+      "read": "last read: {0}",
+      "never_read": "never read"
+    }
+  },
   "portfolio": {
     "title": "Portfolio view",
     "horizons": { "now": "Now", "next": "Next", "later": "Later" },

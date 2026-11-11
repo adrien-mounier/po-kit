@@ -17,11 +17,6 @@ function New-CollectProposal([hashtable]$Parts = @{}) {
     $proposal
 }
 
-function Add-InboxNote([string]$Workspace, [string]$Name, [string]$Text = 'Steering committee of Example Bank: the tech lead presents the target journey on 16 March.') {
-    # Drops a raw note in the inbox, as the PO would.
-    [IO.File]::WriteAllText((Join-Path $Workspace "inbox\$Name"), $Text, $Utf8)
-}
-
 Test 'apply with a selection applies those lines only, drops the others, and no proposal stays pending' {
     $ws = New-TestWorkspace
     Set-Proposal $ws @{ operations = @(

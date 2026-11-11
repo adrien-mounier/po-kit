@@ -118,15 +118,6 @@ function Read-Stamp([string]$Workspace, [string]$Title = 'Portfolio view', [stri
     $lines[2..($first - 2)] -join "`n"
 }
 
-function Set-CollectProposal([string]$Workspace, [string]$CollectedAt, [string[]]$Read, [string[]]$NotCovered = @()) {
-    # Leaves the proposal of a collect that read these sources, and says it did not cover those.
-    Set-Proposal $Workspace @{
-        collected_at        = $CollectedAt
-        sources_read        = @($Read | ForEach-Object { @{ source = $_; cutoff = $CollectedAt; items = 3 } })
-        sources_not_covered = $NotCovered
-    }
-}
-
 Test 'the view opens with a stamp: when it was generated, the register state as the workspace history names it, and that no collect has run yet' {
     $ws = New-TestWorkspaceWithSubject
 

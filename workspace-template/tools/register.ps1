@@ -123,7 +123,7 @@ function Format-Timestamp([DateTimeOffset]$Moment) {
 # --- Record definitions -------------------------------------------------------------------------
 # tools\definitions holds one data file per record type, plus common.json for the fields every
 # record carries. A field is defined by:
-#   type          text, date, timestamp, boolean, integer, list or object
+#   type          text, date, timestamp, boolean, integer, list or object; any for a value of any kind
 #   required      true when a proposal must give it
 #   allowed       the values accepted
 #   allowed_from  the list in settings.json that holds the values accepted: its name, or
@@ -160,10 +160,11 @@ function Get-Definition([string]$Type) {
     }
 }
 
-function Test-Value($Definition, $Value, [string]$Name, [switch]$Partial) {
+function Test-Value($Definition, $Value, [string]$Name, [switch]$Partial, [switch]$Stored) {
     # What is wrong with a proposed value, against its definition: one reason per problem, and
     # nothing when the value is valid. -Partial accepts a group that leaves required fields out:
-    # the fields an update names.
+    # the fields an update names. -Stored takes the value as a record of the register: it holds
+    # the fields set by the register tool, which a proposal neither gives nor owes.
     if ($null -eq $Value -or ($Value -is [string] -and -not $Value.Trim())) {
         if ($Definition.required) { "missing required field '$Name'" }
         return
@@ -177,6 +178,7 @@ function Test-Value($Definition, $Value, [string]$Name, [switch]$Partial) {
         'integer' { $Value -is [int] -or $Value -is [long] }
         'list' { $Value -is [array] }
         'object' { $Value -is [System.Management.Automation.PSCustomObject] }
+        'any' { $true }
     }
     if (-not $fits) {
         "field '$Name' must be $($KindsOfValue[$Definition.type])$(if (-not $isGroup) { ", not '$Value'" })"
@@ -187,11 +189,11 @@ function Test-Value($Definition, $Value, [string]$Name, [switch]$Partial) {
             $path = "$Name.$($given.Name)".TrimStart('.')
             $field = $Definition.fields.PSObject.Properties[$given.Name]
             if (-not $field) { "unknown field '$path'" }
-            elseif ($field.Value.set_by -eq 'tool') { "field '$path' is set by the register tool" }
-            else { Test-Value $field.Value $given.Value $path }
+            elseif ($field.Value.set_by -eq 'tool' -and -not $Stored) { "field '$path' is set by the register tool" }
+            else { Test-Value $field.Value $given.Value $path -Stored:$Stored }
         }
         foreach ($field in $Definition.fields.PSObject.Properties) {
-            if ($field.Value.required -and -not $Partial -and -not $Value.PSObject.Properties[$field.Name]) {
+            if ($field.Value.required -and ($Stored -or $field.Value.set_by -ne 'tool') -and -not $Partial -and -not $Value.PSObject.Properties[$field.Name]) {
                 "missing required field '$("$Name.$($field.Name)".TrimStart('.'))'"
             }
         }
@@ -199,7 +201,7 @@ function Test-Value($Definition, $Value, [string]$Name, [switch]$Partial) {
     }
     if ($Definition.type -eq 'list') {
         foreach ($item in $Value) {
-            if ($null -eq $item) { "field '$Name' holds an empty item" } else { Test-Value $Definition.items $item $Name }
+            if ($null -eq $item) { "field '$Name' holds an empty item" } else { Test-Value $Definition.items $item $Name -Stored:$Stored }
         }
         return
     }
@@ -612,6 +614,180 @@ function Write-PortfolioView($Labels) {
         else { $portfolio.no_subject }
     }
     Write-TextFile (Join-Path $Workspace 'views\portfolio.md') (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
+}
+
+# --- Check --------------------------------------------------------------------------------------
+# The check verifies the whole register and its staleness, with no model and no network. What it
+# finds is an error, which makes the check fail, or a warning, which does not. A finding holds its
+# rule, what it is about (a record as "Title [identifier]", a file, a source) and, for some, a
+# detail.
+#
+# A rule is named by a key, listed here in the order of the check report, and labelled under
+# check.rules in every language of tools\labels. Adding a rule means adding its key here, its
+# label, and the finding itself in Get-CheckFindings.
+
+$CheckRules = @{
+    error   = 'unreadable_record', 'unknown_field_or_value', 'missing_required_field', 'identifier_differs_from_file_name', 'reference_to_missing_record',
+        'cleared_without_name_and_date', 'missing_gate_not_out_of_frame', 'taken_decision_without_author'
+    warning = 'commitment_without_owner', 'commitment_without_due_date', 'commitment_overdue', 'decision_past_its_date', 'subject_stale',
+        'inbox_note_old', 'source_stale', 'unclassified_old'
+}
+
+function Test-RecordRules([string]$Type, $Record) {
+    # The error rules that a record breaks by what its fields say together, as it is recorded or
+    # as a proposal would leave it: for each, the rule, the reason given when a proposal is refused
+    # and, for some, the detail of the finding.
+    if ($Type -eq 'subject') {
+        if ($Record.clearance -ceq 'cleared' -and -not ("$($Record.cleared_by)".Trim() -and $Record.cleared_on)) {
+            @{ rule = 'cleared_without_name_and_date'; reason = "cleared subject without a name and a date: a cleared subject gives 'cleared_by' and 'cleared_on'" }
+        }
+        $missing = @($Record.gates | Where-Object { $_.state -ceq 'missing' } | ForEach-Object { $_.name }) -join ', '
+        if ($Record.horizon -ceq 'now' -and $missing -and $Record.clearance -cne 'out of frame') {
+            @{ rule = 'missing_gate_not_out_of_frame'; detail = $missing
+                reason = "subject under Now with a missing gate ($missing) and a clearance other than out of frame: its clearance is '$($Record.clearance)'" }
+        }
+    }
+    if ($Type -eq 'decision' -and $Record.status -ceq 'taken' -and -not "$($Record.decided_by)".Trim()) {
+        @{ rule = 'taken_decision_without_author'; reason = "taken decision without its author: a taken decision gives 'decided_by'" }
+    }
+}
+
+function Get-CheckDelays {
+    # The delay of each staleness rule, in days: three from the settings, and a week for the
+    # unclassified items. A thing is stale when it is older than its delay, counted in whole days.
+    $set = $Settings.delays_in_days
+    @{ subject_stale = $set.subject; inbox_note_old = $set.inbox_note; source_stale = $set.source; unclassified_old = 7 }
+}
+
+function Get-DaysSince([string]$Date) {
+    # The whole days from a date, or from the date of a timestamp, to today.
+    ([DateTime]$Today - [DateTime]$Date.Substring(0, 10)).Days
+}
+
+function Get-RecordFiles {
+    # Every record file of the register, type after type, in the order of the file names compared
+    # character by character: its type, its path, its name from the workspace (file) and the
+    # identifier its name gives (id).
+    foreach ($definition in Get-ChildItem (Join-Path $Tools 'definitions\*.json') -Exclude common.json) {
+        $folder = Join-Path $Workspace (Read-JsonFile $definition.FullName).folder
+        $paths = [string[]]@(Get-ChildItem -LiteralPath $folder -Recurse -File -Filter *.json | ForEach-Object { $_.FullName })
+        [Array]::Sort($paths, [StringComparer]::Ordinal)
+        foreach ($path in $paths) {
+            @{ type = $definition.BaseName; path = $path; file = $path.Substring($Workspace.Length + 1).Replace('\', '/'); id = [IO.Path]::GetFileNameWithoutExtension($path) }
+        }
+    }
+}
+
+function Get-CheckFindings($Labels) {
+    # Every finding of the check on the register as it is on disk.
+    $details = $Labels.check.details
+    $delays = Get-CheckDelays
+    $files = @(Get-RecordFiles)
+    # The type of every record the register holds, by identifier: identifiers differ by their case.
+    $held = New-Object Collections.Hashtable ([StringComparer]::Ordinal)
+    foreach ($file in $files) { $held[$file.id] = $file.type }
+
+    foreach ($file in $files) {
+        $record = try { Read-JsonFile $file.path } catch { }
+        if ($record -isnot [System.Management.Automation.PSCustomObject]) {
+            @{ rule = 'unreadable_record'; about = "``$($file.file)``" }
+            continue
+        }
+        # A record is named as the portfolio view names a subject, by the identifier that finds it.
+        $about = "$("$($record.title)" -replace '\s*\r?\n\s*', ' ') [$($file.id)]".Trim()
+
+        $invalid = @(
+            Test-Value (Get-Definition $file.type).record $record '' -Stored
+            if ($record.type -is [string] -and $record.type -cne $file.type) { "field 'type' is '$($record.type)'; allowed: $($file.type)" }
+        )
+        foreach ($problem in $invalid) {
+            $rule = if ($problem -like 'missing required field*') { 'missing_required_field' } else { 'unknown_field_or_value' }
+            @{ rule = $rule; about = $about; detail = $problem }
+        }
+        if ($record.id -is [string] -and $record.id -cne $file.id) {
+            @{ rule = 'identifier_differs_from_file_name'; about = "``$($file.file)``"; detail = "'$($record.id)'" }
+        }
+        foreach ($link in 'subject', 'supersedes', 'superseded_by') {
+            $named = $record.$link
+            if ($named -isnot [string] -or -not $named.Trim()) { continue }
+            if (-not $held[$named] -or ($link -eq 'subject' -and $held[$named] -ne 'subject')) {
+                @{ rule = 'reference_to_missing_record'; about = $about; detail = "$link '$named'" }
+            }
+        }
+        foreach ($broken in Test-RecordRules $file.type $record) { @{ rule = $broken.rule; about = $about; detail = $broken.detail } }
+
+        # The warnings are about the records still in play, and read fields that must be valid.
+        if ($invalid) { continue }
+        if ($file.type -eq 'commitment' -and $record.status -ceq 'open') {
+            $said = @(
+                if ($record.owner) { $details.owner -f $record.owner }
+                if ($record.due_date) { $details.due -f $record.due_date }
+            ) -join ', '
+            if (-not $record.owner) { @{ rule = 'commitment_without_owner'; about = $about; detail = $said } }
+            if (-not $record.due_date) { @{ rule = 'commitment_without_due_date'; about = $about; detail = $said } }
+            elseif ($record.due_date -lt $Today) { @{ rule = 'commitment_overdue'; about = $about; detail = $said } }
+        }
+        if ($file.type -eq 'decision' -and $record.status -ceq 'pending' -and $record.needed_by -and $record.needed_by -lt $Today) {
+            $said = @(if ($record.needed_from) { $details.needed_from -f $record.needed_from }) + ($details.needed_by -f $record.needed_by) -join ', '
+            @{ rule = 'decision_past_its_date'; about = $about; detail = $said }
+        }
+        if ($file.type -eq 'subject' -and $record.status -ceq 'active' -and $record.horizon -ceq 'now' -and (Get-DaysSince $record.date_updated) -gt $delays.subject_stale) {
+            @{ rule = 'subject_stale'; about = $about; detail = $details.updated -f $record.date_updated }
+        }
+    }
+
+    # A note waits in the inbox itself: the notes filed under inbox\done are processed.
+    foreach ($note in Get-ChildItem -LiteralPath (Join-Path $Workspace 'inbox') -File | Sort-Object Name) {
+        $dated = $note.LastWriteTime.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+        if ((Get-DaysSince $dated) -gt $delays.inbox_note_old) { @{ rule = 'inbox_note_old'; about = $note.Name; detail = $details.dated -f $dated } }
+    }
+
+    # A source is read by a collect: the collect state holds, per source, the time of the last
+    # collect that read it. A source set to off is not expected to be read.
+    $collectPath = Join-Path $Workspace 'state\last-collect.json'
+    $sourcesRead = if (Test-Path -LiteralPath $collectPath) { (Read-JsonFile $collectPath).sources }
+    foreach ($source in (Read-JsonFile (Join-Path $Workspace 'connections.json')).PSObject.Properties) {
+        if ($source.Value.mode -ceq 'off') { continue }
+        $read = $sourcesRead.($source.Name).collected_at
+        if (-not $read) { @{ rule = 'source_stale'; about = $source.Name; detail = $details.never_read } }
+        elseif ((Get-DaysSince $read) -gt $delays.source_stale) { @{ rule = 'source_stale'; about = $source.Name; detail = $details.read -f $read } }
+    }
+
+    # An unclassified item is a line of the list that opens with the date it was collected, as
+    # apply writes it. The PO takes an item off the list once it is sorted.
+    $listPath = Join-Path $Workspace 'state\unclassified.md'
+    if (Test-Path -LiteralPath $listPath) {
+        foreach ($line in [IO.File]::ReadAllLines($listPath, $Utf8)) {
+            if ($line -cmatch '^- ((\d{4}-\d\d-\d\d) \| .*)$') {
+                $item, $collected = $Matches[1], $Matches[2]
+                if ((Test-IsoDate $collected) -and (Get-DaysSince $collected) -gt $delays.unclassified_old) { @{ rule = 'unclassified_old'; about = $item.Trim() } }
+            }
+        }
+    }
+}
+
+function Write-CheckReport($Labels) {
+    # Runs the check and writes the check report, views\check-report.md: the errors, each with its
+    # rule, then the warnings grouped by rule. Gives the number of errors, and the summary that a
+    # command prints.
+    $check = $Labels.check
+    $findings = @(Get-CheckFindings $Labels)
+    $errors = @($findings | Where-Object { $CheckRules.error -contains $_.rule })
+    $warnings = @($findings | Where-Object { $CheckRules.warning -contains $_.rule })
+    $lines = @("# $($check.title)", '') + @(Get-Stamp $Labels) + '', "## $($check.errors)", ''
+    $lines += if ($errors) { $errors | ForEach-Object { "- $($check.rules.($_.rule)): $($_.about)$(if ($_.detail) { ": $($_.detail)" })" } } else { $check.no_error }
+    $lines += '', "## $($check.warnings)"
+    if (-not $warnings) { $lines += '', $check.no_warning }
+    $delays = Get-CheckDelays
+    foreach ($rule in $CheckRules.warning) {
+        $found = @($warnings | Where-Object { $_.rule -eq $rule })
+        if (-not $found) { continue }
+        # The label of a staleness rule says its delay.
+        $lines += '', "### $($check.rules.$rule -f $delays[$rule])", ''
+        $lines += $found | ForEach-Object { "- $($_.about)$(if ($_.detail) { " ($($_.detail))" })" }
+    }
+    Write-TextFile (Join-Path $Workspace 'views\check-report.md') (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
+    @{ errors = $errors.Count; summary = "Check: $($errors.Count) error(s), $($warnings.Count) warning(s). Check report: views\check-report.md" }
 }
 
 # --- Run the command ----------------------------------------------------------------------------

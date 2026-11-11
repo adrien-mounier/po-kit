@@ -1,11 +1,11 @@
 {
   "fields": {
-    "id": { "type": "text", "set_by": "tool" },
-    "type": { "type": "text", "set_by": "tool" },
+    "id": { "type": "text", "required": true, "set_by": "tool" },
+    "type": { "type": "text", "required": true, "set_by": "tool" },
     "title": { "type": "text", "required": true },
     "status": { "type": "text" },
-    "date_recorded": { "type": "date", "set_by": "tool" },
-    "date_updated": { "type": "date", "set_by": "tool" },
+    "date_recorded": { "type": "date", "required": true, "set_by": "tool" },
+    "date_updated": { "type": "date", "required": true, "set_by": "tool" },
     "evidence_level": { "type": "text", "required": true, "allowed": ["fact", "reported", "hypothesis"] },
     "source": {
       "type": "object",
@@ -19,6 +19,26 @@
     "notes": { "type": "text" },
     "supersedes": { "type": "text" },
     "superseded_by": { "type": "text", "set_by": "tool" },
-    "history": { "type": "list", "set_by": "tool" }
+    "history": {
+      "type": "list",
+      "set_by": "tool",
+      "items": {
+        "type": "object",
+        "fields": {
+          "date": { "type": "date", "required": true },
+          "field": { "type": "text", "required": true },
+          "previous": { "type": "any" },
+          "new": { "type": "any" },
+          "source": {
+            "type": "object",
+            "required": true,
+            "fields": {
+              "where": { "type": "text", "required": true },
+              "read_on": { "type": "date", "required": true }
+            }
+          }
+        }
+      }
+    }
   }
 }

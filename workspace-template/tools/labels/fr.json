@@ -7,6 +7,41 @@
     "none": "aucune",
     "no_collect": "Aucune collecte n'a encore eu lieu : aucune source n'est couverte."
   },
+  "check": {
+    "title": "Rapport de contrôle",
+    "errors": "Erreurs",
+    "warnings": "Avertissements",
+    "no_error": "Aucune erreur.",
+    "no_warning": "Aucun avertissement.",
+    "rules": {
+      "unreadable_record": "Fiche illisible",
+      "unknown_field_or_value": "Champ ou valeur inconnu",
+      "missing_required_field": "Champ obligatoire manquant",
+      "identifier_differs_from_file_name": "Identifiant différent du nom du fichier",
+      "reference_to_missing_record": "Référence à une fiche absente",
+      "cleared_without_name_and_date": "Sujet au feu vert accordé sans nom ni date",
+      "missing_gate_not_out_of_frame": "Sujet sous Maintenant avec un jalon obligatoire manquant et un feu vert autre que hors cadre",
+      "taken_decision_without_author": "Décision prise sans son auteur",
+      "commitment_without_owner": "Engagement ouvert sans responsable",
+      "commitment_without_due_date": "Engagement ouvert sans échéance",
+      "commitment_overdue": "Engagement en retard",
+      "decision_past_its_date": "Décision attendue dont la date est passée",
+      "subject_stale": "Sujet sous Maintenant sans mise à jour depuis plus de {0} jour(s)",
+      "inbox_note_old": "Note déposée depuis plus de {0} jour(s)",
+      "source_stale": "Source non lue depuis plus de {0} jour(s)",
+      "unclassified_old": "Éléments non classés depuis plus de {0} jour(s)"
+    },
+    "details": {
+      "owner": "responsable : {0}",
+      "due": "échéance : {0}",
+      "needed_from": "attendue de : {0}",
+      "needed_by": "attendue pour le : {0}",
+      "updated": "dernière mise à jour : {0}",
+      "dated": "datée du {0}",
+      "read": "dernière lecture : {0}",
+      "never_read": "jamais lue"
+    }
+  },
   "portfolio": {
     "title": "Vue portefeuille",
     "horizons": { "now": "Maintenant", "next": "Ensuite", "later": "Plus tard" },

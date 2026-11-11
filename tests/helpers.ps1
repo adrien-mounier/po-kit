@@ -118,6 +118,29 @@ function New-RecordOperation([string]$Type, [hashtable]$Fields = @{}) {
     @{ op = 'create'; type = $Type; interpreted = $false; fields = $record }
 }
 
+function New-UpdateOperation([string]$Id, [hashtable]$Fields) {
+    # One valid operation updating a record of Example Bank: the fields to change, and the source
+    # of the change.
+    @{
+        op = 'update'; id = $Id; interpreted = $false; fields = $Fields
+        source = @{ where = 'inbox/call-with-the-tech-lead.md'; read_on = '2026-03-10' }
+    }
+}
+
+function Set-CollectProposal([string]$Workspace, [string]$CollectedAt, [string[]]$Read, [string[]]$NotCovered = @()) {
+    # Leaves the proposal of a collect that read these sources, and says it did not cover those.
+    Set-Proposal $Workspace @{
+        collected_at        = $CollectedAt
+        sources_read        = @($Read | ForEach-Object { @{ source = $_; cutoff = $CollectedAt; items = 3 } })
+        sources_not_covered = $NotCovered
+    }
+}
+
+function Add-InboxNote([string]$Workspace, [string]$Name, [string]$Text = 'Steering committee of Example Bank: the tech lead presents the target journey on 16 March.') {
+    # Drops a raw note in the inbox, as the PO would.
+    [IO.File]::WriteAllText((Join-Path $Workspace "inbox\$Name"), $Text, $Utf8)
+}
+
 function New-TestWorkspaceWithSubject {
     # A workspace whose register holds one subject: mobile-onboarding.
     $workspace = New-TestWorkspace
