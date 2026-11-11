@@ -58,3 +58,46 @@ Test 'differences outside the register, such as a new inbox note or a pending pr
     }
     Assert-True (Test-Path (Join-Path $ws 'register\subjects\branch-appointment-booking.json')) 'the proposal was not applied'
 }
+
+Test 'after apply, the commit is pushed to the backup when the workspace has a remote' {
+    $ws = New-TestWorkspace
+    # The backup is a local folder: no network is needed.
+    $backup = Join-Path $TestRoot ('backup-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+    git init -q --bare $backup
+    git -C $ws remote add backup $backup
+    Set-Proposal $ws @{ operations = @(New-SubjectOperation) }
+
+    $run = Invoke-Register $ws apply
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Equal (git -C $ws rev-parse HEAD) (git --git-dir $backup rev-parse refs/heads/main) 'last commit of the backup'
+    $pushed = @(git --git-dir $backup show --name-only --format= refs/heads/main)
+    Assert-True ($pushed -contains 'register/subjects/mobile-onboarding.json') "the last commit of the backup holds: $pushed"
+    Assert-Match $run.Output "Pushed to 'backup'" 'output'
+}
+
+Test 'with no remote, apply does not try to push and says so without alarm' {
+    $ws = New-TestWorkspace
+    Set-Proposal $ws @{ operations = @(New-SubjectOperation) }
+
+    $run = Invoke-Register $ws apply
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '(?m)^Not pushed: the workspace has no remote\.$' 'output'
+    Assert-True ($run.Output -notmatch '(?i)warning|fail|fatal|error') "the output is alarming: $($run.Output)"
+}
+
+Test 'when the push fails, apply warns and still succeeds: the commit exists in the workspace' {
+    $ws = New-TestWorkspace
+    git -C $ws remote add backup (Join-Path $TestRoot 'backup-that-does-not-exist')
+    Set-Proposal $ws @{ operations = @(New-SubjectOperation) }
+
+    $run = Invoke-Register $ws apply
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "(?m)^Warning: the push to 'backup' failed" 'output'
+    $committed = @(git -C $ws show --name-only --format= HEAD)
+    Assert-True ($committed -contains 'register/subjects/mobile-onboarding.json') "the last commit holds: $committed"
+    Assert-True (-not (Test-Path (Join-Path $ws 'state\proposal.json'))) 'the proposal is still pending'
+    Assert-Equal '' (@(git -C $ws status --porcelain) -join ' ') 'changes left out of the commit'
+}
