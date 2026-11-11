@@ -1,0 +1,24 @@
+{
+  "stamp": {
+    "generated": "Génération : {0}.",
+    "register_state": "État du registre : {0}.",
+    "last_collect": "Dernière collecte : {0}.",
+    "not_covered": "Sources non couvertes par la dernière collecte : {0}.",
+    "none": "aucune",
+    "no_collect": "Aucune collecte n'a encore eu lieu : aucune source n'est couverte."
+  },
+  "portfolio": {
+    "title": "Vue portefeuille",
+    "horizons": { "now": "Maintenant", "next": "Ensuite", "later": "Plus tard" },
+    "no_subject": "Aucun sujet.",
+    "subject": "Sujet",
+    "kind": "Nature",
+    "clearance": "Feu vert",
+    "next_date": "Prochaine date",
+    "next_step": "Prochaine étape",
+    "kinds": { "product": "Produit", "contribution": "Contribution", "service": "Service" },
+    "clearances": { "cleared": "Accordé", "pending": "En attente", "out of frame": "**Hors cadre**", "none": "Aucun" },
+    "cleared_by": "par {0}",
+    "cleared_on": "le {0}"
+  }
+}

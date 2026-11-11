@@ -1,11 +1,12 @@
 # The register tool: the only program allowed to write the register. It runs without any model.
 #
-#   powershell -NoProfile -File tools\register.ps1 <command> [arguments] [-Today yyyy-mm-dd]
+#   powershell -NoProfile -File tools\register.ps1 <command> [arguments] [-Today yyyy-mm-dd] [-Now timestamp]
 #
-# It works on the workspace it sits in. -Today sets the date this run treats as today.
+# It works on the workspace it sits in. -Today sets the date this run treats as today, and -Now
+# the moment it treats as now (as 2026-03-02T08:30:00+01:00), which also gives the date.
 #
 # Each command is one file under tools\commands: adding a command means adding a file. A command
-# runs with everything defined here in scope ($Workspace, $Settings, $Today, the functions) and
+# runs with everything defined here in scope ($Workspace, $Settings, $Today, $Now, the functions) and
 # its own arguments in $Arguments. It ends a failed run with Stop-Run.
 #
 # Keep this file and the commands in plain ASCII: Windows PowerShell 5.1 misreads other
@@ -13,6 +14,7 @@
 param(
     [Parameter(Position = 0)][string]$Command,
     [string]$Today,
+    [string]$Now,
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments
 )
 
@@ -101,9 +103,9 @@ function Test-IsoDate([string]$Text) {
 }
 
 # A timestamp is a date and time that carries its UTC offset. Every timestamp the register tool
-# reads goes through Read-Timestamp, and every one it writes through Format-Timestamp, the present
-# moment included: Format-Timestamp ([DateTimeOffset]::Now). A field of type "timestamp" in a
-# definition is checked and recorded this way.
+# reads goes through Read-Timestamp, and every one it writes through Format-Timestamp. The present
+# moment is $Now, already written this way. A field of type "timestamp" in a definition is checked
+# and recorded this way.
 
 function Read-Timestamp([string]$Text) {
     # The moment a text states, or nothing when the text is not a timestamp. The offset is
@@ -426,10 +428,107 @@ function Save-Collect {
     }
 }
 
+# --- Views --------------------------------------------------------------------------------------
+# A view is a document generated from the register, under views\. It is never edited, and it opens
+# with a stamp: the lines Get-Stamp gives.
+#
+# Its labels exist in several languages. tools\labels holds one data file per language, named
+# after it (en.json): one group of labels for the stamp, and one per view. Adding a language means
+# adding a file. What a record says is never translated.
+
+function Get-Labels([string]$Language) {
+    # The labels of a language. A language without labels ends the run with a failure code.
+    $file = Join-Path $Tools "labels\$Language.json"
+    if ($Language -cnotmatch '^[a-z]+$' -or -not (Test-Path -LiteralPath $file)) {
+        $known = (Get-ChildItem (Join-Path $Tools 'labels\*.json') | ForEach-Object { $_.BaseName }) -join ', '
+        Stop-Run "Unsupported language '$Language'. Nothing was written. Languages: $known. view takes the language as its argument; without one, and for apply, it is languages.default in settings.json."
+    }
+    Read-JsonFile $file
+}
+
+function Get-Stamp($Labels) {
+    # The stamp that opens every view, as lines of Markdown. It is produced here and nowhere else:
+    #   > Generated: 2026-03-02T09:15:00+01:00.
+    #   > Register state: 4b825dc642cb.
+    #   > Last collect: 2026-03-02T08:30:00+01:00.
+    #   > Sources not covered by the last collect: mail, tracker.
+    # or, in place of the last two lines, that no collect has run yet.
+    #
+    # The register state is the start of the name git gives to the content of register\, which
+    # git rev-parse <commit>:register prints for any commit of the workspace history. The same
+    # register gives the same name, whatever the commit. It is read from what git has staged, so
+    # the caller sees to it that the register on disk is the one staged: a command that only reads
+    # the register calls Assert-RegisterCommitted first, and apply stages what it wrote.
+    $stamp = $Labels.stamp
+    $said = @(
+        $stamp.generated -f $Now
+        $stamp.register_state -f "$(Invoke-Git write-tree --prefix=register/)".Substring(0, 12)
+        $collectPath = Join-Path $Workspace 'state\last-collect.json'
+        if (Test-Path -LiteralPath $collectPath) {
+            # A source is not covered when the last collect did not read it, whether or not the
+            # collect said so. A source the last collect read carries the time of that collect.
+            $collect = Read-JsonFile $collectPath
+            $declared = @((Read-JsonFile (Join-Path $Workspace 'connections.json')).PSObject.Properties | ForEach-Object { $_.Name })
+            $notCovered = @($declared | Where-Object { $collect.not_covered -ccontains $_ -or $collect.sources.$_.collected_at -cne $collect.collected_at })
+            $stamp.last_collect -f $collect.collected_at
+            $stamp.not_covered -f $(if ($notCovered) { $notCovered -join ', ' } else { $stamp.none })
+        }
+        else { $stamp.no_collect }
+    )
+    $said | ForEach-Object { "> $_" }
+}
+
+function Write-Table([string[]]$Header, [object[]]$Rows) {
+    # A Markdown table with aligned columns: readable as plain text, and rendered by a chat.
+    # The last column holds the long text and is left unpadded.
+    $lines = @(, $Header) + $Rows
+    $widths = @(0..($Header.Count - 1) | ForEach-Object { $column = $_; ($lines | ForEach-Object { $_[$column].Length } | Measure-Object -Maximum).Maximum })
+    $widths[-1] = $Header[-1].Length
+    $number = 0
+    foreach ($line in $lines) {
+        '| ' + ((0..($Header.Count - 1) | ForEach-Object { $line[$_].PadRight($widths[$_]) }) -join ' | ') + ' |'
+        if ($number++ -eq 0) { '|' + (($widths | ForEach-Object { '-' * ($_ + 2) }) -join '|') + '|' }
+    }
+}
+
+function Write-PortfolioView($Labels) {
+    # Writes the portfolio view, views\portfolio.md: every active subject under its horizon.
+    $portfolio = $Labels.portfolio
+    $folder = Join-Path $Workspace (Get-Definition 'subject').folder
+    # In the order of their identifiers, compared character by character: the same on every machine.
+    $ids = [string[]]@(Get-ChildItem -LiteralPath $folder -Filter *.json | ForEach-Object { $_.BaseName })
+    [Array]::Sort($ids, [StringComparer]::Ordinal)
+    $subjects = @($ids | ForEach-Object { Read-JsonFile (Join-Path $folder "$_.json") } | Where-Object { $_.status -ceq 'active' })
+    $lines = @("# $($portfolio.title)", '') + @(Get-Stamp $Labels)
+    foreach ($horizon in 'now', 'next', 'later') {
+        $lines += '', "## $($portfolio.horizons.$horizon)", ''
+        $rows = @(foreach ($subject in $subjects | Where-Object { $_.horizon -ceq $horizon }) {
+                $clearance = $portfolio.clearances.($subject.clearance)
+                if ($subject.clearance -ceq 'cleared') {
+                    if ($subject.cleared_by) { $clearance += ' ' + ($portfolio.cleared_by -f $subject.cleared_by) }
+                    if ($subject.cleared_on) { $clearance += ' ' + ($portfolio.cleared_on -f $subject.cleared_on) }
+                }
+                # A date that is not confirmed is not shown, so that the view never promises it.
+                $cells = "$($subject.title) [$($subject.id)]", $portfolio.kinds.($subject.kind), $clearance,
+                    $(if ($subject.next_date_confirmed) { "$($subject.next_date)" } else { '' }), "$($subject.next_step)"
+                , @($cells | ForEach-Object { ($_ -replace '\s*\r?\n\s*', ' ').Replace('|', '\|') })
+            })
+        $lines += if ($rows) { Write-Table $portfolio.subject, $portfolio.kind, $portfolio.clearance, $portfolio.next_date, $portfolio.next_step $rows }
+        else { $portfolio.no_subject }
+    }
+    Write-TextFile (Join-Path $Workspace 'views\portfolio.md') (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
+}
+
 # --- Run the command ----------------------------------------------------------------------------
 
-if (-not $Today) { $Today = [DateTime]::Today.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture) }
+# $Now is the moment of the run, as a timestamp, and $Today its date: the clock's, unless -Now sets
+# the moment or -Today its date alone. A run never reads the clock anywhere else.
+$moment = if ($Now) { Read-Timestamp $Now } else { [DateTimeOffset]::Now }
+if ($null -eq $moment) { Stop-Run "The moment given as now must be a date and time with its UTC offset (as 2026-03-02T08:30:00+01:00), not '$Now'." }
+$Now = Format-Timestamp $moment
+if (-not $Today) { $Today = $Now.Substring(0, 10) }
 elseif (-not (Test-IsoDate $Today)) { Stop-Run "The date given as today must be an ISO date (yyyy-mm-dd), not '$Today'." }
+else { $Now = $Today + $Now.Substring(10) }
 
 $commandFile = Join-Path $Tools "commands\$Command.ps1"
 if ($Command -cnotmatch '^[a-z]+$' -or -not (Test-Path -LiteralPath $commandFile)) {

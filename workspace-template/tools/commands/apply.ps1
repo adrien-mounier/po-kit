@@ -1,5 +1,5 @@
-# apply: validates the pending proposal again, settles its collect, writes its records, commits
-# and pushes to the backup.
+# apply: validates the pending proposal again, settles its collect, writes its records,
+# regenerates the portfolio view, commits and pushes to the backup.
 #
 #   apply          every line of the proposal
 #   apply 1 3      lines 1 and 3 only, numbered as preview shows them; the others are dropped
@@ -29,6 +29,9 @@ function New-NumberedIdentifier([string]$Prefix, [string]$Folder) {
 }
 
 Assert-RegisterCommitted
+# The portfolio view is regenerated in the default language. Its labels are read before anything
+# is written, so that a language without labels refuses the run whole.
+$labels = Get-Labels $Settings.languages.default
 
 $operations = @(Get-PendingProposal)
 $lines = @(for ($line = 1; $line -le $operations.Count; $line++) { "$line" })
@@ -76,10 +79,15 @@ $applied = @(foreach ($operation in $operations) {
 # from the last commit. The commit holds all that the run wrote: the records, the notes filed, the
 # collect state and the unclassified list, and never the proposal.
 Invoke-Git add -A register inbox state ':(exclude)state/proposal.json'
+# The portfolio view is generated from the register as staged, and goes in the same commit: the
+# view of a commit is never behind its register.
+Write-PortfolioView $labels
+Invoke-Git add views/portfolio.md
 Invoke-Git commit -q -m "Apply proposal: $($operations.Count - $dropped.Count) operation(s)" -m ($applied -join "`n")
 Remove-Item -LiteralPath $ProposalPath
 
 'Applied and committed:'
 $applied | ForEach-Object { "- $_" }
 if ($dropped) { "Dropped: line $($dropped -join ', ')." }
+'Portfolio view regenerated: views\portfolio.md'
 Push-ToBackup

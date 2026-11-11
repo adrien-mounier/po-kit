@@ -13,19 +13,6 @@ function Format-Fields($Fields, [string[]]$Except) {
     @($given | ForEach-Object { "$($_.Name): $(Format-Value $_.Value)" }) -join '; '
 }
 
-function Write-Table([string[]]$Header, [object[]]$Rows) {
-    # A Markdown table with aligned columns: readable as plain text, and rendered by a chat.
-    # The last column holds the long text and is left unpadded.
-    $lines = @(, $Header) + $Rows
-    $widths = @(0..($Header.Count - 1) | ForEach-Object { $column = $_; ($lines | ForEach-Object { $_[$column].Length } | Measure-Object -Maximum).Maximum })
-    $widths[-1] = $Header[-1].Length
-    $number = 0
-    foreach ($line in $lines) {
-        '| ' + ((0..($Header.Count - 1) | ForEach-Object { $line[$_].PadRight($widths[$_]) }) -join ' | ') + ' |'
-        if ($number++ -eq 0) { '|' + (($widths | ForEach-Object { '-' * ($_ + 2) }) -join '|') + '|' }
-    }
-}
-
 Assert-RegisterCommitted
 $operations = @(Get-PendingProposal)
 $number = 0
