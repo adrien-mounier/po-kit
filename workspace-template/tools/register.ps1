@@ -63,10 +63,28 @@ function Test-IsoDate([string]$Text) {
     [DateTime]::TryParseExact($Text, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None, [ref]$parsed)
 }
 
+# A timestamp is a date and time that carries its UTC offset. Every timestamp the register tool
+# reads goes through Read-Timestamp, and every one it writes through Format-Timestamp, the present
+# moment included: Format-Timestamp ([DateTimeOffset]::Now). A field of type "timestamp" in a
+# definition is checked and recorded this way.
+
+function Read-Timestamp([string]$Text) {
+    # The moment a text states, or nothing when the text is not a timestamp. The offset is
+    # written +01:00 or Z, and fractions of a second are accepted.
+    $moment = [DateTimeOffset]::MinValue
+    if ($Text -cmatch '^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?(Z|[+-]\d\d:\d\d)$' -and
+        [DateTimeOffset]::TryParse($Text, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None, [ref]$moment)) { $moment }
+}
+
+function Format-Timestamp([DateTimeOffset]$Moment) {
+    # To the second, in the offset the moment was given in: 2026-03-02T08:30:00+01:00
+    $Moment.ToString("yyyy-MM-dd'T'HH:mm:sszzz", [Globalization.CultureInfo]::InvariantCulture)
+}
+
 # --- Record definitions -------------------------------------------------------------------------
 # tools\definitions holds one data file per record type, plus common.json for the fields every
 # record carries. A field is defined by:
-#   type          text, date, boolean, integer, list or object
+#   type          text, date, timestamp, boolean, integer, list or object
 #   required      true when a proposal must give it
 #   allowed       the values accepted
 #   allowed_from  the name of the list in settings.json that holds the values accepted
@@ -78,6 +96,7 @@ function Test-IsoDate([string]$Text) {
 $KindsOfValue = @{
     text = 'text'; date = 'an ISO date (yyyy-mm-dd)'; boolean = 'true or false'; integer = 'a whole number'
     list = 'a list'; object = 'a group of fields'
+    timestamp = 'a date and time with its UTC offset (as 2026-03-02T08:30:00+01:00)'
 }
 
 function Get-Definition([string]$Type) {
@@ -102,6 +121,7 @@ function Test-Value($Definition, $Value, [string]$Name) {
     $fits = switch ($Definition.type) {
         'text' { $Value -is [string] }
         'date' { $Value -is [string] -and (Test-IsoDate $Value) }
+        'timestamp' { $Value -is [string] -and (Read-Timestamp $Value) }
         'boolean' { $Value -is [bool] }
         'integer' { $Value -is [int] -or $Value -is [long] }
         'list' { $Value -is [array] }
@@ -160,6 +180,7 @@ function Complete-Value($Definition, $Value) {
         return , $items
     }
     if ($null -eq $Value) { return $Definition.default }
+    if ($Definition.type -eq 'timestamp') { return Format-Timestamp (Read-Timestamp $Value) }
     $Value
 }
 
@@ -209,10 +230,10 @@ function Get-PendingProposal {
 
 $CollectDefinition = @'
 { "type": "object", "fields": {
-    "collected_at": { "type": "text" },
+    "collected_at": { "type": "timestamp" },
     "sources_read": { "type": "list", "items": { "type": "object", "fields": {
         "source": { "type": "text", "required": true },
-        "cutoff": { "type": "text", "required": true },
+        "cutoff": { "type": "timestamp", "required": true },
         "items": { "type": "integer", "required": true } } } },
     "sources_not_covered": { "type": "list", "items": { "type": "text" } },
     "notes_processed": { "type": "list", "items": { "type": "text" } },
@@ -233,10 +254,19 @@ function Get-PendingCollect {
 
 function Test-PendingCollect {
     # What is wrong with what the pending proposal says of its collect: one reason per problem.
-    $collect = Get-PendingCollect
-    foreach ($note in $collect.notes_processed) {
-        if ($note -match '[\\/:]' -or -not (Test-Path -LiteralPath (Join-Path $Workspace "inbox\$note") -PathType Leaf)) {
-            "the note '$note' is not in the inbox"
+    $proposal = Read-JsonFile $ProposalPath
+    if ($proposal -isnot [System.Management.Automation.PSCustomObject]) { return }
+    $said = [ordered]@{}
+    foreach ($part in $proposal.PSObject.Properties) { if ($part.Name -ne 'operations') { $said[$part.Name] = $part.Value } }
+    $collect = [pscustomobject]$said
+    Test-Value $CollectDefinition $collect ''
+    $parts = @($said.Keys | Where-Object { $_ -ne 'collected_at' -and $CollectDefinition.fields.PSObject.Properties[$_] })
+    if ($parts -and -not $collect.collected_at) { "missing required field 'collected_at'" }
+    if ($collect.notes_processed -is [array]) {
+        foreach ($note in $collect.notes_processed) {
+            if ($note -match '[\\/:]' -or -not (Test-Path -LiteralPath (Join-Path $Workspace "inbox\$note") -PathType Leaf)) {
+                "the note '$note' is not in the inbox"
+            }
         }
     }
 }

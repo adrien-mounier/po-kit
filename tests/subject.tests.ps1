@@ -299,7 +299,7 @@ Test 'a proposal the register tool cannot read as operations is refused' {
     Assert-Refused $ws @('The proposal is not valid JSON written as UTF-8')
 
     Set-Proposal $ws @{ operation = @(New-SubjectOperation) }
-    Assert-Refused $ws @("The proposal holds no operation")
+    Assert-Refused $ws @("unknown field 'operation'")
 
     $unknownOperation = New-SubjectOperation
     $unknownOperation.op = 'delete'

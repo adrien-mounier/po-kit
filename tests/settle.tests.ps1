@@ -143,3 +143,61 @@ Test 'a source the next proposal did not read keeps its previous cutoff in the c
     Assert-Equal '2026-03-02T08:30:00+01:00' $state.sources.mail.collected_at 'time of the collect that read the mail'
     Assert-Equal 'mail, tracker' ($state.not_covered -join ', ') 'sources not covered'
 }
+
+Test 'a time of the collect or a cutoff that does not carry its UTC offset is refused' {
+    $ws = New-TestWorkspace
+    Set-Proposal $ws (New-CollectProposal @{
+            collected_at = '2026-03-02T08:30:00'
+            sources_read = @(
+                @{ source = 'notes'; cutoff = '2026-03-02'; items = 2 },
+                @{ source = 'mail'; cutoff = '2026-02-30T08:12:00+01:00'; items = 14 }
+            )
+            operations   = @(New-SubjectOperation)
+        })
+
+    $kind = [regex]::Escape('must be a date and time with its UTC offset (as 2026-03-02T08:30:00+01:00)')
+    Assert-Refused $ws @(
+        "field 'collected_at' $kind, not '2026-03-02T08:30:00'",
+        "field 'sources_read.cutoff' $kind, not '2026-03-02'",
+        "field 'sources_read.cutoff' $kind, not '2026-02-30T08:12:00\+01:00'"
+    )
+}
+
+Test 'the collect state states every time one way, with its UTC offset' {
+    $ws = New-TestWorkspace
+    Set-Proposal $ws (New-CollectProposal @{
+            collected_at = '2026-03-02T07:30:00Z'
+            sources_read = @(@{ source = 'mail'; cutoff = '2026-03-01T23:12:00.1234567-05:00'; items = 14 })
+            operations   = @(New-SubjectOperation)
+        })
+
+    $run = Invoke-Register $ws apply -Today 2026-03-02
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $state = Read-Json (Join-Path $ws 'state\last-collect.json')
+    Assert-Equal '2026-03-02T07:30:00+00:00' $state.collected_at 'time of the collect'
+    Assert-Equal '2026-03-01T23:12:00-05:00' $state.sources.mail.cutoff 'cutoff of the mail'
+    Assert-Equal '2026-03-02T07:30:00+00:00' $state.sources.mail.collected_at 'time of the collect that read the mail'
+}
+
+Test 'what a proposal says of its collect is validated like its operations: one reason per problem' {
+    $ws = New-TestWorkspace
+    Set-Proposal $ws @{
+        sources_read        = @(@{ source = 'mail'; items = 'many'; pages = 3 })
+        sources_not_covered = 'tracker'
+        note_processed      = @('steering committee.md')
+        unclassified        = @(@{ text = 'Who owns the branch kiosk pilot?' })
+        operations          = @((New-SubjectOperation), (New-SubjectOperation @{ kind = 'project' }))
+    }
+
+    Assert-Refused $ws @(
+        "- unknown field 'sources_read.pages'",
+        "- field 'sources_read.items' must be a whole number, not 'many'",
+        "- missing required field 'sources_read.cutoff'",
+        "- field 'sources_not_covered' must be a list",
+        "- unknown field 'note_processed'",
+        "- missing required field 'unclassified.source'",
+        "- missing required field 'collected_at'",
+        "- Line 2: field 'kind' is 'project'"
+    )
+}
