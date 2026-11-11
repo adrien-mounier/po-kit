@@ -192,12 +192,15 @@ Test 'every routine of the kit is copied into the skills folder given, beside th
     $run = Invoke-Install $kit -Workspace $to.Workspace -SkillsFolder $to.Skills
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    foreach ($routine in 'collect', 'weekly-synthesis') {
+    # The two routines of this test, and those the kit already ships.
+    $routines = @(Get-ChildItem (Join-Path $kit 'routines') -Directory | ForEach-Object { $_.Name })
+    Assert-True ($routines -contains 'collect' -and $routines -contains 'weekly-synthesis') "the kit of this test lacks its routines: $routines"
+    foreach ($routine in $routines) {
         Assert-True (Test-Path (Join-Path $to.Skills $routine)) "the routine $routine was not copied"
         Assert-Equal (Get-WorkspaceSnapshot (Join-Path $kit "routines\$routine")) (Get-WorkspaceSnapshot (Join-Path $to.Skills $routine)) "files of the routine $routine"
     }
     Assert-Equal $before (Get-WorkspaceSnapshot $own) "the PO's own skill"
-    Assert-Equal 'a-skill-of-the-po collect weekly-synthesis' ((Get-ChildItem $to.Skills -Force | Sort-Object Name | ForEach-Object { $_.Name }) -join ' ') 'content of the skills folder'
+    Assert-Equal ((@('a-skill-of-the-po') + $routines | Sort-Object) -join ' ') ((Get-ChildItem $to.Skills -Force | Sort-Object Name | ForEach-Object { $_.Name }) -join ' ') 'content of the skills folder'
 }
 
 Test 'an update leaves records, inbox notes, views, state, settings and connections byte-identical, and replaces the kit-owned files' {

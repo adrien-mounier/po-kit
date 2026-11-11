@@ -1,0 +1,30 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "type": "subject",
+      "interpreted": false,
+      "fields": {
+        "title": "Savings simulator",
+        "kind": "product",
+        "horizon": "next",
+        "clearance": "cleared",
+        "cleared_by": "the sponsor",
+        "cleared_on": "2026-02-27",
+        "evidence_level": "fact",
+        "source": { "where": "conversation with the PO", "read_on": "2026-03-02" },
+        "objectives": [2],
+        "gates": [
+          { "name": "architecture review", "state": "planned" },
+          { "name": "security review", "state": "unknown" }
+        ],
+        "next_step": "Write the framing note for the sponsor",
+        "watch_list": {
+          "people": ["the tech lead", "the head of savings"],
+          "keywords": ["savings simulator"],
+          "tracker_projects": ["SAV"]
+        }
+      }
+    }
+  ]
+}

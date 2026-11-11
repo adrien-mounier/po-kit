@@ -1,0 +1,24 @@
+{
+  "routine": "subject",
+  "prompt": "Nothing to record today.",
+  "expect": [
+    { "record": "mobile-onboarding" },
+    { "record": "card-dispute-portal" },
+    { "record": "card-dispute-portal", "absent": true },
+    { "record": "mobile-onboarding", "absent": true },
+    { "record": "mobile-onboarding", "field": "gates[-1].state", "is": "planned" },
+    { "record": "mobile-onboarding", "field": "next_date", "is": null },
+    { "record": "mobile-onboarding", "field": "watch_list.people", "is": ["the architect", "the tech lead"] },
+    { "record": "mobile-onboarding", "field": "kind", "is": "Product" },
+    { "record": "card-dispute-portal", "field": "kind", "is": "product" },
+    { "records": "subjects", "count": 2 },
+    { "file": "inbox/steering committee.md" },
+    { "file": "inbox/done/steering committee.md" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.title", "is": "Card dispute portal" },
+    { "file": "views/weekly/2026-03-02.md", "line": "Mobile onboarding" },
+    { "file": "views/weekly/2026-03-02.md", "line": "mobile onboarding" },
+    { "file": "views/weekly/2026-03-02.md", "line": "Savings simulator", "absent": true },
+    { "file": "views/weekly/2026-03-02.md", "line": "Mobile onboarding", "absent": true },
+    { "file": "views/weekly/2026-03-09.md", "line": "Mobile onboarding" }
+  ]
+}
