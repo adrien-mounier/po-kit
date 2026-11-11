@@ -46,6 +46,29 @@ Test 'the default connections read notes from the inbox folder and set mail and 
     Assert-Equal 'off' $connections.tracker.mode 'tracker mode'
 }
 
+Test 'every routine is a folder that an agent loads as a skill: its SKILL.md opens with its name and a description, and names no agent and no connector' {
+    $routines = @(Get-ChildItem (Join-Path $KitRoot 'routines') -Directory)
+    Assert-True ($routines.Count -gt 0) 'the kit ships no routine'
+    foreach ($routine in $routines) {
+        $text = Get-Content -LiteralPath (Join-Path $routine.FullName 'SKILL.md') -Raw -Encoding UTF8
+        Assert-True ($text -match '(?s)^---\r?\n(.+?)\r?\n---\r?\n') "the routine $($routine.Name) does not open with its name and description between two lines of three dashes"
+        $opening = $Matches[1]
+        Assert-Match $opening "(?m)^name: $([regex]::Escape($routine.Name))\s*$" "name of the routine $($routine.Name)"
+        Assert-Match $opening '(?m)^description: \S' "description of the routine $($routine.Name)"
+        foreach ($file in Get-ChildItem -LiteralPath $routine.FullName -Recurse -File) {
+            $named = [regex]::Matches((Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8), '(?i)\b(Claude|Codex|Copilot|Gemini|MCP|Outlook|Gmail|Exchange|Jira|Azure DevOps)\b') | ForEach-Object { $_.Value }
+            Assert-Equal '' "$named" "agents and connectors named in routines\$($routine.Name)\$($file.Name)"
+        }
+    }
+}
+
+Test 'the workspace rules say how the settings list the gates and the objectives' {
+    $rules = Get-Content -LiteralPath (Join-Path $Template 'AGENTS.md') -Raw -Encoding UTF8
+
+    Assert-Match $rules '`gates`: .*\["architecture review", "security review"\]' 'how gates are listed'
+    Assert-Match $rules '`objectives`: .*\{ "number": 1, "title": "[^"]+" \}' 'how objectives are listed'
+}
+
 Test 'every script of the kit is plain ASCII, so Windows PowerShell 5.1 reads it right' {
     $scripts = @(git -C $KitRoot ls-files --cached --others --exclude-standard -- '*.ps1')
     Assert-True ($scripts.Count -gt 0) 'no script found'

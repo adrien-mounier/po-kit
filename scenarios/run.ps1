@@ -28,10 +28,13 @@
 #   { "file": "<path>" }                                            the workspace holds the file
 #   { "file": "<path>", "absent": true }                            it does not
 #   { "file": "<path>", "field": "<path>", "is": <value> }          the file, read as JSON, holds this value
-# A path to a field goes down with dots, and into a list with a position from 0, or from -1 for
-# the last: watch_list.people, history[0].field, history[-1].new. A value is compared exactly: a
-# text with its case, a list with its order. Name the fields of a group one by one. The pending
-# proposal is the file state/proposal.json.
+#   { "file": "<path>", "line": "<text>" }                          a line of the file contains the text
+#   { "file": "<path>", "line": "<text>", "absent": true }          no line of the file does
+# A file is named from the workspace: the pending proposal is state/proposal.json, the portfolio
+# view is views/portfolio.md. A path to a field goes down with dots, and into a list with a
+# position from 0, or from -1 for the last: watch_list.people, history[0].field, history[-1].new.
+# A value or a text is compared exactly: a text with its case, a list with its order. Name the
+# fields of a group one by one.
 #
 # For each scenario, in a temporary folder of its own, the runner:
 # 1. installs the kit: a workspace and a skills folder, as install.ps1 does on any machine;
@@ -49,6 +52,7 @@
 #
 # Keep this file in plain ASCII: Windows PowerShell 5.1 misreads other characters in a script
 # saved without a byte order mark.
+[CmdletBinding(PositionalBinding = $false)]
 param(
     [string]$Agent,
     [switch]$Keep,
@@ -144,6 +148,11 @@ function Test-Fact($Fact, [string]$Workspace) {
         $expected = ConvertTo-FactJson $Fact.is
         $found = if ($path) { Get-FieldJson (Read-Json $path) $Fact.field } else { 'nothing: it is absent' }
         return @{ What = "${name}: $($Fact.field) is $expected"; Holds = ($found -ceq $expected); Found = $found }
+    }
+    if ($Fact.PSObject.Properties['line']) {
+        $lines = @(if ($path) { [IO.File]::ReadAllLines($path) | Where-Object { $_.Contains($Fact.line) } })
+        if ($Fact.absent) { return @{ What = "$name has no line containing `"$($Fact.line)`""; Holds = (-not $lines); Found = ($lines -join "`n") } }
+        return @{ What = "$name has a line containing `"$($Fact.line)`""; Holds = [bool]$lines; Found = $(if ($path) { 'no such line' } else { 'nothing: it is absent' }) }
     }
     if ($Fact.absent) { return @{ What = "$name is absent"; Holds = (-not $path); Found = 'it is there' } }
     @{ What = "$name is there"; Holds = [bool]$path; Found = 'it is absent' }

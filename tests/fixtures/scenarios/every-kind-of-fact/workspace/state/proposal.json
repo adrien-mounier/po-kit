@@ -1,0 +1,16 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "type": "subject",
+      "interpreted": false,
+      "fields": {
+        "title": "Card dispute portal",
+        "kind": "product",
+        "horizon": "later",
+        "evidence_level": "fact",
+        "source": { "where": "conversation with the PO", "read_on": "2026-03-02" }
+      }
+    }
+  ]
+}
