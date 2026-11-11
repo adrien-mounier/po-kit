@@ -1,0 +1,23 @@
+{
+  "format_version": 1,
+  "delays_in_days": {
+    "subject": 7,
+    "inbox_note": 2,
+    "source": 3
+  },
+  "validation_mode": "all",
+  "languages": {
+    "default": "en",
+    "sponsor": "en"
+  },
+  "per_source_cap": 50,
+  "gates": ["architecture review", "security review"],
+  "objectives": [
+    { "number": 1, "title": "Halve the time a retail customer needs to open an account" },
+    { "number": 2, "title": "Give every retail customer a view of their savings options" }
+  ],
+  "sponsor": {
+    "name": "The sponsor",
+    "email": "sponsor@example.com"
+  }
+}

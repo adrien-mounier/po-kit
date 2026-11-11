@@ -1,27 +1,5 @@
 # preview: shows the pending proposal as a numbered table. It writes nothing.
 
-function Format-Value($Value) {
-    # A field value on one line: lists joined by commas, nested fields between parentheses.
-    if ($Value -is [array]) { return (@($Value | ForEach-Object { Format-Value $_ }) -join ', ') }
-    # A value completed by the register tool holds its nested fields as a dictionary.
-    if ($Value -is [System.Collections.IDictionary]) { $Value = [pscustomobject]$Value }
-    if ($Value -is [System.Management.Automation.PSCustomObject]) { return '(' + (Format-Fields $Value) + ')' }
-    if ($Value -is [bool]) { return "$Value".ToLower() }
-    "$Value" -replace '\s*\r?\n\s*', ' '
-}
-
-function Format-Fields($Fields, [string[]]$Except) {
-    # The fields that hold something: a record as it is recorded carries every field, most empty.
-    $given = $Fields.PSObject.Properties | Where-Object { $Except -notcontains $_.Name -and "$(Format-Value $_.Value)" }
-    @($given | ForEach-Object { "$($_.Name): $(Format-Value $_.Value)" }) -join '; '
-}
-
-function Format-Change($Change) {
-    # A field that an update changes, with its current and its proposed value.
-    $current, $proposed = foreach ($value in $Change.previous, $Change.new) { $text = Format-Value $value; if ($text -and $text -ne '()') { $text } else { '(none)' } }
-    "$($Change.field): $current -> $proposed"
-}
-
 Assert-RegisterCommitted
 $operations = @(Get-PendingProposal)
 $number = 0

@@ -23,3 +23,12 @@ It works on the workspace it sits in. From this folder:
 A refused proposal lists its reasons and writes nothing: correct the proposal and preview again.
 
 Each command is one file under `tools\commands`; its first line says what it does.
+
+## The settings
+
+`settings.json` is the PO's, edited by hand. Two of its lists bound what a record may say:
+
+- `gates`: the names of the organisation's gates, as `["architecture review", "security review"]`. A subject states a gate under one of these names.
+- `objectives`: the PO's objectives, each as `{ "number": 1, "title": "Halve the time to open an account" }`. A record names an objective by its number.
+
+When the PO names a gate or an objective that is not listed, the PO adds it there first.

@@ -1,0 +1,17 @@
+{
+  "routine": "subject",
+  "prompt": "Two changes to my subjects. Move the Payments API contribution from Next to Now. And close the Branch opening hours page: it has been handed over to the branch network. I accept both changes as your preview will show them: apply them without asking me again.",
+  "expect": [
+    { "record": "payments-api-contribution", "field": "horizon", "is": "now" },
+    { "record": "payments-api-contribution", "field": "history[0].field", "is": "horizon" },
+    { "record": "payments-api-contribution", "field": "history[0].previous", "is": "next" },
+    { "record": "payments-api-contribution", "field": "history[0].new", "is": "now" },
+    { "record": "payments-api-contribution", "field": "status", "is": "active" },
+    { "record": "branch-opening-hours-page", "field": "status", "is": "closed" },
+    { "record": "mobile-onboarding", "field": "history", "is": [] },
+    { "records": "subjects", "count": 3 },
+    { "file": "views/portfolio.md", "line": "Payments API contribution [payments-api-contribution]" },
+    { "file": "views/portfolio.md", "line": "Branch opening hours page", "absent": true },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

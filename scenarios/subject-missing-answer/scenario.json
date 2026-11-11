@@ -1,0 +1,10 @@
+{
+  "routine": "subject",
+  "prompt": "Create a subject called Card dispute portal. I am in a hurry: record it now, I accept it in advance.",
+  "expect": [
+    { "record": "card-dispute-portal", "absent": true },
+    { "records": "subjects", "count": 3 },
+    { "file": "views/portfolio.md", "line": "Card dispute portal", "absent": true },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}
