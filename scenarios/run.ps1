@@ -13,9 +13,14 @@
 # Each scenario starts the agent once, and the agent costs money: the tests of the kit, which are
 # free, are tests\run.ps1.
 #
+# The command is the machine's own. On the machine where the kit is built the agent is Claude
+# Code, started without that machine's plugins, hooks and connectors, with the tools a routine
+# needs and a spending limit per scenario:
+#   -Agent "claude -p --model haiku --output-format json --no-session-persistence --setting-sources project --strict-mcp-config --allowedTools Read,Write,Edit,Glob,Grep,Bash,PowerShell --max-budget-usd 0.25"
+#
 # A scenario is a folder that holds scenario.json:
 #   { "routine": "subject",    the routine to follow: the name of a folder under routines
-#     "prompt": "...",         what the PO says, every answer included: nobody answers the agent
+#     "prompt": "...",         all that the PO says: nobody answers a question of the agent
 #     "expect": [ ... ] }      the expected facts
 # and, when the scenario needs them, a folder workspace: its own files (notes for the inbox, a
 # pending proposal), laid over the Example Bank workspace.
@@ -39,8 +44,8 @@
 # For each scenario, in a temporary folder of its own, the runner:
 # 1. installs the kit: a workspace and a skills folder, as install.ps1 does on any machine;
 # 2. lays the Example Bank workspace over it: the files under example-bank\workspace, the register
-#    that example-bank\register.proposal.json describes, applied by the register tool, then the
-#    scenario's own files;
+#    that example-bank\register.proposal.json describes, applied by the register tool on the day
+#    of the run, then the scenario's own files;
 # 3. starts the agent in the workspace, with a prompt that names the routine and gives what the PO
 #    says. What the agent prints is kept beside the workspace, in agent-output.txt;
 # 4. checks each expected fact, and that the register holds only what the register tool committed.

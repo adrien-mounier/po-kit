@@ -43,6 +43,17 @@ Test 'the scenario "modify" passes when one subject moves to Now with a history 
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
 }
 
+Test 'the scenario "missing answer" passes when the agent records nothing, and fails when it records a subject the PO did not describe' {
+    $run = Invoke-Scenarios -Agent $FakeAgent subject-missing-answer
+
+    Assert-Equal 0 $run.ExitCode "exit code when nothing is recorded, with output: $($run.Output)"
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Proposal `"$Fixtures\scenarios\every-kind-of-fact\workspace\state\proposal.json`"" subject-missing-answer
+
+    Assert-Match $run.Output '  FAIL  record card-dispute-portal is absent' 'the subject recorded on a guess'
+    Assert-Equal 1 $run.ExitCode 'exit code when the subject is recorded on a guess'
+}
+
 Test 'when the agent does nothing, each fact is reported as passed or failed with what was found, the folder is kept and the run fails' {
     $run = Invoke-Scenarios -Agent $FakeAgent subject-modify
 
