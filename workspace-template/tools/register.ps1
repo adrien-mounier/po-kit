@@ -2,9 +2,11 @@
 #
 #   powershell -NoProfile -File tools\register.ps1 <command> [arguments] [-Today yyyy-mm-dd]
 #
-# It works on the workspace it sits in. Each command is one file under tools\commands, run with
-# everything defined here in scope and its own arguments in $Arguments: adding a command means
-# adding a file. -Today sets the date this run treats as today.
+# It works on the workspace it sits in. -Today sets the date this run treats as today.
+#
+# Each command is one file under tools\commands: adding a command means adding a file. A command
+# runs with everything defined here in scope ($Workspace, $Settings, $Today, the functions) and
+# its own arguments in $Arguments. It ends a failed run with Stop-Run.
 #
 # Keep this file and the commands in plain ASCII: Windows PowerShell 5.1 misreads other
 # characters in a script saved without a byte order mark.
@@ -32,7 +34,10 @@ function Stop-Run([string[]]$Lines) {
 }
 
 function Read-JsonFile([string]$Path) {
-    Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+    # Strictly UTF-8: a file saved in another encoding stops the run instead of being misread.
+    # A byte order mark is tolerated on the way in.
+    $strictUtf8 = New-Object System.Text.UTF8Encoding $false, $true
+    $strictUtf8.GetString([IO.File]::ReadAllBytes($Path)).TrimStart([char]0xFEFF) | ConvertFrom-Json
 }
 
 function Write-TextFile([string]$Path, [string]$Text) {
@@ -169,7 +174,7 @@ function Get-PendingProposal {
     $reasons = @()
     $operations = @()
     try { $operations = @((Read-JsonFile $ProposalPath).operations | Where-Object { $null -ne $_ }) }
-    catch { $reasons += 'The proposal is not valid JSON.' }
+    catch { $reasons += 'The proposal is not valid JSON written as UTF-8.' }
     if (-not $reasons -and -not $operations) { $reasons += 'The proposal holds no operation.' }
 
     $line = 0

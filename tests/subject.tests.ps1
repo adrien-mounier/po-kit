@@ -296,7 +296,7 @@ Test 'a proposal the register tool cannot read as operations is refused' {
     $path = Join-Path $ws 'state\proposal.json'
 
     [IO.File]::WriteAllText($path, '{ "operations": [ { "op": "create" ')
-    Assert-Refused $ws @('The proposal is not valid JSON')
+    Assert-Refused $ws @('The proposal is not valid JSON written as UTF-8')
 
     Set-Proposal $ws @{ operation = @(New-SubjectOperation) }
     Assert-Refused $ws @("The proposal holds no operation")
@@ -311,6 +311,20 @@ Test 'a proposal the register tool cannot read as operations is refused' {
         "Line 2: unknown record type 'project'",
         "Line 3: the operation gives no fields"
     )
+}
+
+Test 'a proposal saved in another encoding than UTF-8 is refused instead of being misread' {
+    $ws = New-TestWorkspace
+    $path = Join-Path $ws 'state\proposal.json'
+    $text = [IO.File]::ReadAllText((Join-Path $Fixtures 'create-subject.proposal.json'))
+
+    [IO.File]::WriteAllText($path, $text, [Text.Encoding]::GetEncoding(1252))
+    Assert-Refused $ws @('The proposal is not valid JSON written as UTF-8')
+
+    # A byte order mark is tolerated on the way in.
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $true))
+    $run = Invoke-Register $ws preview
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
 }
 
 Test 'with no pending proposal, preview and apply say so and fail' {
