@@ -187,6 +187,23 @@ Test 'the scenario "collect waits for the PO" passes when the proposal stays pen
     Assert-Equal 1 $run.ExitCode 'exit code when the proposal is applied unasked'
 }
 
+Test 'the scenario "collect and drop a line" passes when the line kept is recorded alone and the note is filed, and fails when the line dropped is recorded too' {
+    $note = 'pilot-preparation.md'
+    $kept = New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }
+    $dropped = New-NoteOperation decision $note @{ title = 'Choose the branches of the pilot'; needed_from = 'the sponsor'; needed_by = '2026-03-27'; date_of_fact = '2026-03-12' }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($kept)) collect-drop-a-line
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    record C-$Year-002: owner is `"the architect`"" 'the line kept'
+    Assert-Match $run.Output "  ok    file inbox/done/$Month/pilot-preparation\.md is there" 'the note is filed all the same'
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $kept, $dropped) collect-drop-a-line
+
+    Assert-Match $run.Output '  FAIL  register/decisions holds 0 record\(s\)\n        found: 1 record\(s\)' 'the line the PO dropped'
+    Assert-Equal 1 $run.ExitCode 'exit code when the line dropped is recorded'
+}
+
 Test 'the scenario "collect with a pending proposal" passes when the pending proposal is left as it is, and fails when the collect replaces it' {
     $run = Invoke-Scenarios -Agent $FakeAgent collect-pending-proposal
 

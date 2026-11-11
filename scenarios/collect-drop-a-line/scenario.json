@@ -1,0 +1,13 @@
+{
+  "routine": "collect",
+  "prompt": "Collect. I accept the commitments that your preview will show, and I drop every other line: apply without asking me again.",
+  "expect": [
+    { "record": "C-{year}-002", "field": "owner", "is": "the architect" },
+    { "record": "C-{year}-002", "field": "due_date", "is": "2026-03-26" },
+    { "records": "commitments", "count": 2 },
+    { "records": "decisions", "count": 0 },
+    { "records": "risks", "count": 0 },
+    { "file": "inbox/done/{month}/pilot-preparation.md" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}
