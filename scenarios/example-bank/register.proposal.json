@@ -1,0 +1,84 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "type": "subject",
+      "interpreted": false,
+      "fields": {
+        "title": "Mobile onboarding",
+        "kind": "product",
+        "horizon": "now",
+        "clearance": "cleared",
+        "cleared_by": "the sponsor",
+        "cleared_on": "2026-02-20",
+        "evidence_level": "fact",
+        "source": { "where": "conversation with the PO", "read_on": "2026-03-02" },
+        "objectives": [1],
+        "owning_entity": "Example Bank Retail",
+        "sponsor": "the sponsor",
+        "decider": "the retail steering committee",
+        "gates": [
+          { "name": "architecture review", "state": "done" },
+          { "name": "security review", "state": "planned" }
+        ],
+        "next_step": "Present the target journey to the retail steering committee",
+        "watch_list": {
+          "people": ["the tech lead", "the architect"],
+          "keywords": ["onboarding"],
+          "tracker_projects": ["ONB"]
+        }
+      }
+    },
+    {
+      "op": "create",
+      "type": "subject",
+      "interpreted": false,
+      "fields": {
+        "title": "Payments API contribution",
+        "kind": "contribution",
+        "horizon": "next",
+        "clearance": "pending",
+        "evidence_level": "fact",
+        "source": { "where": "conversation with the PO", "read_on": "2026-03-02" },
+        "owning_entity": "Example Bank Payments",
+        "sponsor": "the sponsor",
+        "decider": "the head of payments",
+        "gates": [
+          { "name": "architecture review", "state": "planned" },
+          { "name": "security review", "state": "unknown" }
+        ],
+        "next_step": "Agree the scope of the contribution with the head of payments",
+        "watch_list": {
+          "people": ["the head of payments"],
+          "keywords": ["payments API"],
+          "tracker_projects": ["PAY"]
+        }
+      }
+    },
+    {
+      "op": "create",
+      "type": "subject",
+      "interpreted": false,
+      "fields": {
+        "title": "Branch opening hours page",
+        "kind": "service",
+        "horizon": "later",
+        "clearance": "none",
+        "evidence_level": "fact",
+        "source": { "where": "conversation with the PO", "read_on": "2026-03-02" },
+        "owning_entity": "Example Bank Branch Network",
+        "decider": "the branch network manager",
+        "gates": [
+          { "name": "architecture review", "state": "not required" },
+          { "name": "security review", "state": "not required" }
+        ],
+        "next_step": "Hand the page over to the branch network",
+        "watch_list": {
+          "people": ["the branch network manager"],
+          "keywords": ["opening hours"],
+          "tracker_projects": []
+        }
+      }
+    }
+  ]
+}

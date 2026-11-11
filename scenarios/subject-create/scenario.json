@@ -1,0 +1,18 @@
+{
+  "routine": "subject",
+  "prompt": "Create a subject. Its title is Savings simulator. It is a product I steer. Horizon: next. Clearance: cleared by the sponsor on 2026-02-27. Gates: the architecture review is planned, and nobody knows yet about the security review. Watch list: two people, the tech lead and the head of savings; one keyword, savings simulator; one tracker project, SAV. Next step: write the framing note for the sponsor, with no date yet. It serves objective 2. I accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "record": "savings-simulator", "field": "kind", "is": "product" },
+    { "record": "savings-simulator", "field": "horizon", "is": "next" },
+    { "record": "savings-simulator", "field": "clearance", "is": "cleared" },
+    { "record": "savings-simulator", "field": "cleared_by", "is": "the sponsor" },
+    { "record": "savings-simulator", "field": "cleared_on", "is": "2026-02-27" },
+    { "record": "savings-simulator", "field": "watch_list.people", "is": ["the tech lead", "the head of savings"] },
+    { "record": "savings-simulator", "field": "watch_list.keywords", "is": ["savings simulator"] },
+    { "record": "savings-simulator", "field": "watch_list.tracker_projects", "is": ["SAV"] },
+    { "record": "savings-simulator", "field": "objectives", "is": [2] },
+    { "record": "savings-simulator", "field": "status", "is": "active" },
+    { "records": "subjects", "count": 4 },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}
