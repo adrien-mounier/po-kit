@@ -23,9 +23,10 @@
 #     "prompt": "...",         all that the PO says: nobody answers a question of the agent
 #     "expect": [ ... ] }      the expected facts
 # and, when the scenario needs them, a folder workspace: its own files (notes for the inbox, a
-# pending proposal), laid over the Example Bank workspace. Mail and tickets are supplied there as
-# folders of exported files, exports\mail and exports\tracker, with the connections that declare
-# them and, in state\last-collect.json, how far an earlier collect read them.
+# pending proposal, settings of its own), laid over the Example Bank workspace. Mail and tickets
+# are supplied there as folders of exported files, exports\mail and exports\tracker, with the
+# connections that declare them and, in state\last-collect.json, how far an earlier collect read
+# them.
 #
 # An expected fact is one of:
 #   { "record": "<identifier>" }                                    the register holds the record
