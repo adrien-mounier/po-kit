@@ -51,6 +51,11 @@ function Get-ToolsSnapshot([string]$Folder) {
     (@((Get-WorkspaceSnapshot $Folder) -split "`n") -notlike '\kit-version.txt *') -join "`n"
 }
 
+function Get-RoutineSnapshot([string]$Folder) {
+    # The files of a routine under a folder, without the mark the installer leaves in what it installs.
+    (@((Get-WorkspaceSnapshot $Folder) -split "`n") -notlike '\installed-by-po-kit.txt *') -join "`n"
+}
+
 function Get-DataSnapshot([string]$Workspace) {
     # Every file of the workspace that the kit does not own, with its content hash.
     (@((Get-WorkspaceSnapshot $Workspace) -split "`n") -notmatch '^\\(tools\\|AGENTS\.md |CLAUDE\.md )') -join "`n"
@@ -198,10 +203,52 @@ Test 'every routine of the kit is copied into the skills folder given, beside th
     Assert-True ($routines -contains 'collect' -and $routines -contains 'weekly-synthesis') "the kit of this test lacks its routines: $routines"
     foreach ($routine in $routines) {
         Assert-True (Test-Path (Join-Path $to.Skills $routine)) "the routine $routine was not copied"
-        Assert-Equal (Get-WorkspaceSnapshot (Join-Path $kit "routines\$routine")) (Get-WorkspaceSnapshot (Join-Path $to.Skills $routine)) "files of the routine $routine"
+        Assert-Equal (Get-WorkspaceSnapshot (Join-Path $kit "routines\$routine")) (Get-RoutineSnapshot (Join-Path $to.Skills $routine)) "files of the routine $routine"
+        Assert-True (Test-Path (Join-Path $to.Skills "$routine\installed-by-po-kit.txt")) "the routine $routine does not carry the mark of the installer"
     }
     Assert-Equal $before (Get-WorkspaceSnapshot $own) "the PO's own skill"
     Assert-Equal ((@('a-skill-of-the-po') + $routines | Sort-Object) -join ' ') ((Get-ChildItem $to.Skills -Force | Sort-Object Name | ForEach-Object { $_.Name }) -join ' ') 'content of the skills folder'
+}
+
+Test 'a folder of the skills folder that carries the name of a routine and was not installed by the kit is left as it is: the installer names it and changes nothing' {
+    $to = New-InstallTarget
+    $own = Join-Path $to.Skills 'weekly'
+    Set-TestFile (Join-Path $own 'SKILL.md') "# The weekly routine the PO wrote`n"
+    Set-TestFile (Join-Path $own 'notes\my template.md') "Mine.`n"
+    $before = Get-WorkspaceSnapshot $to.Skills
+
+    $run = Invoke-Install $KitRoot -Workspace $to.Workspace -SkillsFolder $to.Skills
+
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output ([regex]::Escape($own)) 'the folder named'
+    Assert-Match $run.Output 'Nothing was installed' 'what the PO is told'
+    Assert-Equal $before (Get-WorkspaceSnapshot $to.Skills) 'files of the skills folder'
+    Assert-True (-not (Test-Path $to.Workspace)) 'a workspace was created'
+
+    # Once the PO has moved the folder away, the kit installs its routine, and replaces it at the next run.
+    Rename-Item $own 'my-weekly'
+    foreach ($time in 'first', 'second') {
+        $run = Invoke-Install $KitRoot -Workspace $to.Workspace -SkillsFolder $to.Skills
+        Assert-Equal 0 $run.ExitCode "exit code of the $time run once the folder is moved away, with output: $($run.Output)"
+    }
+    Assert-Equal (Get-FileHash (Join-Path $KitRoot 'routines\weekly\SKILL.md')).Hash (Get-FileHash (Join-Path $to.Skills 'weekly\SKILL.md')).Hash "the routine installed against the kit's"
+    Assert-True (Test-Path (Join-Path $to.Skills 'my-weekly\notes\my template.md')) "the PO's own folder was touched"
+}
+
+Test 'a clone of the workspace keeps every file as it was written, whatever the line-ending setting of the machine that clones it' {
+    $to = New-InstallTarget
+    $run = Invoke-Install $KitRoot -Workspace $to.Workspace -SkillsFolder $to.Skills
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $ws = $to.Workspace
+    Set-TestFile (Join-Path $ws 'inbox\done\2026-03\call with the sponsor.md') "The sponsor asks for a date.`nNo date is confirmed.`n"
+    Set-TestFile (Join-Path $ws 'inbox\done\2026-03\call with the tech lead.md') "The tech lead confirms the release date.`r`nThe demo is on Friday.`r`n"
+    git -C $ws add -A
+    git -C $ws commit -q -m 'Two notes filed'
+
+    $clone = Join-Path (Split-Path -Parent $ws) 'clone of the workspace'
+    git clone -q -c core.autocrlf=true $ws $clone
+
+    Assert-Equal (Get-WorkspaceSnapshot $ws) (Get-WorkspaceSnapshot $clone) 'files of the clone'
 }
 
 Test 'an update leaves records, inbox notes, views, state, settings and connections byte-identical, and replaces the kit-owned files' {
@@ -221,7 +268,7 @@ Test 'an update leaves records, inbox notes, views, state, settings and connecti
         Assert-Equal (Get-FileHash (Join-Path $template $file)).Hash (Get-FileHash (Join-Path $story.Workspace $file)).Hash "$file against the kit's"
     }
     Assert-Equal 'v2' (Get-Content -LiteralPath (Join-Path $story.Workspace 'tools\kit-version.txt') -Raw).Trim() 'kit version recorded'
-    Assert-Equal (Get-WorkspaceSnapshot (Join-Path $story.Kit 'routines\collect')) (Get-WorkspaceSnapshot (Join-Path $story.Skills 'collect')) 'files of the routine collect'
+    Assert-Equal (Get-WorkspaceSnapshot (Join-Path $story.Kit 'routines\collect')) (Get-RoutineSnapshot (Join-Path $story.Skills 'collect')) 'files of the routine collect'
     Assert-True (Test-Path (Join-Path $story.Skills 'weekly-synthesis\SKILL.md')) 'the routine that version 2 brings was not copied'
 }
 

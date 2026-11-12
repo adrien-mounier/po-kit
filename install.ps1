@@ -7,10 +7,12 @@
 #   -SkillsFolder  the folder where the agent of this machine looks for its skills.
 #
 # Run again, it replaces what the kit owns with the kit's current version, and nothing else:
-#   in the workspace       tools\, AGENTS.md and CLAUDE.md, committed together
+#   in the workspace       tools\, AGENTS.md, CLAUDE.md and .gitattributes, committed together
 #   in the skills folder   one folder per routine of the kit, named after it
 # The register, the inbox, the views, the state, the settings and the connections are the PO's:
 # an update never touches them. The workspace records the kit version in tools\kit-version.txt.
+# A folder of the skills folder is the kit's when the installer left its mark in it: one that
+# carries the name of a routine without that mark stops the installation, and stays as it is.
 #
 # The last step runs the installed register tool once, harmlessly. When the machine's execution
 # policy refuses, the installation stops and the PO asks their IT team: the installer never
@@ -24,6 +26,9 @@ $ErrorActionPreference = 'Stop'
 $Kit = $PSScriptRoot
 $Template = Join-Path $Kit 'workspace-template'
 $KitOwned = 'tools', 'AGENTS.md', 'CLAUDE.md'
+# The mark the installer leaves in each routine folder it installs.
+$Mark = 'installed-by-po-kit.txt'
+$Utf8 = New-Object System.Text.UTF8Encoding $false
 
 function Stop-Install([string[]]$Lines) {
     # Says why the installation cannot go on, and ends it with a failure code.
@@ -72,6 +77,16 @@ if (-not (Test-CommitterKnown $(if (Test-Path -LiteralPath (Join-Path $Workspace
         '  git config --global user.name "Your Name"', '  git config --global user.email "you@example.com"'
 }
 
+# A routine is a folder under routines; it becomes the skill of the same name. A folder of that
+# name that the installer did not install is somebody's own skill: it is not replaced.
+$routines = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'routines') -Directory)
+$notTheKits = @($routines | ForEach-Object { Join-Path $SkillsFolder $_.Name } |
+        Where-Object { (Test-Path -LiteralPath $_) -and -not (Test-Path -LiteralPath (Join-Path $_ $Mark)) })
+if ($notTheKits) {
+    Stop-Install (@('The skills folder already holds, under the name of a routine of the kit, what the kit did not install:') +
+        @($notTheKits | ForEach-Object { "  $_" }) + 'Nothing was installed. Move or rename it, then run this installer again.')
+}
+
 # --- The workspace ------------------------------------------------------------------------------
 
 if (-not (Test-Path -LiteralPath $Workspace) -or -not (Get-ChildItem -LiteralPath $Workspace -Force)) {
@@ -86,12 +101,16 @@ elseif (-not (Test-Path -LiteralPath (Join-Path $Workspace '.git')) -or -not (Te
 }
 
 foreach ($name in $KitOwned) { Copy-Replacing (Join-Path $Template $name) (Join-Path $Workspace $name) }
-[IO.File]::WriteAllText((Join-Path $Workspace 'tools\kit-version.txt'), $version + [Environment]::NewLine, (New-Object System.Text.UTF8Encoding $false))
+[IO.File]::WriteAllText((Join-Path $Workspace 'tools\kit-version.txt'), $version + [Environment]::NewLine, $Utf8)
+# A clone of the workspace keeps every file exactly as it was written too, whatever the settings
+# of the machine that clones it: the workspace says so itself, in a file the kit owns. The template
+# cannot hold that file, which would rule the template in the kit's own history.
+[IO.File]::WriteAllText((Join-Path $Workspace '.gitattributes'), "* -text`n", $Utf8)
 
 # The first commit holds the whole new workspace. An update commits what the kit owns and only
 # that, so the history shows which version of the register tool wrote which records.
 $first = -not (& git -C $Workspace rev-parse -q --verify HEAD)
-$paths = if ($first) { , '.' } else { $KitOwned }
+$paths = if ($first) { , '.' } else { $KitOwned + '.gitattributes' }
 Invoke-Git add -A -- $paths
 & git -C $Workspace diff --cached --quiet -- $paths
 if ($LASTEXITCODE -ne 0) {
@@ -99,13 +118,16 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 # --- The routines -------------------------------------------------------------------------------
-# A routine is a folder under routines; it becomes the skill of the same name.
+# Each routine replaces the folder installed before, and carries the mark of the installer.
 # ponytail: a routine the kit no longer ships stays in the skills folder. Keep a list of what was
 # installed if the kit ever retires a routine.
 
 New-Item -ItemType Directory -Path $SkillsFolder -Force | Out-Null
-$routines = @(Get-ChildItem -LiteralPath (Join-Path $Kit 'routines') -Directory)
-foreach ($routine in $routines) { Copy-Replacing $routine.FullName (Join-Path $SkillsFolder $routine.Name) }
+foreach ($routine in $routines) {
+    $installed = Join-Path $SkillsFolder $routine.Name
+    Copy-Replacing $routine.FullName $installed
+    [IO.File]::WriteAllText((Join-Path $installed $Mark), "PO Kit $version installed this folder, and replaces it whole at every update.`r`n", $Utf8)
+}
 
 # --- The register tool must run here ------------------------------------------------------------
 
