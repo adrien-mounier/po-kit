@@ -34,7 +34,7 @@ Test 'verify succeeds on a stored view that carries its stamp and cites, in brac
     Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
 }
 
-Test 'verify reads square brackets as a citation only when all they hold is record identifiers: a ticket reference in a title is text, in the portfolio view and in a synthesis' {
+Test 'verify reads as text what square brackets hold that is no record identifier: a ticket reference in a title, in the portfolio view and in a synthesis' {
     $ws = New-TestWorkspaceWithWeek
     Set-Proposal $ws @{ operations = @(
             (New-SubjectOperation @{ title = 'Card dispute form [REQ#4521]' }),
@@ -86,6 +86,26 @@ Test 'verify fails when a cited record is superseded, or is a numbered identifie
         ) -join "`n") ($problems -join "`n") 'problems listed'
     Assert-True ($run.Output -notmatch 'C-2026-003') "the output names a record that is cited rightly: $($run.Output)"
     Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+}
+
+Test 'verify fails on a numbered identifier that is superseded or missing wherever it stands between square brackets: beside a ticket reference, after a semicolon, among words' {
+    $ws = New-TestWorkspaceWithWeek
+    $view = Set-StoredView $ws (@('# Weekly synthesis', '') + (Get-ExportedStamp $ws) + @(
+            '', '## Progress and commitments', '',
+            'The onboarding pilot is presented on 20 March [C-2026-001, REQ#4521].',
+            'The kiosks are ordered [C-2026-003; C-2026-099].',
+            'The architecture board decided [see D-2025-031].'
+        ))
+
+    $run = Invoke-Register $ws verify $view
+
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    $problems = @($run.Output -split "`n" | Where-Object { $_ -like '- *' })
+    Assert-Equal (@(
+            '- C-2026-001 is superseded by D-2026-005.'
+            '- C-2026-099 is not in the register.'
+            '- D-2025-031 is not in the register.'
+        ) -join "`n") ($problems -join "`n") 'problems listed'
 }
 
 Test 'verify fails when the stamp is absent, or is not whole as the register tool gives it' {
