@@ -1,5 +1,6 @@
 # apply: validates the pending proposal again, settles its collect, writes its records,
-# regenerates the portfolio view, runs the check, commits and pushes to the backup.
+# regenerates the portfolio view, runs the check, commits and pushes to the backup. The commit
+# also saves the weekly syntheses stored since the last apply.
 #
 #   apply          every line of the proposal
 #   apply 1 3      lines 1 and 3 only, numbered as preview shows them; the others are dropped
@@ -130,7 +131,9 @@ Invoke-Git add -A register inbox state ':(exclude)state/proposal.json'
 Write-PortfolioView $labels
 # So is the check report. What the check finds never undoes the apply: it is said, and committed.
 $check = Write-CheckReport $labels
-Invoke-Git add views/portfolio.md views/check-report.md
+# The commit takes every view: a weekly synthesis stored since the last apply, under views\weekly,
+# is saved and pushed with the rest. The next synthesis starts its period from it.
+Invoke-Git add -A views
 Invoke-Git commit -q -m "Apply proposal: $($operations.Count - $left.Count) operation(s)" -m ($applied -join "`n")
 if ($waiting) {
     # The lines that wait become the pending proposal, numbered again from 1. Each one still names

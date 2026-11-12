@@ -88,6 +88,49 @@ Test 'export says how each source is covered: its mode, whether the last collect
         ) -join "`n") (Get-Section $run.Output 'Coverage per source') 'coverage before any collect'
 }
 
+Test 'export says of a source that the last collect stopped at the cap, so that the synthesis can say it was read only in part' {
+    $ws = New-TestWorkspaceWithSubject
+    Set-Proposal $ws @{
+        collected_at = '2026-03-10T08:30:00+01:00'
+        sources_read = @(
+            @{ source = 'notes'; cutoff = '2026-03-10T08:30:00+01:00'; items = 1 },
+            @{ source = 'mail'; cutoff = '2026-03-09T16:45:00+01:00'; items = 50; cap_reached = $true }
+        )
+    }
+    $collect = Invoke-Register $ws apply -Today 2026-03-10
+    Assert-Equal 0 $collect.ExitCode "exit code of the collect, with output: $($collect.Output)"
+
+    $run = Invoke-Register $ws export 2026-03-10 -Now $Tuesday
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Equal (@(
+            '- notes | mode: folder | covered: yes | read up to 2026-03-10T08:30:00+01:00 by the collect of 2026-03-10T08:30:00+01:00: 1 item(s)'
+            '- mail | mode: off | covered: yes | read up to 2026-03-09T16:45:00+01:00 by the collect of 2026-03-10T08:30:00+01:00: 50 item(s), cap reached: the rest waits for the next collect'
+            '- tracker | mode: off | covered: no | never read'
+        ) -join "`n") (Get-Section $run.Output 'Coverage per source') 'coverage after a collect that stopped at the cap'
+}
+
+Test 'export ends with the portfolio view as view writes it under its stamp, in the language of the sponsor or in the language asked' {
+    $ws = New-TestWorkspaceWithWeek
+    $settings = Read-Json (Join-Path $ws 'settings.json')
+    $settings.languages.sponsor = 'fr'
+    Write-Json (Join-Path $ws 'settings.json') $settings
+
+    foreach ($asked in @{ arguments = @(); language = 'fr'; now = 'Maintenant' }, @{ arguments = @('en'); language = 'en'; now = 'Now' }) {
+        $arguments = $asked.arguments
+        $run = Invoke-Register $ws export 2026-03-10 @arguments -Now $Tuesday
+        Assert-Equal 0 $run.ExitCode "exit code of export $arguments, with output: $($run.Output)"
+        $view = Invoke-Register $ws view $asked.language -Now $Tuesday
+        Assert-Equal 0 $view.ExitCode "exit code of view $($asked.language), with output: $($view.Output)"
+
+        # The view: its title, its stamp, then every subject under its horizon.
+        $written = [IO.File]::ReadAllText((Join-Path $ws 'views\portfolio.md'), $Utf8) -replace '\r\n', "`n"
+        $horizons = $written.Substring($written.IndexOf("## $($asked.now)`n"))
+        Assert-Match $horizons '\| Mobile onboarding \[mobile-onboarding\] +\| ' "the view written in '$($asked.language)'"
+        Assert-True ($run.Output + "`n").EndsWith("`n## Portfolio view`n`n$horizons") "the export $arguments does not end with the portfolio view in '$($asked.language)':`n$($run.Output)"
+    }
+}
+
 Test 'export counts the records attached to each objective of the settings' {
     # Three records name the objective 3: one is closed. The only record that names the objective 5
     # is attached to a closed subject.

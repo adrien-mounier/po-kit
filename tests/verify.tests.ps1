@@ -93,6 +93,22 @@ Test 'verify recognises the stamp of the views that the register tool writes, in
     }
 }
 
+Test 'the next apply saves a stored weekly synthesis in the history of the workspace, and pushes it to the backup with the rest' {
+    $ws = New-TestWorkspaceWithWeek
+    $backup = Join-Path $TestRoot ('backup-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+    git init -q --bare $backup
+    git -C $ws remote add backup $backup
+    Set-StoredView $ws (@('# Portfolio view', '') + (Get-ExportedStamp $ws) + @('', 'The sponsor suspended the presentation of the pilot [D-2026-005].')) | Out-Null
+    Set-Proposal $ws @{ operations = @(New-RecordOperation commitment @{ title = 'Send the kiosk quote to the sponsor'; owner = 'the PO' }) }
+
+    $run = Invoke-Register $ws apply -Today 2026-03-11
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $pushed = @(git --git-dir $backup show --name-only --format= refs/heads/main)
+    Assert-True ($pushed -contains 'views/weekly/2026-03-10.md') "the last commit of the backup lacks the weekly synthesis: $pushed"
+    Assert-Equal '' (@(git -C $ws status --porcelain --untracked-files=all views) -join ' ') 'views left out of the commit'
+}
+
 Test 'verify without a view, or with a path that holds no file, is refused' {
     $ws = New-TestWorkspaceWithWeek
 

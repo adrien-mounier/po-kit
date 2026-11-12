@@ -2,7 +2,7 @@
 # nothing.
 #
 #   export 2026-03-03       the register as it is, and what changed since that date, included
-#   export 2026-03-03 fr    with the stamp in another language than languages.sponsor of settings.json
+#   export 2026-03-03 fr    in another language than languages.sponsor of settings.json
 #
 # The same register state, the same date and the same moment given as -Now print the same export.
 #
@@ -14,14 +14,17 @@
 #   ## Open commitments       with owner and due date
 #   ## Pending decisions      under one "### Awaited from: <person>" per person awaited
 #   ## Open risks             with severity, the urgent ones first
-#   ## Coverage per source    one line per source of connections.json
+#   ## Coverage per source    one line per source of connections.json, with the cap when the last
+#                             collect that read the source stopped there
 #   ## Records per objective  one line per objective of settings.json
+#   ## Portfolio view         the portfolio view as view writes it under its stamp, ready to copy:
+#                             from its first horizon to the last line of the export
 # A section that holds nothing says "None."
 #
 # A record is one line: its title, its identifier in brackets as a view cites it, its type, its
 # evidence level, then what it says. A value the synthesis must state and the record does not give
-# is written "missing". Only the stamp is in the language: the rest is read by the agent, as the
-# preview is.
+# is written "missing". Only the stamp and the portfolio view are in the language: the rest is read
+# by the agent, as the preview is.
 
 function Get-OrMissing($Value) {
     # A value on one line, or the word that says the record does not give it.
@@ -112,7 +115,7 @@ Write-Section 'Open risks' @(foreach ($urgent in $true, $false) { $risks | Where
 
 # "covered" is whether the last collect read the source, as the stamp counts it.
 Write-Section 'Coverage per source' @(Get-Coverage | ForEach-Object {
-        $read = if ($_.read) { "read up to $($_.read.cutoff) by the collect of $($_.read.collected_at): $($_.read.items) item(s)" } else { 'never read' }
+        $read = if ($_.read) { "read up to $($_.read.cutoff) by the collect of $($_.read.collected_at): $($_.read.items) item(s)$(Format-CapReached $_.read)" } else { 'never read' }
         "- $($_.source) | mode: $($_.mode) | covered: $(if ($_.covered) { 'yes' } else { 'no' }) | $read"
     })
 
@@ -120,3 +123,6 @@ Write-Section 'Records per objective' @($Settings.objectives | Where-Object { $_
         $number = $_.number
         "- Objective $number, $(Format-Value $_.title): $(@($records | Where-Object { $_.objectives -contains $number }).Count) record(s)"
     })
+
+'', '## Portfolio view'
+Get-PortfolioHorizons $labels

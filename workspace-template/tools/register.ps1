@@ -679,15 +679,16 @@ function Write-Table([string[]]$Header, [object[]]$Rows) {
     }
 }
 
-function Write-PortfolioView($Labels) {
-    # Writes the portfolio view, views\portfolio.md: every active subject under its horizon.
+function Get-PortfolioHorizons($Labels) {
+    # The portfolio view below its title and its stamp, as lines: every active subject under its
+    # horizon. export prints these lines too, for the weekly synthesis that opens with them.
     $portfolio = $Labels.portfolio
     $folder = Join-Path $Workspace (Get-Definition 'subject').folder
     # In the order of their identifiers, compared character by character: the same on every machine.
     $ids = [string[]]@(Get-ChildItem -LiteralPath $folder -Filter *.json | ForEach-Object { $_.BaseName })
     [Array]::Sort($ids, [StringComparer]::Ordinal)
     $subjects = @($ids | ForEach-Object { Read-JsonFile (Join-Path $folder "$_.json") } | Where-Object { $_.status -ceq 'active' })
-    $lines = @("# $($portfolio.title)", '') + @(Get-Stamp $Labels)
+    $lines = @()
     foreach ($horizon in 'now', 'next', 'later') {
         $lines += '', "## $($portfolio.horizons.$horizon)", ''
         $rows = @(foreach ($subject in $subjects | Where-Object { $_.horizon -ceq $horizon }) {
@@ -704,6 +705,12 @@ function Write-PortfolioView($Labels) {
         $lines += if ($rows) { Write-Table $portfolio.subject, $portfolio.kind, $portfolio.clearance, $portfolio.next_date, $portfolio.next_step $rows }
         else { $portfolio.no_subject }
     }
+    $lines
+}
+
+function Write-PortfolioView($Labels) {
+    # Writes the portfolio view, views\portfolio.md: its title, its stamp, then its horizons.
+    $lines = @("# $($Labels.portfolio.title)", '') + @(Get-Stamp $Labels) + @(Get-PortfolioHorizons $Labels)
     Write-TextFile (Join-Path $Workspace 'views\portfolio.md') (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
 }
 
