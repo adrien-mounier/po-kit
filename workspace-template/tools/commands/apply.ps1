@@ -66,14 +66,15 @@ Assert-CommitterKnown
 $labels = Get-Labels $Settings.languages.default
 
 $operations = @(Get-PendingProposal)
-$lines = @(for ($line = 1; $line -le $operations.Count; $line++) { "$line" })
+$lines = @(for ($line = 1; $line -le $operations.Count; $line++) { $line })
 $selection = @($Arguments | ForEach-Object { $_ -split '[,\s]+' } | Where-Object { $_ })
-# A selection is the numbers of the lines kept, or one word: none or plain.
+# A selection is the numbers of the lines kept, or one word: none or plain. A line is a number from
+# here on: what was given as a number is read as one, once, and the rest is refused below.
 $word = if ('none', 'plain' -ccontains "$selection") { "$selection" }
-$kept = @(if (-not $word) { $selection })
+$kept = @(if (-not $word) { $selection | ForEach-Object { $number = 0; if ([int]::TryParse($_, [ref]$number)) { $number } else { $_ } } })
 # The lines this run does not apply: dropped for good, or left pending because they wait for the PO.
-$dropped = @(if ($word -eq 'none') { $lines } elseif ($kept) { $lines | Where-Object { $kept -notcontains $_ } })
-$waiting = @(if ($word -eq 'plain') { Get-WaitingLines $operations | ForEach-Object { "$_" } })
+$dropped = @(if ($word -eq 'none') { $lines } elseif ($kept.Count) { $lines | Where-Object { $kept -notcontains $_ } })
+$waiting = @(if ($word -eq 'plain') { Get-WaitingLines $operations })
 $left = $dropped + $waiting
 $wrong = @(
     $kept | Where-Object { $lines -notcontains $_ } |
@@ -187,7 +188,7 @@ if ($waiting) {
     foreach ($line in $waiting) {
         $fields = $operations[$line - 1].fields
         $named = Get-LineNamed $fields.subject
-        if ($named) { $fields.subject = if ($identifiers[$named]) { $identifiers[$named] } else { "line $($waiting.IndexOf("$named") + 1)" } }
+        if ($named) { $fields.subject = if ($identifiers[$named]) { $identifiers[$named] } else { "line $($waiting.IndexOf($named) + 1)" } }
     }
     Write-JsonFile $ProposalPath @{ operations = @($waiting | ForEach-Object { $operations[$_ - 1] }) }
 }
