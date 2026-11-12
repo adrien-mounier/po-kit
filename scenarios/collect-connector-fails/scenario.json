@@ -6,7 +6,7 @@
     { "file": "connections.json", "field": "tracker.verified.on", "is": "{today}" },
     { "file": "connections.json", "field": "tracker.mode", "is": "connector" },
     { "file": "connections.json", "field": "tracker.connector", "is": "Example Bank tracker" },
-    { "file": "connections.json", "field": "notes.folder", "is": "inbox" },
+    { "file": "connections.json", "field": "notes.mode", "is": "folder" },
     { "file": "connections.json", "field": "mail.mode", "is": "off" },
     { "record": "C-{year}-002", "field": "owner", "is": "the tech lead" },
     { "record": "C-{year}-002", "field": "due_date", "is": "2026-03-26" },

@@ -1,7 +1,6 @@
 {
   "notes": {
-    "mode": "folder",
-    "folder": "inbox"
+    "mode": "folder"
   },
   "mail": {
     "mode": "off"

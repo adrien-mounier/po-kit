@@ -37,11 +37,10 @@ Test 'the default settings hold the delays, the validation mode, the languages, 
     Assert-Equal '' $settings.sponsor.email "sponsor's address"
 }
 
-Test 'the default connections read notes from the inbox folder and set mail and tracker to off' {
+Test 'the default connections read notes from a folder, which is always the inbox, and set mail and tracker to off' {
     $connections = Read-Json (Join-Path $Template 'connections.json')
 
     Assert-Equal 'folder' $connections.notes.mode 'notes mode'
-    Assert-Equal 'inbox' $connections.notes.folder 'notes folder'
     Assert-Equal 'off' $connections.mail.mode 'mail mode'
     Assert-Equal 'off' $connections.tracker.mode 'tracker mode'
 }

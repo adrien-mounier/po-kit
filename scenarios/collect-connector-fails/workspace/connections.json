@@ -1,5 +1,5 @@
 {
-  "notes": { "mode": "folder", "folder": "inbox" },
+  "notes": { "mode": "folder" },
   "mail": { "mode": "off" },
   "tracker": { "mode": "connector", "connector": "Example Bank tracker" }
 }

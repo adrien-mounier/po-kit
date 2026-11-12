@@ -395,7 +395,7 @@ Test 'the scenario "collect with a connector that fails" passes when the connect
     $note = 'call with the tech lead.md'
     $connections = Join-Path $TestRoot 'failed.connections.json'
     Write-Json $connections ([ordered]@{
-            notes   = @{ mode = 'folder'; folder = 'inbox' }
+            notes   = @{ mode = 'folder' }
             mail    = @{ mode = 'off' }
             tracker = [ordered]@{ mode = 'connector'; connector = 'Example Bank tracker'; verified = [ordered]@{ result = 'failed'; on = $Day; detail = 'no connector of that name on this machine' } }
         })

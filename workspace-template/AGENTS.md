@@ -47,7 +47,7 @@ Two settings shape the weekly synthesis:
 `connections.json` is the PO's too: it says how each source is read on this machine. A source goes by the name it is declared under there (`notes`, `mail`, `tracker`), in one of three modes:
 
 - `{ "mode": "off" }`: the source is not read.
-- `{ "mode": "folder", "folder": "exports/mail" }`: the source is read from the files of that folder, named from this folder or by its full path.
+- `{ "mode": "folder", "folder": "exports/mail" }`: the source is read from the files of that folder, named from this folder or by its full path. `notes` names no folder: its folder is always `inbox/`.
 - `{ "mode": "connector", "connector": "<name>" }`: the source is read through the connector that the agent of this machine knows under that name, for reading only. The collect verifies a connector once, with a harmless read, and writes in the entry what it gave and when: `"verified": { "result": "ok", "on": "2026-03-02" }`, or `"result": "failed"` with the reason in `"detail"`.
 
 The entry of `mail` also says whether its connector can create mail drafts: `{ "mode": "connector", "connector": "<name>", "drafts": true }`. The weekly synthesis is then left as a draft in the PO's mailbox. Without `"drafts": true`, no draft is created.
