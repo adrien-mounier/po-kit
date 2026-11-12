@@ -63,7 +63,7 @@ Every created record also gives:
 - `evidence_level`: see below.
 - `source`: `{ "where": "inbox/<file name of the note>", "read_on": "<today's date>" }`.
 
-When the note says which of the PO's objectives a record serves, the record gives `objectives` too: their numbers as `settings.json` lists them, as `[1]`. A note that names no objective leaves it out.
+When the note says which of the PO's objectives a record serves, the record gives `objectives` too: their numbers as `settings.json` lists them, as `[1]`. A note that names no objective leaves it out, even when the record seems to serve one: that objective is yours to recommend in step 6, and the PO's to attach.
 
 Name a person as the register already does (`the tech lead`), otherwise as the note does. "I" in a note is the PO: `the PO`.
 
@@ -150,4 +150,6 @@ Done when the proposal holds one operation per change found in step 4, and every
    - The PO drops every line: run `apply none`. Nothing more is recorded, the notes not yet filed are filed, and no proposal stays pending.
    - The PO wants a line changed: correct the proposal and preview again.
 
-Done when every line is recorded, dropped, or shown to the PO as waiting for them, and you have told the PO each record written with its identifier, the notes filed, what went to unclassified, and what the check found.
+**Recommend an objective the note did not name.** The export of step 3 lists the PO's objectives under `Records per objective`, each with its number and its title. When a line seems to serve one of them and its note does not name it, tell the PO in one line, in the same answer as the table or as what was recorded: the number of the line, or the identifier of the record once it is recorded, the objective by its number and its title, word for word, and why. As: `Line 2 seems to serve objective 2, "Answer every loan request within two days": the rate table is what the answer waits for. Shall I attach it?` A recommendation changes nothing and holds nothing back: the line is shown, applied or left waiting as it is, without the objective. Attach the objective only once the PO says yes: to a line still pending, by adding `objectives` to it in the proposal and previewing again; to a record already recorded, by proposing an update of that record that gives `objectives`.
+
+Done when every line is recorded, dropped, or shown to the PO as waiting for them, and you have told the PO each record written with its identifier, the notes filed, what went to unclassified, what the check found, and each objective you recommend.

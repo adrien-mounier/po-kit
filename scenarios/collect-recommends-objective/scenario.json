@@ -1,0 +1,13 @@
+{
+  "routine": "collect",
+  "prompt": "Collect.",
+  "expect": [
+    { "file": "state/proposal.json", "field": "operations[0].type", "is": "commitment" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.owner", "is": "the tech lead" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.due_date", "is": "2026-03-27" },
+    { "file": "state/proposal.json", "line": "\"objectives\"", "absent": true },
+    { "file": "../agent-output.txt", "line": "Halve the time a retail customer needs to open an account" },
+    { "records": "commitments", "count": 1 },
+    { "file": "inbox/journey-review.md" }
+  ]
+}
