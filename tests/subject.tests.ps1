@@ -328,6 +328,33 @@ Test 'a proposal saved in another encoding than UTF-8 is refused instead of bein
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
 }
 
+Test 'settings or connections saved in another encoding than UTF-8, or that are not JSON, stop the run with a plain reason that names the file' {
+    $ws = New-TestWorkspaceWithSubject
+    Set-CollectProposal $ws '2026-03-02T08:30:00+01:00' @('notes')
+    foreach ($file in 'settings.json', 'connections.json') {
+        $path = Join-Path $ws $file
+        $text = [IO.File]::ReadAllText($path)
+        $spoiled = @(
+            # As Windows PowerShell 5.1 saves a text by default: UTF-16.
+            @{ how = 'saved as UTF-16'; write = { [IO.File]::WriteAllText($path, $text, [Text.Encoding]::Unicode) } },
+            @{ how = 'cut short'; write = { [IO.File]::WriteAllText($path, $text.Substring(0, 20), $Utf8) } }
+        )
+        foreach ($case in $spoiled) {
+            & $case.write
+            foreach ($command in 'preview', 'apply', 'check', 'export') {
+                $run = Invoke-Register $ws $command 2026-03-02
+
+                Assert-Equal 1 $run.ExitCode "exit code of $command with $file $($case.how), with output: $($run.Output)"
+                Assert-Match $run.Output "^$([regex]::Escape($file)) cannot be read: it must hold JSON, saved as UTF-8\." "reason given by $command with $file $($case.how)"
+                Assert-Equal 1 @($run.Output -split "`n").Count "lines printed by $command with $file $($case.how): $($run.Output)"
+            }
+        }
+        [IO.File]::WriteAllText($path, $text, $Utf8)
+    }
+    $run = Invoke-Register $ws check
+    Assert-Equal 0 $run.ExitCode "exit code of check once both files are put right, with output: $($run.Output)"
+}
+
 Test 'with no pending proposal, preview and apply say so and fail' {
     $ws = New-TestWorkspace
 

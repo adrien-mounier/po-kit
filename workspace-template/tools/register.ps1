@@ -6,8 +6,8 @@
 # the moment it treats as now (as 2026-03-02T08:30:00+01:00), which also gives the date.
 #
 # Each command is one file under tools\commands: adding a command means adding a file. A command
-# runs with everything defined here in scope ($Workspace, $Settings, $Today, $Now, the functions) and
-# its own arguments in $Arguments. It ends a failed run with Stop-Run.
+# runs with everything defined here in scope ($Workspace, $Settings, $Connections, $Today, $Now,
+# the functions) and its own arguments in $Arguments. It ends a failed run with Stop-Run.
 #
 # Keep this file and the commands in plain ASCII: Windows PowerShell 5.1 misreads other
 # characters in a script saved without a byte order mark.
@@ -40,6 +40,13 @@ function Read-JsonFile([string]$Path) {
     # A byte order mark is tolerated on the way in.
     $strictUtf8 = New-Object System.Text.UTF8Encoding $false, $true
     $strictUtf8.GetString([IO.File]::ReadAllBytes($Path)).TrimStart([char]0xFEFF) | ConvertFrom-Json
+}
+
+function Read-PoFile([string]$Name) {
+    # settings.json or connections.json: a file of the workspace that the PO edits by hand, read
+    # before the command runs. When it cannot be read, the run ends with the reason.
+    try { Read-JsonFile (Join-Path $Workspace $Name) }
+    catch { Stop-Run "$Name cannot be read: it must hold JSON, saved as UTF-8. Nothing was done. Correct it, or save it again as UTF-8, then run the command again." }
 }
 
 function Write-TextFile([string]$Path, [string]$Text) {
@@ -550,7 +557,7 @@ function Test-PendingCollect {
     $parts = @($said.Keys | Where-Object { $_ -ne 'collected_at' -and $CollectDefinition.fields.PSObject.Properties[$_] })
     if ($parts -and -not "$($collect.collected_at)".Trim()) { "missing required field 'collected_at'" }
     # The collect state is kept per source: a source under another name would lose its cutoff.
-    $declared = @((Read-JsonFile (Join-Path $Workspace 'connections.json')).PSObject.Properties | ForEach-Object { $_.Name })
+    $declared = @($Connections.PSObject.Properties | ForEach-Object { $_.Name })
     $named = @($collect.sources_read | ForEach-Object { $_.source }) + @($collect.sources_not_covered)
     foreach ($source in $named | Where-Object { $_ -is [string] -and $declared -cnotcontains $_ }) {
         "source '$source' is not declared in connections.json, which declares: $($declared -join ', ')"
@@ -628,7 +635,7 @@ function Get-Coverage {
     # said so. A source the last collect read carries the time of that collect.
     $collectPath = Join-Path $Workspace 'state\last-collect.json'
     $collect = if (Test-Path -LiteralPath $collectPath) { Read-JsonFile $collectPath }
-    foreach ($source in (Read-JsonFile (Join-Path $Workspace 'connections.json')).PSObject.Properties) {
+    foreach ($source in $Connections.PSObject.Properties) {
         $read = $collect.sources.($source.Name)
         @{
             source = $source.Name; mode = $source.Value.mode; read = $read
@@ -927,7 +934,8 @@ if ($Command -cnotmatch '^[a-z]+$' -or -not (Test-Path -LiteralPath $commandFile
     $known = (Get-ChildItem (Join-Path $Tools 'commands\*.ps1') | ForEach-Object { $_.BaseName }) -join ', '
     Stop-Run "Unknown command '$Command'. Commands: $known."
 }
-$Settings = Read-JsonFile (Join-Path $Workspace 'settings.json')
+$Settings = Read-PoFile 'settings.json'
+$Connections = Read-PoFile 'connections.json'
 # The validation mode says what a routine has applied without asking the PO: nothing (all), or the
 # plain facts of a proposal (interpreted). A routine reads it in what preview prints.
 if ('all', 'interpreted' -cnotcontains $Settings.validation_mode) {
