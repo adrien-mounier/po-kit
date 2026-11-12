@@ -25,8 +25,8 @@ Each active subject carries a watch list, in its record `register/subjects/<iden
 The source stays closed until you hold the watch lists. Then, in this order:
 
 1. Read the watch lists, from the records of the subjects, on their own: nothing of a source is read in the same go.
-2. Search the source once for each person, each keyword and each tracker project. Through a connector, ask it for the mail of the person, the mail that holds the keyword, the tickets of the project. In a folder, search the content of its files for the word, with a search that answers with the names of the files holding it and shows nothing of the others. For a tracker project the word is its key, as `LOAN`: the search returns the tickets of that project, and those of every other project stay closed.
-3. What the searches returned are the matches: open these, and only these.
+2. Search the source: mail once for each person and each keyword, the tracker once for each tracker project. Through a connector, ask it for the mail of the person, the mail that holds the keyword, the tickets of the project. In a folder, search the content of its files for the word, with a search that answers with the names of the files holding it and shows nothing of the others. For a tracker project the word is its key, as `LOAN`: the search returns the tickets of that project, and those of every other project stay closed.
+3. What the searches returned are the matches: open these, and only these, each one by the name its search gave. Never open the files of a source through a pattern or a loop over its folder, as `exports/tracker/*`: that opens what no watch list matched.
 
 Whatever no search returned stays closed, in a folder of two files as in a mailbox of thousands: you do not list it, open it or mention it. It is the PO's own mail or another team's ticket, and nothing of it reaches the proposal or your answer.
 

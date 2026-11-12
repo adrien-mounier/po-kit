@@ -323,7 +323,7 @@ Test 'the scenario "collect a sent mail" passes when the promise of the PO becom
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
 }
 
-Test 'the scenario "collect a ticket" passes when the ticket of a watched project yields a record with the ticket as its source, and fails when the ticket of another project is recorded too' {
+Test 'the scenario "collect a ticket" passes when the ticket of a watched project yields a record with the ticket as its source, and fails when the ticket of another project is recorded too, or shows in what the agent printed' {
     $watched = New-ItemOperation 'exports/tracker/ONB-142.txt' @{ title = 'Deliver the identity document scan screen'; owner = 'the tech lead'; due_date = '2026-03-27'; date_of_fact = '2026-03-11' }
     $other = New-ItemOperation 'exports/tracker/CRD-7.txt' @{ title = 'Rewrite the wording of the card dispute form'; owner = 'the cards analyst'; due_date = '2026-04-10' }
     $collect = @{ sources_read = (New-SourceRead notes 0), (New-SourceRead tracker 1); sources_not_covered = @('mail') }
@@ -333,12 +333,21 @@ Test 'the scenario "collect a ticket" passes when the ticket of a watched projec
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output "  ok    record C-$Year-002: source\.where is `"exports/tracker/ONB-142\.txt`"" 'the ticket is the source of the record'
     Assert-Match $run.Output '  ok    file state/last-collect\.json: sources\.tracker\.items is 1' 'one ticket is read'
+    Assert-Match $run.Output '  ok    file \.\./agent-output\.txt has no line containing "card dispute"' 'nothing of the ticket of another project in what the agent printed'
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
 
     $run = Invoke-Scenarios -Agent (New-CollectAgent @() $watched, $other -Collect $collect) collect-ticket
 
     Assert-Match $run.Output '  FAIL  register/commitments holds 2 record\(s\)\n        found: 3 record\(s\)' 'the ticket of a project that no watch list names'
     Assert-Equal 1 $run.ExitCode 'exit code when the other ticket is recorded'
+
+    # What the agent printed is checked too: its answer and, when its command prints them, the
+    # files it opened.
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $watched -Do '-Say "I left aside a ticket of the cards analyst, about the card dispute form."' -Collect $collect) collect-ticket
+
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "card dispute"' 'the ticket of another project in what the agent printed'
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "cards analyst"' 'the person the ticket names in what the agent printed'
+    Assert-Equal 1 $run.ExitCode 'exit code when the agent prints something of the other ticket'
 }
 
 Test 'the scenario "collect with the tracker off" passes when the collect completes, the collect state lists the tracker as not covered and the stamp of the portfolio view says so' {

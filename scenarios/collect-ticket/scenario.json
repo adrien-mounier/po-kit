@@ -12,6 +12,8 @@
     { "file": "state/unclassified.md", "absent": true },
     { "file": "state/last-collect.json", "field": "sources.tracker.items", "is": 1 },
     { "file": "state/last-collect.json", "field": "not_covered", "is": ["mail"] },
-    { "file": "state/proposal.json", "absent": true }
+    { "file": "state/proposal.json", "absent": true },
+    { "file": "../agent-output.txt", "line": "card dispute", "absent": true },
+    { "file": "../agent-output.txt", "line": "cards analyst", "absent": true }
   ]
 }
