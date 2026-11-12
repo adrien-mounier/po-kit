@@ -69,9 +69,11 @@ function Test-CommitterKnown([string]$Folder) {
 }
 
 # The workspace is saved by commits, and git refuses to commit when it does not know who commits:
-# asked before anything is written, of the workspace or, when it is yet to create, of the kit's
-# clone, which knows whom the machine knows. The installer sets no name for the PO.
-if (-not (Test-CommitterKnown $(if (Test-Path -LiteralPath (Join-Path $Workspace '.git')) { $Workspace } else { $Kit }))) {
+# asked before anything is written, of the workspace or, when it is yet to create, of a folder
+# that is in no repository, where git answers with what the machine knows and nothing else, as it
+# will in the new workspace. The clone of the kit may hold a name of its own. The installer sets
+# no name for the PO.
+if (-not (Test-CommitterKnown $(if (Test-Path -LiteralPath (Join-Path $Workspace '.git')) { $Workspace } else { [IO.Path]::GetTempPath() }))) {
     Stop-Install 'git does not know who commits on this machine, and the workspace is saved by commits. Nothing was installed.',
         'Tell git once, with your own name and address, then run this installer again:',
         '  git config --global user.name "Your Name"', '  git config --global user.email "you@example.com"'

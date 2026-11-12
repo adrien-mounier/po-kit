@@ -341,6 +341,22 @@ Test 'on a machine where git does not know who commits, the installer stops befo
     Assert-True (-not (Test-Path $to.Skills)) 'a skills folder was created'
 }
 
+Test 'a name that only the clone of the kit holds does not pass for one the new workspace will have' {
+    $kit = New-TestKit
+    Save-TestKit $kit 'v1'
+    git -C $kit config user.name 'The builder of the kit'
+    git -C $kit config user.email 'builder@example.com'
+    $to = New-InstallTarget
+
+    $run = Invoke-WithoutIdentity { Invoke-Install $kit -Workspace $to.Workspace -SkillsFolder $to.Skills }
+
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'git does not know who commits' 'reason given'
+    Assert-True ($run.Output -notmatch 'fatal|\*\*\*') "the output holds git's own error: $($run.Output)"
+    Assert-True (-not (Test-Path $to.Workspace)) 'a workspace was created'
+    Assert-True (-not (Test-Path $to.Skills)) 'a skills folder was created'
+}
+
 Test 'a first installation that could not commit is completed by running the installer again' {
     $to = New-InstallTarget
     # git refuses to commit with a date it cannot read.
