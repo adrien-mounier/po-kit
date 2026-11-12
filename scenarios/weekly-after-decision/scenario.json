@@ -46,6 +46,7 @@
         "# Team capacity",
         "# Not covered this week" ] },
     { "verified": "views/weekly/{today}.md" },
+    { "exported": "views/weekly/{today}.md", "since": "2026-03-03" },
     { "file": "views/weekly/{today}.md", "lines": [ "# Progress and commitments", "Since 2026-03-03", "[D-{year}-001]", "Open commitments:", "No commitment is open.", "# Proposed priorities" ] },
     { "file": "views/weekly/{today}.md", "line": "C-{year}-001", "absent": true },
     { "file": "views/weekly/{today}.md", "line": "2026-03-16", "absent": true },

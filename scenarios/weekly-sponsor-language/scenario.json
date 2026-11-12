@@ -31,6 +31,7 @@
         "Selon le PO : ",
         "# Non couvert cette semaine" ] },
     { "verified": "views/weekly/{today}.md" },
+    { "exported": "views/weekly/{today}.md", "since": "2026-03-09" },
     { "file": "views/portfolio.md", "lines": [ "# Portfolio view", "## Now", "## Next", "## Later" ] }
   ]
 }

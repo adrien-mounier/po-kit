@@ -27,6 +27,7 @@
     { "record": "C-{year}-002", "field": "due_date", "is": null },
     { "file": "views/weekly/{today}.md", "lines": [ "# Portfolio view", "# Progress and commitments", "# Proposed priorities", "# Blockers and decisions expected from the sponsor", "# Team capacity", "# Not covered this week" ] },
     { "verified": "views/weekly/{today}.md" },
+    { "exported": "views/weekly/{today}.md", "since": "2026-03-09" },
     { "file": "views/weekly/{today}.md", "lines": [ "# Progress and commitments", "Since 2026-03-09", "Open commitments:", "[C-{year}-002]", "# Proposed priorities" ] },
     { "file": "views/weekly/{today}.md", "lines": [ "Open commitments:", "no due date", "# Proposed priorities" ] },
     { "file": "views/weekly/{today}.md", "lines": [ "Decisions expected from the sponsor:", "[D-{year}-001]", "# Team capacity" ] },

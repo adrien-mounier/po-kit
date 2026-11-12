@@ -43,6 +43,8 @@
 #   { "file": "<path>", "lines": ["<text>", "<text>"] }             lines of the file contain these texts, in this
 #                                                                   order, each on a line further down than the one before
 #   { "verified": "<path>" }                                        the register tool's verify passes on this stored view
+#   { "exported": "<path>", "since": "<date>" }                     every record this stored view cites is in what the
+#                                                                   register tool's export prints for the period since that date
 # A file is named from the workspace: the pending proposal is state/proposal.json, the portfolio
 # view is views/portfolio.md. What the agent printed is ../agent-output.txt, beside the workspace:
 # its answer, and all that it opened when its command prints that too (for Claude Code,
@@ -162,6 +164,18 @@ function Test-Fact($Fact, [string]$Workspace) {
         $run = Invoke-Script (Join-Path $Workspace 'tools\register.ps1') verify $Fact.verified
         return @{ What = "the register tool verifies $($Fact.verified)"; Holds = ($run.ExitCode -eq 0); Found = $run.Output }
     }
+    if ($Fact.exported) {
+        # verify passes on any record that is not superseded, in the period or not. A view cites a
+        # record by its identifier in square brackets, and the export prints a record the same way.
+        $what = "every record that $($Fact.exported) cites is in the export since $($Fact.since)"
+        $view = Join-Path $Workspace $Fact.exported
+        if (-not (Test-Path -LiteralPath $view -PathType Leaf)) { return @{ What = $what; Holds = $false; Found = 'nothing: it is absent' } }
+        $run = Invoke-Script (Join-Path $Workspace 'tools\register.ps1') export $Fact.since
+        if ($run.ExitCode -ne 0) { return @{ What = $what; Holds = $false; Found = $run.Output } }
+        $outside = @([regex]::Matches([IO.File]::ReadAllText($view), '\[([^\[\]]*)\]') | ForEach-Object { $_.Groups[1].Value -split ',' } |
+                ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $run.Output.Contains("[$_]") } | Select-Object -Unique)
+        return @{ What = $what; Holds = (-not $outside); Found = "not in the export: $($outside -join ', ')" }
+    }
     if ($Fact.record) {
         # An identifier is the file name of its record, wherever the register files it.
         $name = "record $($Fact.record)"
@@ -173,7 +187,7 @@ function Test-Fact($Fact, [string]$Workspace) {
         $path = Join-Path $Workspace $Fact.file
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { $path = $null }
     }
-    else { throw "an expected fact names a record, a file, records or a view to verify: $(ConvertTo-FactJson $Fact)" }
+    else { throw "an expected fact names a record, a file, records, a view to verify or a view against the export: $(ConvertTo-FactJson $Fact)" }
 
     if ($Fact.PSObject.Properties['field']) {
         $expected = ConvertTo-FactJson $Fact.is

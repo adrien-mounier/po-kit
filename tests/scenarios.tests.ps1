@@ -458,6 +458,7 @@ Test 'the scenario "weekly after a decision" passes when the synthesis cites the
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output "  ok    record C-$Year-001: superseded_by is `"D-$Year-001`"" 'the collect the scenario gives was applied before the agent started'
     Assert-Match $run.Output "  ok    the register tool verifies views/weekly/$Day\.md" 'the verdict of verify'
+    Assert-Match $run.Output "  ok    every record that views/weekly/$Day\.md cites is in the export since 2026-03-03" 'the records cited are those of the export of the period'
     Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has lines containing, in this order: `"# Portfolio view`", .*`"## Now`", .*`"# Not covered this week`"" 'the portfolio view, then the blocks in order'
     Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has no line containing `"2026-03-16`"" 'the date of the presentation'
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
@@ -466,6 +467,7 @@ Test 'the scenario "weekly after a decision" passes when the synthesis cites the
     $run = Invoke-Scenarios -Agent (New-WeeklyAgent after-decision $announced) weekly-after-decision
 
     Assert-Match $run.Output "  FAIL  the register tool verifies views/weekly/$Day\.md\n        found: Not verified: views/weekly/$Day\.md\n- C-$Year-001 is superseded by D-$Year-001\." 'the superseded commitment, named by verify'
+    Assert-Match $run.Output "  FAIL  every record that views/weekly/$Day\.md cites is in the export since 2026-03-03\n        found: not in the export: C-$Year-001" 'the superseded commitment, which the export leaves out'
     Assert-Match $run.Output "  FAIL  file views/weekly/$Day\.md has no line containing `"2026-03-16`"" 'the presentation still announced'
     Assert-Match $run.Output '  FAIL  file views/weekly/\S+ has lines containing, in this order: "# Progress and commitments", .*\n        found: no line containing "No commitment is open\." further down' 'the commitment still listed as open'
     Assert-Equal 1 $run.ExitCode 'exit code when the presentation is still announced'
@@ -640,6 +642,24 @@ Test 'a scenario given as a folder lays its own files over the workspace, and ev
         '  ok    the register holds only what the register tool committed'
     ) -join "`n"
     Assert-True $run.Output.Contains($expected) "the report differs from:`n$expected`ngot:`n$($run.Output)"
+    Assert-Equal 1 $run.ExitCode 'exit code'
+}
+
+Test 'a stored synthesis passes the fact on the export when every record it cites is in the export of its period, and fails it for a record that verify accepts and the export leaves out' {
+    $scenario = Join-Path $Fixtures 'scenarios\cites-a-closed-subject'
+
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent source-off) $scenario
+
+    Assert-Match $run.Output "  ok    the register tool verifies views/weekly/$Day\.md" 'the verdict of verify'
+    Assert-Match $run.Output "  ok    every record that views/weekly/$Day\.md cites is in the export since 2026-03-09" 'the records cited are in the export'
+    Assert-Match $run.Output '  FAIL  every record that views/weekly/2026-03-09\.md cites is in the export since 2026-03-09\n        found: nothing: it is absent' 'a view that is not stored'
+
+    # A closed subject is still a record to cite for verify, and the export of the period leaves it out.
+    $closed = { $args[0].Replace('No blocker is recorded.', '- The opening hours page was handed over [branch-opening-hours-page, mobile-onboarding]') }
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent source-off $closed) $scenario
+
+    Assert-Match $run.Output "  ok    the register tool verifies views/weekly/$Day\.md" 'the verdict of verify on the closed subject'
+    Assert-Match $run.Output "  FAIL  every record that views/weekly/$Day\.md cites is in the export since 2026-03-09\n        found: not in the export: branch-opening-hours-page" 'the closed subject, named'
     Assert-Equal 1 $run.ExitCode 'exit code'
 }
 

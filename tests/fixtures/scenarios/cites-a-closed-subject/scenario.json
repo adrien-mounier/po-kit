@@ -1,0 +1,16 @@
+{
+  "routine": "weekly",
+  "collected": {
+    "operations": [
+      { "op": "update", "id": "branch-opening-hours-page", "interpreted": false,
+        "source": { "where": "conversation with the PO", "read_on": "{today}" },
+        "fields": { "status": "closed" } }
+    ]
+  },
+  "prompt": "Weekly. There is no earlier synthesis: the period starts on 2026-03-09.",
+  "expect": [
+    { "verified": "views/weekly/{today}.md" },
+    { "exported": "views/weekly/{today}.md", "since": "2026-03-09" },
+    { "exported": "views/weekly/2026-03-09.md", "since": "2026-03-09" }
+  ]
+}

@@ -15,6 +15,7 @@
     { "file": "views/weekly/{today}.md", "lines": [ "# Portfolio view", "> Sources not covered by the last collect: tracker.", "# Progress and commitments", "# Proposed priorities", "# Blockers and decisions expected from the sponsor", "# Team capacity", "# Not covered this week", "tracker" ] },
     { "file": "views/weekly/{today}.md", "lines": [ "# Not covered this week", "mail" ] },
     { "verified": "views/weekly/{today}.md" },
+    { "exported": "views/weekly/{today}.md", "since": "2026-03-09" },
     { "file": "views/weekly/{today}.md", "lines": [ "# Team capacity", "According to the PO: ", "# Not covered this week" ] },
     { "file": "views/weekly/{today}.md", "lines": [ "# Team capacity", "half capacity", "# Not covered this week" ] },
     { "file": "views/weekly/{today}.md", "line": "Every source was covered", "absent": true }
