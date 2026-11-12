@@ -1,0 +1,11 @@
+From: the architect <architect@example.com>
+To: the PO <po@example.com>
+Date: 2026-03-11T14:05:00+01:00
+Subject: Sequence diagrams of the onboarding journey
+
+Hello,
+
+I will send you the sequence diagrams of the onboarding journey by 25 March 2026.
+
+Regards,
+The architect

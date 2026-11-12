@@ -1,0 +1,11 @@
+From: the tech lead <tech.lead@example.com>
+To: the PO <po@example.com>
+Date: 2026-03-10T16:05:00+01:00
+Subject: Card dispute form
+
+Hello,
+
+A word outside our own work. The cards team is redesigning its card dispute form, and is looking for a product owner to review its wording in April. I gave them your name.
+
+Regards,
+The tech lead

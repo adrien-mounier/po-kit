@@ -1,0 +1,10 @@
+From: the facilities desk <facilities@example.com>
+To: all staff of the head office <head.office@example.com>
+Date: 2026-03-10T11:40:00+01:00
+Subject: Parking permits
+
+Hello,
+
+The car park of the head office closes for resurfacing from 23 March 2026. Renew your parking permit at the front desk before 20 March 2026.
+
+The facilities desk

@@ -1,0 +1,12 @@
+Key: ONB-150
+Project: ONB
+Title: Address step of the onboarding journey
+Status: In progress
+Assignee: the tech lead
+Reporter: the PO
+Updated: 2026-03-10T10:15:00+01:00
+
+The customer confirms a postal address during onboarding.
+
+Comment by the tech lead, 10 March 2026:
+I will deliver this step to the PO by 2 April 2026.

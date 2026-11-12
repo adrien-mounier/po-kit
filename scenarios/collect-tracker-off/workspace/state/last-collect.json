@@ -1,0 +1,8 @@
+{
+  "collected_at": "2026-03-09T08:30:00+01:00",
+  "sources": {
+    "notes": { "cutoff": "2026-03-09T08:30:00+01:00", "items": 0, "collected_at": "2026-03-09T08:30:00+01:00", "cap_reached": false },
+    "mail": { "cutoff": "2026-03-09T08:30:00+01:00", "items": 0, "collected_at": "2026-03-09T08:30:00+01:00", "cap_reached": false }
+  },
+  "not_covered": ["tracker"]
+}

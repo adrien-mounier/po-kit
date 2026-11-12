@@ -1,0 +1,14 @@
+{
+  "routine": "collect",
+  "prompt": "Collect.",
+  "expect": [
+    { "file": "state/proposal.json", "absent": true },
+    { "records": "commitments", "count": 1 },
+    { "records": "decisions", "count": 0 },
+    { "records": "risks", "count": 0 },
+    { "file": "state/unclassified.md", "absent": true },
+    { "file": "state/last-collect.json", "field": "collected_at", "is": "2026-03-12T08:30:00+01:00" },
+    { "file": "state/last-collect.json", "field": "sources.mail.cutoff", "is": "2026-03-12T08:30:00+01:00" },
+    { "file": "state/last-collect.json", "field": "sources.tracker.cutoff", "is": "2026-03-12T08:30:00+01:00" }
+  ]
+}

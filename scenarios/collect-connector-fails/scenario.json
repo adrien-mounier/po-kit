@@ -1,0 +1,18 @@
+{
+  "routine": "collect",
+  "prompt": "Collect. I accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "file": "connections.json", "field": "tracker.verified.result", "is": "failed" },
+    { "file": "connections.json", "field": "tracker.verified.on", "is": "{today}" },
+    { "file": "connections.json", "field": "tracker.mode", "is": "connector" },
+    { "file": "connections.json", "field": "tracker.connector", "is": "Example Bank tracker" },
+    { "file": "connections.json", "field": "notes.folder", "is": "inbox" },
+    { "file": "connections.json", "field": "mail.mode", "is": "off" },
+    { "record": "C-{year}-002", "field": "owner", "is": "the tech lead" },
+    { "record": "C-{year}-002", "field": "due_date", "is": "2026-03-26" },
+    { "records": "commitments", "count": 2 },
+    { "file": "state/last-collect.json", "field": "not_covered", "is": ["mail", "tracker"] },
+    { "file": "inbox/done/{month}/call with the tech lead.md" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

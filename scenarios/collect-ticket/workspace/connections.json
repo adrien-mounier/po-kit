@@ -1,0 +1,5 @@
+{
+  "notes": { "mode": "folder", "folder": "inbox" },
+  "mail": { "mode": "off" },
+  "tracker": { "mode": "folder", "folder": "exports/tracker" }
+}

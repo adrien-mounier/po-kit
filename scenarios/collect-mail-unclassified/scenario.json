@@ -1,0 +1,13 @@
+{
+  "routine": "collect",
+  "prompt": "Collect. I accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "file": "state/unclassified.md", "line": " | exports/mail/received/card dispute form.txt | " },
+    { "records": "subjects", "count": 3 },
+    { "records": "commitments", "count": 1 },
+    { "records": "decisions", "count": 0 },
+    { "records": "risks", "count": 0 },
+    { "file": "state/last-collect.json", "field": "sources.mail.items", "is": 1 },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

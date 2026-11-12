@@ -61,19 +61,22 @@ Test 'the scenario "missing answer" passes when the agent records nothing, and f
 # is processed: a scenario names them {year} and {month}, and {today} the day of the run.
 $Year, $Month, $Day = 'yyyy', 'yyyy-MM', 'yyyy-MM-dd' | ForEach-Object { (Get-Date).ToString($_, [Globalization.CultureInfo]::InvariantCulture) }
 
-function New-CollectAgent([string[]]$Notes, [object[]]$Operations, [string]$Do = '') {
+function New-CollectAgent([string[]]$Notes, [object[]]$Operations, [string]$Do = '', [hashtable]$Collect = @{}) {
     # The command of a fake agent that collects: it leaves the proposal of a collect that read these
     # notes of the inbox, with these operations, and has the register tool apply it. $Do adds
-    # options of the fake agent.
+    # options of the fake agent. $Collect replaces parts of the proposal: the sources read, the
+    # sources not covered, the unclassified items.
     New-Item -ItemType Directory -Path $TestRoot -Force | Out-Null
     $path = Join-Path $TestRoot ([Guid]::NewGuid().ToString('N').Substring(0, 8) + '.proposal.json')
-    Write-Json $path @{
+    $proposal = @{
         collected_at        = '2026-03-12T08:30:00+01:00'
-        sources_read        = @(@{ source = 'notes'; cutoff = '2026-03-12T08:30:00+01:00'; items = $Notes.Count })
+        sources_read        = @(@{ source = 'notes'; cutoff = '2026-03-12T08:30:00+01:00'; items = @($Notes).Count })
         sources_not_covered = @('mail', 'tracker')
-        notes_processed     = $Notes
-        operations          = $Operations
+        notes_processed     = @($Notes)
+        operations          = @($Operations)
     }
+    foreach ($part in $Collect.Keys) { $proposal[$part] = $Collect[$part] }
+    Write-Json $path $proposal
     "$FakeAgent -Proposal `"$path`" $Do"
 }
 
@@ -230,6 +233,157 @@ Test 'the scenario "collect a pasted text" passes when the text is saved as an i
     Assert-Match $run.Output "  ok    record C-$Year-002: source\.where is `"inbox/pasted-$Day\.md`"" 'the record names the note'
     Assert-Match $run.Output "  ok    file inbox/done/$Month/pasted-$Day\.md has a line containing `"corrected opening hours`"" 'the note holds the pasted text, and is filed'
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
+# --- The collect scenarios of mail and tracker ---------------------------------------------------
+# Mail and tickets are supplied as folders of exported files, exports/mail and exports/tracker, and
+# the collect state of the scenario says how far an earlier collect read these sources.
+
+function New-SourceRead([string]$Source, [int]$Items, [string]$Cutoff = '2026-03-12T08:30:00+01:00') {
+    @{ source = $Source; cutoff = $Cutoff; items = $Items }
+}
+
+function New-ItemOperation([string]$Where, [hashtable]$Fields) {
+    # One operation creating a commitment from a mail or a ticket, which its source names.
+    New-RecordOperation commitment (@{ source = @{ where = $Where; read_on = '2026-03-12' } } + $Fields)
+}
+
+$MailRead = @{ sources_read = (New-SourceRead notes 0), (New-SourceRead mail 1); sources_not_covered = @('tracker') }
+
+Test 'the scenario "collect mail outside every watch list" passes when the proposal holds the mail a watch list matched and nothing of the other, and fails when it quotes the other' {
+    $matched = New-ItemOperation 'exports/mail/received/list of the onboarding screens.txt' @{ title = 'Send the list of the onboarding screens'; owner = 'the tech lead'; due_date = '2026-03-20'; date_of_fact = '2026-03-10' }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $matched -Do '-Pending' -Collect $MailRead) collect-mail-outside-watch-lists
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file state/proposal\.json: sources_read\[1\]\.items is 1' 'one mail is read'
+    Assert-Match $run.Output '  ok    file state/proposal\.json has no line containing "permit"' 'the mail outside the watch lists is not quoted'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $quoted = $MailRead + @{ unclassified = @(@{ source = 'exports/mail/received/parking permits.txt'; text = 'Renew your parking permit before 20 March 2026.' }) }
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $matched -Do '-Pending' -Collect $quoted) collect-mail-outside-watch-lists
+
+    Assert-Match $run.Output '  FAIL  file state/proposal\.json has no line containing "permit"' 'the mail outside the watch lists quoted as unclassified'
+    Assert-Match $run.Output '  FAIL  file state/proposal\.json: unclassified\[0\] is null' 'the unclassified item'
+    Assert-Equal 1 $run.ExitCode 'exit code when the mail is quoted'
+}
+
+Test 'the scenario "collect unclassified mail" passes when the mail a watch list matched, which fits no subject, lands in the unclassified list and yields no record' {
+    $where = 'exports/mail/received/card dispute form.txt'
+    $collect = $MailRead + @{ unclassified = @(@{ source = $where; text = 'The cards team looks for a product owner to review the wording of its card dispute form in April.' }) }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() @() -Collect $collect) collect-mail-unclassified
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    file state/unclassified\.md has a line containing `" \| $([regex]::Escape($where)) \| `"" 'the unclassified item names the mail'
+    Assert-Match $run.Output '  ok    register/commitments holds 1 record\(s\)' 'no record'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
+Test 'the scenario "collect a sent mail" passes when the promise of the PO becomes a commitment owned by the PO, with the mail as its source' {
+    $where = 'exports/mail/sent/scope of our contribution.txt'
+    $promise = New-ItemOperation $where @{ title = 'Send the list of the API calls needed'; subject = 'payments-api-contribution'; owner = 'the PO'; owed_to = 'the head of payments'; due_date = '2026-03-20'; date_of_fact = '2026-03-11' }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $promise -Collect $MailRead) collect-sent-mail
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    foreach ($fact in 'owner is "the PO"', 'owed_to is "the head of payments"', 'due_date is "2026-03-20"', 'subject is "payments-api-contribution"', "source\.where is `"$([regex]::Escape($where))`"") {
+        Assert-Match $run.Output "  ok    record C-$Year-002: $fact" 'expected fact reported as passed'
+    }
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
+Test 'the scenario "collect a ticket" passes when the ticket of a watched project yields a record with the ticket as its source, and fails when the ticket of another project is recorded too' {
+    $watched = New-ItemOperation 'exports/tracker/ONB-142.txt' @{ title = 'Deliver the identity document scan screen'; owner = 'the tech lead'; due_date = '2026-03-27'; date_of_fact = '2026-03-11' }
+    $other = New-ItemOperation 'exports/tracker/CRD-7.txt' @{ title = 'Rewrite the wording of the card dispute form'; owner = 'the cards analyst'; due_date = '2026-04-10' }
+    $collect = @{ sources_read = (New-SourceRead notes 0), (New-SourceRead tracker 1); sources_not_covered = @('mail') }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $watched -Collect $collect) collect-ticket
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    record C-$Year-002: source\.where is `"exports/tracker/ONB-142\.txt`"" 'the ticket is the source of the record'
+    Assert-Match $run.Output '  ok    file state/last-collect\.json: sources\.tracker\.items is 1' 'one ticket is read'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $watched, $other -Collect $collect) collect-ticket
+
+    Assert-Match $run.Output '  FAIL  register/commitments holds 2 record\(s\)\n        found: 3 record\(s\)' 'the ticket of a project that no watch list names'
+    Assert-Equal 1 $run.ExitCode 'exit code when the other ticket is recorded'
+}
+
+Test 'the scenario "collect with the tracker off" passes when the collect completes, the collect state lists the tracker as not covered and the stamp of the portfolio view says so' {
+    $read = New-ItemOperation 'exports/mail/received/sequence diagrams.txt' @{ title = 'Send the sequence diagrams of the onboarding journey'; owner = 'the architect'; due_date = '2026-03-24'; date_of_fact = '2026-03-10' }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $read -Collect $MailRead) collect-tracker-off
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file state/last-collect\.json: not_covered is \["tracker"\]' 'the proposal listed the tracker as not covered'
+    Assert-Match $run.Output '  ok    file views/portfolio\.md has a line containing "> Sources not covered by the last collect: tracker\."' 'the stamp of the portfolio view'
+    Assert-Match $run.Output "  ok    record C-$Year-002: owner is `"the architect`"" 'the collect completed'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
+Test 'the scenario "collect up to the cap" passes when the two oldest mails are read, the cap is said reached and the cutoff is the date of the second, and fails when the third is read too' {
+    $mails = @(
+        (New-ItemOperation 'exports/mail/received/screens list.txt' @{ title = 'Send the list of the onboarding screens'; owner = 'the tech lead'; due_date = '2026-03-20'; date_of_fact = '2026-03-10' }),
+        (New-ItemOperation 'exports/mail/received/sequence diagrams.txt' @{ title = 'Send the sequence diagrams of the onboarding journey'; owner = 'the architect'; due_date = '2026-03-25'; date_of_fact = '2026-03-11' }),
+        (New-ItemOperation 'exports/mail/received/a reminder about the test accounts.txt' @{ title = 'Create the test accounts of the onboarding pilot'; owner = 'the tech lead'; due_date = '2026-03-27'; date_of_fact = '2026-03-12' })
+    )
+    $capped = @{ sources_read = (New-SourceRead notes 0), ((New-SourceRead mail 2 '2026-03-11T14:05:00+01:00') + @{ cap_reached = $true }); sources_not_covered = @('tracker') }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() ($mails[0, 1]) -Collect $capped) collect-cap
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    foreach ($fact in 'items is 2', 'cutoff is "2026-03-11T14:05:00\+01:00"', 'cap_reached is true') {
+        Assert-Match $run.Output "  ok    file state/last-collect\.json: sources\.mail\.$fact" 'expected fact reported as passed'
+    }
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $whole = @{ sources_read = (New-SourceRead notes 0), (New-SourceRead mail 3); sources_not_covered = @('tracker') }
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $mails -Collect $whole) collect-cap
+
+    Assert-Match $run.Output '  FAIL  register/commitments holds 3 record\(s\)\n        found: 4 record\(s\)' 'the mail beyond the cap'
+    Assert-Match $run.Output '  FAIL  file state/last-collect\.json: sources\.mail\.cap_reached is true\n        found: false' 'the cap not said reached'
+    Assert-Equal 1 $run.ExitCode 'exit code when the collect reads beyond the cap'
+}
+
+Test 'the scenario "collect with nothing new" passes when the collect proposes nothing, and fails when it proposes again what an earlier collect read' {
+    $run = Invoke-Scenarios -Agent $FakeAgent collect-nothing-new
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file state/proposal\.json is absent' 'nothing is proposed'
+
+    $again = New-ItemOperation 'exports/mail/received/list of the onboarding screens.txt' @{ title = 'Send the list of the onboarding screens'; owner = 'the tech lead'; due_date = '2026-03-20' }
+    $collect = @{ sources_read = (New-SourceRead notes 0), (New-SourceRead mail 1), (New-SourceRead tracker 0); sources_not_covered = @() }
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $again -Do '-Pending' -Collect $collect) collect-nothing-new
+
+    Assert-Match $run.Output '  FAIL  file state/proposal\.json is absent' 'the mail read before its cutoff is proposed again'
+    Assert-Equal 1 $run.ExitCode 'exit code when something is proposed'
+}
+
+Test 'the scenario "collect with a connector that fails" passes when the connections record the failed verification, the tracker is not covered and the collect goes on' {
+    $note = 'call with the tech lead.md'
+    $connections = Join-Path $TestRoot 'failed.connections.json'
+    Write-Json $connections ([ordered]@{
+            notes   = @{ mode = 'folder'; folder = 'inbox' }
+            mail    = @{ mode = 'off' }
+            tracker = [ordered]@{ mode = 'connector'; connector = 'Example Bank tracker'; verified = [ordered]@{ result = 'failed'; on = $Day; detail = 'no connector of that name on this machine' } }
+        })
+    $action = New-NoteOperation commitment $note @{ title = 'Send the test plan of the onboarding pilot'; owner = 'the tech lead'; owed_to = 'the PO'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $action -Do "-Connections `"$connections`"") collect-connector-fails
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file connections\.json: tracker\.verified\.result is "failed"' 'the result of the verification'
+    Assert-Match $run.Output "  ok    file connections\.json: tracker\.verified\.on is `"$Day`"" 'the date of the verification'
+    Assert-Match $run.Output '  ok    file state/last-collect\.json: not_covered is \["mail","tracker"\]' 'the tracker is not covered'
+    Assert-Match $run.Output "  ok    record C-$Year-002: owner is `"the tech lead`"" 'the collect went on'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $action) collect-connector-fails
+
+    Assert-Match $run.Output '  FAIL  file connections\.json: tracker\.verified\.result is "failed"\n        found: null' 'the verification left unrecorded'
+    Assert-Equal 1 $run.ExitCode 'exit code when the verification is not recorded'
 }
 
 Test 'when the agent does nothing, each fact is reported as passed or failed with what was found, the folder is kept and the run fails' {

@@ -1,0 +1,19 @@
+{
+  "routine": "collect",
+  "prompt": "Collect.",
+  "expect": [
+    { "file": "state/proposal.json", "field": "operations[0].type", "is": "commitment" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.owner", "is": "the tech lead" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.source.where", "is": "exports/mail/received/list of the onboarding screens.txt" },
+    { "file": "state/proposal.json", "field": "operations[1]", "is": null },
+    { "file": "state/proposal.json", "field": "unclassified[0]", "is": null },
+    { "file": "state/proposal.json", "field": "sources_read[1].source", "is": "mail" },
+    { "file": "state/proposal.json", "field": "sources_read[1].items", "is": 1 },
+    { "file": "state/proposal.json", "field": "sources_not_covered", "is": ["tracker"] },
+    { "file": "state/proposal.json", "line": "permit", "absent": true },
+    { "file": "state/proposal.json", "line": "car park", "absent": true },
+    { "file": "state/proposal.json", "line": "facilities", "absent": true },
+    { "records": "commitments", "count": 1 },
+    { "file": "state/unclassified.md", "absent": true }
+  ]
+}

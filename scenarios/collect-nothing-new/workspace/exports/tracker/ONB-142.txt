@@ -1,0 +1,12 @@
+Key: ONB-142
+Project: ONB
+Title: Identity document scan screen
+Status: In progress
+Assignee: the tech lead
+Reporter: the PO
+Updated: 2026-03-11T16:40:00+01:00
+
+The customer scans an identity document during onboarding.
+
+Comment by the tech lead, 11 March 2026:
+I will deliver this screen to the PO by 27 March 2026.

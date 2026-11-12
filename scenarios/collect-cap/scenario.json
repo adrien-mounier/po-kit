@@ -1,0 +1,17 @@
+{
+  "routine": "collect",
+  "prompt": "Collect. I accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "record": "C-{year}-002", "field": "owner", "is": "the tech lead" },
+    { "record": "C-{year}-002", "field": "due_date", "is": "2026-03-20" },
+    { "record": "C-{year}-002", "field": "source.where", "is": "exports/mail/received/screens list.txt" },
+    { "record": "C-{year}-003", "field": "owner", "is": "the architect" },
+    { "record": "C-{year}-003", "field": "due_date", "is": "2026-03-25" },
+    { "record": "C-{year}-003", "field": "source.where", "is": "exports/mail/received/sequence diagrams.txt" },
+    { "records": "commitments", "count": 3 },
+    { "file": "state/last-collect.json", "field": "sources.mail.items", "is": 2 },
+    { "file": "state/last-collect.json", "field": "sources.mail.cutoff", "is": "2026-03-11T14:05:00+01:00" },
+    { "file": "state/last-collect.json", "field": "sources.mail.cap_reached", "is": true },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}
