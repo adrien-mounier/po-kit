@@ -1,0 +1,20 @@
+{
+  "routine": "collect",
+  "prompt": "Collect.",
+  "expect": [
+    { "file": "state/proposal.json", "field": "operations[0].type", "is": "commitment" },
+    { "file": "state/proposal.json", "field": "operations[0].interpreted", "is": false },
+    { "file": "state/proposal.json", "field": "operations[0].fields.owner", "is": "the architect" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.due_date", "is": "2026-03-26" },
+    { "file": "state/proposal.json", "field": "operations[1].type", "is": "commitment" },
+    { "file": "state/proposal.json", "field": "operations[1].interpreted", "is": true },
+    { "file": "state/proposal.json", "field": "operations[1].fields.owner", "is": "the tech lead" },
+    { "file": "state/proposal.json", "field": "operations[1].fields.due_date", "is": "2026-03-31" },
+    { "file": "state/proposal.json", "field": "operations[2]", "is": null },
+    { "file": "state/proposal.json", "field": "notes_processed", "is": ["pilot-preparation.md"] },
+    { "records": "commitments", "count": 1 },
+    { "records": "decisions", "count": 0 },
+    { "records": "risks", "count": 0 },
+    { "file": "inbox/pilot-preparation.md" }
+  ]
+}
