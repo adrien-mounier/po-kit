@@ -42,7 +42,7 @@ _Avoid_: resolution, agreement
 
 **Risk**:
 A threat to a commitment, a blocking decision that cannot wait, or a significant stakeholder misalignment.
-_Avoid_: issue, blocker, alert
+_Avoid_: issue, blocker (except in the heading "Blockers and decisions expected from the sponsor" of the weekly synthesis), alert
 
 **Objective**:
 One of the PO's numbered goals for a review period. Records can be attached to objectives.
@@ -59,7 +59,7 @@ Where a subject sits in time: now, next or later.
 _Avoid_: phase, priority, status
 
 **Clearance**:
-Whether someone with authority has approved work on a subject: cleared, pending or out of frame. It is independent of the horizon. (French: pastille « feu vert ».)
+Whether someone with authority has approved work on a subject: cleared, pending, out of frame, or none, which is what a subject carries until a clearance is stated. It is independent of the horizon. (French: pastille « feu vert ».)
 _Avoid_: approval status, validation, sign-off
 
 **Out of frame**:
@@ -84,7 +84,7 @@ _Avoid_: delete, overwrite, archive
 
 **Stale**:
 Said of a record or a source that has not been updated within its allowed delay. A commitment, decision or risk recorded or updated for a subject counts as an update of that subject.
-_Avoid_: outdated, old, expired
+_Avoid_: outdated, old (except "older than" its delay for an inbox note or an unclassified item), expired
 
 ### How the register changes
 
@@ -112,9 +112,29 @@ _Avoid_: filter, scope, query
 Collected material that looks relevant but matches no subject, held for the PO to sort.
 _Avoid_: misc, backlog, pending
 
+**Cutoff**:
+How far a collect has read a source: the next collect reads that source since its last cutoff.
+_Avoid_: checkpoint, cursor, watermark
+
+**Cap**:
+The most items a collect reads per source, set in the settings.
+_Avoid_: limit, quota, batch size
+
+**Collect state**:
+What the workspace remembers of the collects: for each source, how far it was read and how many items were read, and which sources were not covered.
+_Avoid_: sync state, cursor file, collect log
+
 **Proposal**:
 The list of register changes a routine has prepared and that awaits validation. Nothing reaches the register except through an applied proposal.
 _Avoid_: draft, patch, changeset
+
+**Plain fact**:
+An operation of a proposal that is quoted from a source, as opposed to an interpreted one: a decision, a status change, a deadline inferred.
+_Avoid_: raw fact, literal, quote
+
+**Validation mode**:
+The setting, all or interpreted, that says whether a routine waits for the PO before applying anything, or applies plain facts at once and waits only for interpreted operations.
+_Avoid_: approval mode, auto-apply, trust level
 
 **Check**:
 The verification of the whole register and of its staleness, run by the register tool.
@@ -124,7 +144,7 @@ _Avoid_: lint, audit, validation
 
 **View**:
 A document generated from the register for reading. It is never edited and always carries a stamp.
-_Avoid_: report, page, dashboard
+_Avoid_: report (except the check report), page, dashboard
 
 **Stamp**:
 The header of a view stating when it was generated, which register state it reflects and which sources were not covered.
@@ -134,6 +154,18 @@ _Avoid_: header, metadata, footer
 The view listing every active subject by horizon, with its clearance.
 _Avoid_: roadmap, board, portfolio overview
 
+**Check report**:
+The view the check writes, errors first, then warnings grouped by rule: the one view named a report.
+_Avoid_: check results, audit report, lint output
+
 **Weekly synthesis**:
 The view written each week for the sponsor.
 _Avoid_: weekly report, weekly brief, status report
+
+**Export**:
+The digest of the register for a period that the register tool prints: the material the weekly synthesis is written from.
+_Avoid_: dump, extract, report
+
+**Verify**:
+To check a stored view against the register: its stamp is present, and every record identifier it cites exists and is current.
+_Avoid_: validate, review, proofread
