@@ -1,11 +1,11 @@
 ---
 name: collect
-description: Turn the notes of the PO's inbox, and any text the PO pastes, into a proposal of commitments, decisions, risks and subject updates, shown to the PO before anything is recorded. Use when the PO says "collect", has dropped notes in the inbox, or pastes notes to record.
+description: Turn the notes of the PO's inbox, any text the PO pastes, and the mail and tracker tickets within the watch lists into a proposal of commitments, decisions, risks and subject updates, shown to the PO before anything is recorded. Use when the PO says "collect", has dropped notes in the inbox, or pastes notes to record.
 ---
 
 # Collect
 
-You read the PO's notes and say what they change in the register, the PO decides, and the register tool writes. Your only writes are a pasted text saved as a note in `inbox/`, the verification of a connector in `connections.json`, and `state/proposal.json`.
+You read the PO's notes, and the mail and the tickets within the watch lists, and say what they change in the register, the PO decides, and the register tool writes. Your only writes are a pasted text saved as a note in `inbox/`, the verification of a connector in `connections.json`, and `state/proposal.json`.
 
 Work in the PO's workspace, under its rules: read `AGENTS.md` there first when it is not already in your context. It says how to call the register tool.
 

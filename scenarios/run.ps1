@@ -39,7 +39,10 @@
 #   { "file": "<path>", "line": "<text>" }                          a line of the file contains the text
 #   { "file": "<path>", "line": "<text>", "absent": true }          no line of the file does
 # A file is named from the workspace: the pending proposal is state/proposal.json, the portfolio
-# view is views/portfolio.md. A path to a field goes down with dots, and into a list with a
+# view is views/portfolio.md. What the agent printed is ../agent-output.txt, beside the workspace:
+# its answer, and all that it opened when its command prints that too (for Claude Code,
+# --output-format stream-json --verbose in place of --output-format json), so that a fact can
+# hold that a file was never opened. A path to a field goes down with dots, and into a list with a
 # position from 0, or from -1 for the last: watch_list.people, history[0].field, history[-1].new.
 # A value or a text is compared exactly: a text with its case, a list with its order. Name the
 # fields of a group one by one.

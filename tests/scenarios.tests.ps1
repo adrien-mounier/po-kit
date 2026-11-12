@@ -279,6 +279,7 @@ Test 'the scenario "collect mail outside every watch list" passes when the propo
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output '  ok    file state/proposal\.json: sources_read\[1\]\.items is 1' 'one mail is read'
     Assert-Match $run.Output '  ok    file state/proposal\.json has no line containing "permit"' 'the mail outside the watch lists is not quoted'
+    Assert-Match $run.Output '  ok    file \.\./agent-output\.txt has no line containing "car park"' 'nor in what the agent printed'
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
 
     $quoted = $MailRead + @{ unclassified = @(@{ source = 'exports/mail/received/parking permits.txt'; text = 'Renew your parking permit before 20 March 2026.' }) }
@@ -287,6 +288,14 @@ Test 'the scenario "collect mail outside every watch list" passes when the propo
     Assert-Match $run.Output '  FAIL  file state/proposal\.json has no line containing "permit"' 'the mail outside the watch lists quoted as unclassified'
     Assert-Match $run.Output '  FAIL  file state/proposal\.json: unclassified\[0\] is null' 'the unclassified item'
     Assert-Equal 1 $run.ExitCode 'exit code when the mail is quoted'
+
+    # What the agent printed is checked too: its answer and, when its command prints them, the
+    # files it opened.
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $matched -Do '-Pending -Say "I left aside a notice: the car park closes for resurfacing."' -Collect $MailRead) collect-mail-outside-watch-lists
+
+    Assert-Match $run.Output '  ok    file state/proposal\.json has no line containing "car park"' 'the proposal quotes nothing of the mail'
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "car park"' 'the mail outside the watch lists quoted in what the agent printed'
+    Assert-Equal 1 $run.ExitCode 'exit code when the agent prints something of the mail'
 }
 
 Test 'the scenario "collect unclassified mail" passes when the mail a watch list matched, which fits no subject, lands in the unclassified list and yields no record' {
