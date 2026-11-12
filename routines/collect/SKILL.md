@@ -28,7 +28,7 @@ Done when no proposal is pending.
 
 A file you cannot read as text is not processed: it stays in the inbox, and you tell the PO.
 
-When there is no note, and no mail or ticket to treat as one, tell the PO there is nothing new to collect, and which sources are not covered: the routine ends here, with no proposal.
+When there is no note, and no mail or ticket to treat as one, there is nothing new to collect, and the register tool must still learn that the sources were read. Write the proposal of step 5 with no operation, `"operations": []`, and run the register tool's `apply` at once, without asking the PO: there is nothing to validate. Then tell the PO that nothing new was found, and which sources are not covered: the routine ends here.
 
 Done when you have read every note of the inbox, and every source of `connections.json` is read or not covered.
 

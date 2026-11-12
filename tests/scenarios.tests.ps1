@@ -377,11 +377,23 @@ Test 'the scenario "collect up to the cap" passes when the two oldest mails are 
     Assert-Equal 1 $run.ExitCode 'exit code when the collect reads beyond the cap'
 }
 
-Test 'the scenario "collect with nothing new" passes when the collect proposes nothing, and fails when it proposes again what an earlier collect read' {
-    $run = Invoke-Scenarios -Agent $FakeAgent collect-nothing-new
+Test 'the scenario "collect with nothing new" passes when the collect records nothing and still says that the sources were read, and fails when it leaves the collect state as it was or proposes again what an earlier collect read' {
+    # A proposal with no operation, applied at once: the collect state moves to the time of this collect.
+    $now = "${Day}T08:30:00+01:00"
+    $quiet = @{ collected_at = $now; sources_read = (New-SourceRead notes 0 $now), (New-SourceRead mail 0 $now), (New-SourceRead tracker 0 $now); sources_not_covered = @() }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() @() -Collect $quiet) collect-nothing-new
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    Assert-Match $run.Output '  ok    file state/proposal\.json is absent' 'nothing is proposed'
+    Assert-Match $run.Output '  ok    file state/proposal\.json is absent' 'no proposal waits'
+    Assert-Match $run.Output '  ok    register/commitments holds 1 record\(s\)' 'no record'
+    Assert-Match $run.Output '  ok    file state/last-collect\.json has no line containing "2026-03-12T08:30:00\+01:00"' 'the collect state moved'
+    Assert-Match $run.Output "  ok    file state/last-collect\.json has a line containing `"${Day}T`"" 'to the day of the run'
+
+    $run = Invoke-Scenarios -Agent $FakeAgent collect-nothing-new
+
+    Assert-Match $run.Output '  FAIL  file state/last-collect\.json has no line containing "2026-03-12T08:30:00\+01:00"' 'the collect state left as it was'
+    Assert-Equal 1 $run.ExitCode 'exit code when the collect state does not move'
 
     $again = New-ItemOperation 'exports/mail/received/list of the onboarding screens.txt' @{ title = 'Send the list of the onboarding screens'; owner = 'the tech lead'; due_date = '2026-03-20' }
     $collect = @{ sources_read = (New-SourceRead notes 0), (New-SourceRead mail 1), (New-SourceRead tracker 0); sources_not_covered = @() }
