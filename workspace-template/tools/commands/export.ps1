@@ -1,8 +1,7 @@
 # export: prints the digest of the register that the weekly synthesis is written from. It writes
 # nothing.
 #
-#   export 2026-03-03       the register as it is, and what changed since that date, included
-#   export 2026-03-03 fr    in another language than languages.sponsor of settings.json
+#   export 2026-03-03    the register as it is, and what changed since that date, included
 #
 # The same register state, the same date and the same moment given as -Now print the same export.
 #
@@ -23,8 +22,8 @@
 #
 # A record is one line: its title, its identifier in brackets as a view cites it, its type, its
 # evidence level, then what it says. A value the synthesis must state and the record does not give
-# is written "missing". Only the stamp and the portfolio view are in the language: the rest is read
-# by the agent, as the preview is.
+# is written "missing". Only the stamp and the portfolio view are in the language of the sponsor,
+# languages.sponsor of settings.json: the rest is read by the agent, as the preview is.
 
 function Get-OrMissing($Value) {
     # A value on one line, or the word that says the record does not give it.
@@ -37,12 +36,7 @@ function Format-Record($Record, [string[]]$More = @()) {
     $says = @(
         if ($Record.type -ceq 'subject') {
             "horizon: $($Record.horizon)"
-            $clearance = "clearance: $($Record.clearance)"
-            if ($Record.clearance -ceq 'cleared') {
-                if ($Record.cleared_by) { $clearance += " by $(Format-Value $Record.cleared_by)" }
-                if ($Record.cleared_on) { $clearance += " on $($Record.cleared_on)" }
-            }
-            $clearance
+            "clearance: $(Format-Clearance $Record $Record.clearance 'by {0}' 'on {0}')"
         }
         else { "subject: $($Record.subject)"; "date of fact: $($Record.date_of_fact)"; "status: $($Record.status)" }
         if ($Record.type -ceq 'commitment') { "owner: $(Get-OrMissing $Record.owner)"; "due date: $(Get-OrMissing $Record.due_date)" }
@@ -66,14 +60,10 @@ $since = "$($Arguments | Select-Object -First 1)"
 if (-not (Test-IsoDate $since)) {
     Stop-Run "export takes the date its period starts on, as an ISO date (yyyy-mm-dd)$(if ($since) { ", not '$since'" }): export 2026-03-03"
 }
-$labels = Get-Labels $(if ($Arguments.Count -gt 1) { $Arguments[1] } else { $Settings.languages.sponsor })
+$labels = Get-Labels $Settings.languages.sponsor
 
-# Every record of the register, in the order of the identifiers, compared character by character:
-# the same on every machine.
-$paths = [string[]]@(Get-ChildItem -LiteralPath (Join-Path $Workspace 'register') -Recurse -File -Filter *.json | ForEach-Object { $_.FullName })
-$ids = [string[]]@($paths | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })
-[Array]::Sort($ids, $paths, [StringComparer]::Ordinal)
-$all = @($paths | ForEach-Object { Read-JsonFile $_ })
+# Every record of the register, type after type, in the order of the identifiers.
+$all = @(Get-RecordFiles | ForEach-Object { Read-JsonFile $_.path })
 
 # What the export leaves out, so that an abandoned plan cannot resurface: a record that is
 # superseded or closed, and a record attached to a closed subject, which would name that subject.

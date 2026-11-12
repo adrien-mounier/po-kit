@@ -110,24 +110,23 @@ Test 'export says of a source that the last collect stopped at the cap, so that 
         ) -join "`n") (Get-Section $run.Output 'Coverage per source') 'coverage after a collect that stopped at the cap'
 }
 
-Test 'export ends with the portfolio view as view writes it under its stamp, in the language of the sponsor or in the language asked' {
+Test 'export ends with the portfolio view as view writes it under its stamp, in the language of the sponsor' {
     $ws = New-TestWorkspaceWithWeek
-    $settings = Read-Json (Join-Path $ws 'settings.json')
-    $settings.languages.sponsor = 'fr'
-    Write-Json (Join-Path $ws 'settings.json') $settings
 
-    foreach ($asked in @{ arguments = @(); language = 'fr'; now = 'Maintenant' }, @{ arguments = @('en'); language = 'en'; now = 'Now' }) {
-        $arguments = $asked.arguments
-        $run = Invoke-Register $ws export 2026-03-10 @arguments -Now $Tuesday
-        Assert-Equal 0 $run.ExitCode "exit code of export $arguments, with output: $($run.Output)"
-        $view = Invoke-Register $ws view $asked.language -Now $Tuesday
-        Assert-Equal 0 $view.ExitCode "exit code of view $($asked.language), with output: $($view.Output)"
+    foreach ($sponsor in @{ language = 'fr'; now = 'Maintenant' }, @{ language = 'en'; now = 'Now' }) {
+        $settings = Read-Json (Join-Path $ws 'settings.json')
+        $settings.languages.sponsor = $sponsor.language
+        Write-Json (Join-Path $ws 'settings.json') $settings
+        $run = Invoke-Register $ws export 2026-03-10 -Now $Tuesday
+        Assert-Equal 0 $run.ExitCode "exit code of export for a sponsor who reads '$($sponsor.language)', with output: $($run.Output)"
+        $view = Invoke-Register $ws view $sponsor.language -Now $Tuesday
+        Assert-Equal 0 $view.ExitCode "exit code of view $($sponsor.language), with output: $($view.Output)"
 
         # The view: its title, its stamp, then every subject under its horizon.
         $written = [IO.File]::ReadAllText((Join-Path $ws 'views\portfolio.md'), $Utf8) -replace '\r\n', "`n"
-        $horizons = $written.Substring($written.IndexOf("## $($asked.now)`n"))
-        Assert-Match $horizons '\| Mobile onboarding \[mobile-onboarding\] +\| ' "the view written in '$($asked.language)'"
-        Assert-True ($run.Output + "`n").EndsWith("`n## Portfolio view`n`n$horizons") "the export $arguments does not end with the portfolio view in '$($asked.language)':`n$($run.Output)"
+        $horizons = $written.Substring($written.IndexOf("## $($sponsor.now)`n"))
+        Assert-Match $horizons '\| Mobile onboarding \[mobile-onboarding\] +\| ' "the view written in '$($sponsor.language)'"
+        Assert-True ($run.Output + "`n").EndsWith("`n## Portfolio view`n`n$horizons") "the export does not end with the portfolio view in '$($sponsor.language)':`n$($run.Output)"
     }
 }
 
@@ -154,7 +153,7 @@ Test 'a record that is superseded or closed, or attached to a closed subject, is
     Assert-Match $run.Output '(?m)^- Customers keep asking for paper \[R-2026-004\] ' 'the risk that left the closed subject'
 }
 
-Test 'export includes the stamp of the view to write from it, as view writes it: in the language of the sponsor, or in the language asked' {
+Test 'export includes the stamp of the view to write from it, as view writes it, in the language of the sponsor' {
     $ws = New-TestWorkspaceWithWeek
     $state = "$(git -C $ws rev-parse HEAD:register)".Substring(0, 12)
     $english = "> Generated: $Tuesday.`n> Register state: $state.`n> Last collect: 2026-03-10T08:30:00+01:00.`n> Sources not covered by the last collect: mail, tracker."
@@ -172,10 +171,6 @@ Test 'export includes the stamp of the view to write from it, as view writes it:
     Assert-Equal $french (Get-Section $run.Output 'Stamp') 'stamp when the sponsor reads French'
     # Only the stamp is in the language: the export is read by the agent, as the preview is.
     Assert-Equal (Get-Section (Get-WeekExport) 'Open commitments') (Get-Section $run.Output 'Open commitments') 'open commitments when the sponsor reads French'
-
-    $run = Invoke-Register $ws export 2026-03-10 en -Now $Tuesday
-    Assert-Equal 0 $run.ExitCode "exit code when English is asked, with output: $($run.Output)"
-    Assert-Equal $english (Get-Section $run.Output 'Stamp') 'stamp when English is asked'
 }
 
 Test 'export writes nothing in the workspace, and prints the same for the same register state and the same dates' {
@@ -191,16 +186,22 @@ Test 'export writes nothing in the workspace, and prints the same for the same r
     Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
 }
 
-Test 'export without the date its period starts on, with a date that is not an ISO date or in a language without labels is refused' {
+Test 'export without the date its period starts on, with a date that is not an ISO date or for a sponsor whose language has no labels is refused' {
     $ws = New-TestWorkspaceWithWeek
     $before = Get-WorkspaceSnapshot $ws
     $refusals = @(
         @{ arguments = @(); reason = 'export takes the date its period starts on, as an ISO date \(yyyy-mm-dd\)' },
         @{ arguments = @('10/03/2026'); reason = "as an ISO date \(yyyy-mm-dd\), not '10/03/2026'" },
         @{ arguments = @('fr'); reason = "as an ISO date \(yyyy-mm-dd\), not 'fr'" },
-        @{ arguments = @('2026-03-10', 'de'); reason = "Unsupported language 'de'.*Languages: en, fr\..*languages\.sponsor for export" }
+        @{ arguments = @('2026-03-10'); sponsor = 'de'; reason = "Unsupported language 'de'.*Languages: en, fr\..*languages\.sponsor for export" }
     )
     foreach ($refusal in $refusals) {
+        if ($refusal.sponsor) {
+            $settings = Read-Json (Join-Path $ws 'settings.json')
+            $settings.languages.sponsor = $refusal.sponsor
+            Write-Json (Join-Path $ws 'settings.json') $settings
+            $before = Get-WorkspaceSnapshot $ws
+        }
         $arguments = $refusal.arguments
         $run = Invoke-Register $ws export @arguments -Now $Tuesday
 

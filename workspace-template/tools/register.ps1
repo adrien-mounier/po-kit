@@ -663,7 +663,7 @@ function Get-Labels([string]$Language) {
     $file = Join-Path $Tools "labels\$Language.json"
     if ($Language -cnotmatch '^[a-z]+$' -or -not (Test-Path -LiteralPath $file)) {
         $known = (Get-ChildItem (Join-Path $Tools 'labels\*.json') | ForEach-Object { $_.BaseName }) -join ', '
-        Stop-Run "Unsupported language '$Language'. Nothing was written. Languages: $known. view and export take the language as an argument. Without one it is, in settings.json, languages.default for view and apply, and languages.sponsor for export."
+        Stop-Run "Unsupported language '$Language'. Nothing was written. Languages: $known. view takes the language as an argument. Without one it is, in settings.json, languages.default for view and apply. It is always languages.sponsor for export."
     }
     Read-JsonFile $file
 }
@@ -709,24 +709,28 @@ function Write-Table([string[]]$Header, [object[]]$Rows) {
     }
 }
 
+function Format-Clearance($Subject, [string]$Clearance, [string]$By, [string]$On) {
+    # The clearance of a subject in words, on one line. A cleared subject also says who cleared it
+    # and when, as far as its record gives them: $By and $On are the words for it, with {0} where
+    # the name and the date go.
+    if ($Subject.clearance -ceq 'cleared') {
+        if ($Subject.cleared_by) { $Clearance += ' ' + ($By -f (Format-Value $Subject.cleared_by)) }
+        if ($Subject.cleared_on) { $Clearance += ' ' + ($On -f $Subject.cleared_on) }
+    }
+    $Clearance
+}
+
 function Get-PortfolioHorizons($Labels) {
     # The portfolio view below its title and its stamp, as lines: every active subject under its
     # horizon. export prints these lines too, for the weekly synthesis that opens with them.
     $portfolio = $Labels.portfolio
-    $folder = Join-Path $Workspace (Get-Definition 'subject').folder
-    # In the order of their identifiers, compared character by character: the same on every machine.
-    $ids = [string[]]@(Get-ChildItem -LiteralPath $folder -Filter *.json | ForEach-Object { $_.BaseName })
-    [Array]::Sort($ids, [StringComparer]::Ordinal)
-    $subjects = @($ids | ForEach-Object { Read-JsonFile (Join-Path $folder "$_.json") } | Where-Object { $_.status -ceq 'active' })
+    # In the order of their identifiers.
+    $subjects = @(Get-RecordFiles | Where-Object { $_.type -eq 'subject' } | ForEach-Object { Read-JsonFile $_.path } | Where-Object { $_.status -ceq 'active' })
     $lines = @()
     foreach ($horizon in 'now', 'next', 'later') {
         $lines += '', "## $($portfolio.horizons.$horizon)", ''
         $rows = @(foreach ($subject in $subjects | Where-Object { $_.horizon -ceq $horizon }) {
-                $clearance = $portfolio.clearances.($subject.clearance)
-                if ($subject.clearance -ceq 'cleared') {
-                    if ($subject.cleared_by) { $clearance += ' ' + ($portfolio.cleared_by -f $subject.cleared_by) }
-                    if ($subject.cleared_on) { $clearance += ' ' + ($portfolio.cleared_on -f $subject.cleared_on) }
-                }
+                $clearance = Format-Clearance $subject $portfolio.clearances.($subject.clearance) $portfolio.cleared_by $portfolio.cleared_on
                 # A date that is not confirmed is not shown, so that the view never promises it.
                 $cells = "$($subject.title) [$($subject.id)]", $portfolio.kinds.($subject.kind), $clearance,
                     $(if ($subject.next_date_confirmed) { "$($subject.next_date)" } else { '' }), "$($subject.next_step)"
@@ -794,15 +798,16 @@ function Get-DaysSince([string]$Date) {
 }
 
 function Get-RecordFiles {
-    # Every record file of the register, type after type, in the order of the file names compared
-    # character by character: its type, its path, its name from the workspace (file) and the
-    # identifier its name gives (id).
+    # Every record file of the register, type after type, in the order of the identifiers that the
+    # file names give, compared character by character, which is the same on every machine: its
+    # type, its path, its name from the workspace (file) and its identifier (id).
     foreach ($definition in Get-ChildItem (Join-Path $Tools 'definitions\*.json') -Exclude common.json) {
         $folder = Join-Path $Workspace (Read-JsonFile $definition.FullName).folder
         $paths = [string[]]@(Get-ChildItem -LiteralPath $folder -Recurse -File -Filter *.json | ForEach-Object { $_.FullName })
-        [Array]::Sort($paths, [StringComparer]::Ordinal)
-        foreach ($path in $paths) {
-            @{ type = $definition.BaseName; path = $path; file = $path.Substring($Workspace.Length + 1).Replace('\', '/'); id = [IO.Path]::GetFileNameWithoutExtension($path) }
+        $ids = [string[]]@($paths | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })
+        [Array]::Sort($ids, $paths, [StringComparer]::Ordinal)
+        for ($n = 0; $n -lt $paths.Count; $n++) {
+            @{ type = $definition.BaseName; path = $paths[$n]; file = $paths[$n].Substring($Workspace.Length + 1).Replace('\', '/'); id = $ids[$n] }
         }
     }
 }
