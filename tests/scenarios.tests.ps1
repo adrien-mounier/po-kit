@@ -190,24 +190,24 @@ Test 'the scenario "collect waits for the PO" passes when the proposal stays pen
     Assert-Equal 1 $run.ExitCode 'exit code when the proposal is applied unasked'
 }
 
-Test 'the scenario "collect records the plain facts" passes when the commitment is recorded without asking and the decision still waits, and fails when the decision is recorded too' {
+Test 'the scenario "collect records the plain facts" passes when the quoted fact is recorded without asking and the commitment whose deadline is inferred still waits, and fails when that one is recorded too' {
     $note = 'pilot-preparation.md'
-    $awaited = New-NoteOperation decision $note @{ title = 'Choose the branches of the pilot'; needed_from = 'the sponsor'; needed_by = '2026-03-27'; date_of_fact = '2026-03-12' }
-    $awaited.interpreted = $true
-    $operations = (New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }), $awaited
+    $inferred = New-NoteOperation commitment $note @{ title = 'Send the list of the branches of the pilot'; owner = 'the tech lead'; owed_to = 'the PO'; due_date = '2026-03-31'; date_of_fact = '2026-03-12' }
+    $inferred.interpreted = $true
+    $operations = (New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }), $inferred
 
     $run = Invoke-Scenarios -Agent (New-CollectAgent $note $operations -Do '-Plain') collect-records-plain-facts
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    Assert-Match $run.Output "  ok    record C-$Year-002: owner is `"the architect`"" 'the plain fact is in the register'
-    foreach ($fact in 'operations\[0\]\.type is "decision"', 'operations\[0\]\.interpreted is true', 'operations\[1\] is null', 'notes_processed is null') {
+    Assert-Match $run.Output "  ok    record C-$Year-002: owner is `"the architect`"" 'the quoted fact is in the register'
+    foreach ($fact in 'operations\[0\]\.interpreted is true', 'operations\[0\]\.fields\.owner is "the tech lead"', 'operations\[0\]\.fields\.due_date is "2026-03-31"', 'operations\[1\] is null', 'notes_processed is null') {
         Assert-Match $run.Output "  ok    file state/proposal\.json: $fact" 'expected fact reported as passed'
     }
     Assert-Match $run.Output "  ok    file inbox/done/$Month/pilot-preparation\.md is there" 'the note is filed'
 
     $run = Invoke-Scenarios -Agent (New-CollectAgent $note $operations) collect-records-plain-facts
 
-    Assert-Match $run.Output '  FAIL  register/decisions holds 0 record\(s\)\n        found: 1 record\(s\)' 'the interpreted line recorded before the PO accepted'
+    Assert-Match $run.Output '  FAIL  register/commitments holds 2 record\(s\)\n        found: 3 record\(s\)' 'the inferred deadline recorded before the PO accepted'
     Assert-Equal 1 $run.ExitCode 'exit code when the whole proposal is applied'
 }
 
