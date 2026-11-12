@@ -166,8 +166,10 @@ function Test-Value($Definition, $Value, [string]$Name, [switch]$Partial, [switc
     # the fields an update names. -Stored takes the value as a record of the register: it holds
     # the fields set by the register tool, which a proposal neither gives nor owes.
     if ($null -eq $Value -or ($Value -is [string] -and -not $Value.Trim())) {
-        if ($Definition.required) { "missing required field '$Name'" }
-        return
+        if ($Definition.required) { "missing required field '$Name'"; return }
+        # A blank text is no value: it is left out, unless only listed values are allowed, which
+        # it is not one of.
+        if ($null -eq $Value -or -not ($Definition.allowed -or $Definition.allowed_from)) { return }
     }
     $isGroup = $Value -is [array] -or $Value -is [System.Management.Automation.PSCustomObject]
     $fits = switch ($Definition.type) {
@@ -423,6 +425,19 @@ function Test-ProposalResult($Operations, [int[]]$Lines) {
     foreach ($found in $updated.Values) { Test-RecordRules $found.type $found.record | ForEach-Object { "Line $($found.line): $($_.reason)" } }
 }
 
+function Test-Brackets($Value, [string]$Name) {
+    # What is wrong with the square brackets in what an operation says of a record: one reason per
+    # text that holds one. verify reads whatever a view holds between square brackets as a record
+    # cited, and what a record says reaches the views.
+    if ($Value -is [string]) {
+        if ($Value -match '[\[\]]') { "field '$Name' holds a square bracket: square brackets are reserved for citing records in a view, write parentheses instead" }
+    }
+    elseif ($Value -is [array]) { foreach ($item in $Value) { Test-Brackets $item $Name } }
+    elseif ($Value -is [System.Management.Automation.PSCustomObject]) {
+        foreach ($field in $Value.PSObject.Properties) { Test-Brackets $field.Value "$Name.$($field.Name)".TrimStart('.') }
+    }
+}
+
 function Get-PendingProposal {
     # The operations of the pending proposal, validated in full. Any problem refuses the proposal
     # whole: the run ends with the reasons and a failure code, and nothing is written.
@@ -440,6 +455,8 @@ function Get-PendingProposal {
         $line++
         $problems = @(
             if ($operation.interpreted -isnot [bool]) { 'the operation must state "interpreted": true when it is interpreted, false when it is a plain fact' }
+            Test-Brackets $operation.fields ''
+            Test-Brackets $operation.source 'source'
             if ($operation.op -ceq 'update') { Test-Update $operation $superseded }
             elseif ($operation.op -cne 'create') { "unknown operation '$($operation.op)'; allowed: create, update" }
             elseif ("$($operation.type)" -cnotmatch '^[a-z]+$' -or $operation.type -eq 'common' -or

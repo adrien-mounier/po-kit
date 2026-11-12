@@ -78,6 +78,7 @@ To modify or close:
 - To close: `"fields": { "status": "closed" }`.
 - `read_on` is today's date, read from the machine.
 - What the PO tells you is a plain fact: `"interpreted": false` and `"evidence_level": "fact"`.
+- Square brackets are reserved for citing records in a view: in every text of an operation, write parentheses in their place.
 - The register tool sets the identifier, the dates and the history.
 
 ## 4. Preview, then apply once the PO accepts

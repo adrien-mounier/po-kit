@@ -130,6 +130,58 @@ Test 'each type accepts its own statuses only, a decision must give its status a
     )
 }
 
+Test 'a blank text is refused where only listed values are allowed, in a created record or in an update' {
+    $ws = New-TestWorkspaceWithSubject
+    Set-Proposal $ws @{ operations = @(
+            (New-RecordOperation commitment @{ status = '' }),
+            (New-RecordOperation risk @{ status = ' ' }),
+            (New-UpdateOperation 'mobile-onboarding' @{ status = '' }),
+            (New-UpdateOperation 'mobile-onboarding' @{ clearance = '' }),
+            # A text that any value fits may be emptied: a next step that no longer holds.
+            (New-UpdateOperation 'mobile-onboarding' @{ next_step = ''; horizon = 'next' })
+        )
+    }
+
+    Assert-Refused $ws @(
+        "Line 1: field 'status' is ''; allowed: open, done, dropped, superseded",
+        "Line 2: field 'status' is ' '; allowed: open, closed, superseded",
+        "Line 3: field 'status' is ''; allowed: active, closed",
+        "Line 4: field 'clearance' is ''; allowed: cleared, pending, out of frame, none"
+    )
+}
+
+Test 'a text of a record that holds a square bracket is refused, in a created record and in an update: square brackets cite records in a view' {
+    $ws = New-TestWorkspaceWithSubject
+    $sourced = New-UpdateOperation 'mobile-onboarding' @{ horizon = 'next' }
+    $sourced.source = @{ where = 'mail from the tech lead, "[EXT] Target journey"'; read_on = '2026-03-10' }
+    Set-Proposal $ws @{ operations = @(
+            (New-SubjectOperation @{ title = 'Payments API [v2] contribution' }),
+            (New-RecordOperation commitment @{ owner = 'the tech lead]' }),
+            (New-UpdateOperation 'mobile-onboarding' @{ next_step = 'Review the API contract [v2]'; watch_list = @{ keywords = @('onboarding', '[pilot') } }),
+            $sourced
+        )
+    }
+
+    $reserved = 'holds a square bracket: square brackets are reserved for citing records in a view, write parentheses instead'
+    Assert-Refused $ws @(
+        "Line 1: field 'title' $reserved",
+        "Line 2: field 'owner' $reserved",
+        "Line 3: field 'next_step' $reserved",
+        "Line 3: field 'watch_list\.keywords' $reserved",
+        "Line 4: field 'source\.where' $reserved"
+    )
+
+    # What a proposal says of its collect reaches no view: a note keeps the name the PO gave it.
+    Add-InboxNote $ws 'call [draft].md'
+    Set-Proposal $ws @{
+        collected_at    = '2026-03-02T08:30:00+01:00'
+        notes_processed = @('call [draft].md')
+        unclassified    = @(@{ source = 'inbox/call [draft].md'; text = 'The cards team asks who reviews its form [urgent].' })
+    }
+    $run = Invoke-Register $ws preview
+    Assert-Equal 0 $run.ExitCode "exit code of preview for a collect whose note is named with square brackets, with output: $($run.Output)"
+}
+
 Test 'a record that does not state its evidence level, its source, when the source was read or the date of the fact is refused' {
     $ws = New-TestWorkspaceWithSubject
     Set-Proposal $ws @{ operations = @(

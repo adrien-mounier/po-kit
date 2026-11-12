@@ -131,6 +131,7 @@ Write `state/proposal.json` as UTF-8 without a byte order mark:
 - `sources_not_covered` names every source of `connections.json` that was not read, in the same order.
 - `notes_processed` holds the file name of every note read, without `inbox/`. The register tool files them under `inbox/done/` when the proposal is applied.
 - `fields` of an update holds only the fields that change, each with its whole new value, and the update carries its own `source`.
+- Square brackets are reserved for citing records in a view: in every text of an operation, write parentheses in their place.
 - The register tool sets the identifiers, the dates recorded and the history.
 
 Done when the proposal holds one operation per change found in step 4, and every note read is in `notes_processed`.

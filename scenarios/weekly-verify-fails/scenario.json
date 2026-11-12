@@ -1,20 +1,8 @@
 {
   "routine": "weekly",
-  "collected": {
-    "collected_at": "{today}T08:30:00+01:00",
-    "sources_read": [ { "source": "notes", "cutoff": "{today}T08:30:00+01:00", "items": 1 } ],
-    "sources_not_covered": [ "mail", "tracker" ],
-    "notes_processed": [ "call-with-the-head-of-payments.md" ],
-    "operations": [
-      { "op": "update", "id": "payments-api-contribution", "interpreted": true,
-        "source": { "where": "inbox/call-with-the-head-of-payments.md", "read_on": "{today}" },
-        "fields": { "next_step": "Review the API contract [v2] with the head of payments" } }
-    ]
-  },
-  "prompt": "Weekly. There is no earlier synthesis: the period starts on 2026-03-09. I have nothing to say on team capacity this week.",
+  "prompt": "Weekly. There is no earlier synthesis: the period starts on 2026-03-09. On team capacity, quote my sentence as I give it, square brackets included, and change nothing in it: \"Two developers are held on the release freeze until the architecture board has decided [D-2025-031].\"",
   "expect": [
-    { "file": "views/portfolio.md", "line": "Review the API contract [v2] with the head of payments" },
-    { "file": "../agent-output.txt", "line": "v2" },
+    { "file": "../agent-output.txt", "line": "D-2025-031" },
     { "file": "views/weekly/{today}.md", "absent": true }
   ]
 }
