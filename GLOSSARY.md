@@ -83,7 +83,7 @@ To replace a record by a newer one while keeping both, linked to each other.
 _Avoid_: delete, overwrite, archive
 
 **Stale**:
-Said of a record or a source that has not been updated within its allowed delay.
+Said of a record or a source that has not been updated within its allowed delay. A commitment, decision or risk recorded or updated for a subject counts as an update of that subject.
 _Avoid_: outdated, old, expired
 
 ### How the register changes

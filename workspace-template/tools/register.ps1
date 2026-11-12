@@ -807,6 +807,11 @@ function Get-CheckFindings($Labels) {
     foreach ($file in $files) { $held[$file.id] = $file.type }
     # The definition of each type is read once, whatever the number of records.
     $definitions = @{}
+    # A commitment, a decision or a risk recorded or updated for a subject counts as an update of
+    # that subject: the latest date updated among the records attached to each subject. A subject
+    # under Now is judged once every record is read.
+    $touched = New-Object Collections.Hashtable ([StringComparer]::Ordinal)
+    $underNow = @()
 
     foreach ($file in $files) {
         $record = try { Read-JsonFile $file.path } catch { }
@@ -856,9 +861,14 @@ function Get-CheckFindings($Labels) {
             $said = @(if ($from) { $details.needed_from -f $from }) + ($details.needed_by -f $record.needed_by) -join ', '
             @{ rule = 'decision_past_its_date'; about = $about; detail = $said }
         }
-        if ($file.type -eq 'subject' -and $record.status -ceq 'active' -and $record.horizon -ceq 'now' -and (Get-DaysSince $record.date_updated) -gt $delays.subject_stale) {
-            @{ rule = 'subject_stale'; about = $about; detail = $details.updated -f $record.date_updated }
+        if ($record.subject -and $record.date_updated -gt $touched[$record.subject]) { $touched[$record.subject] = $record.date_updated }
+        if ($file.type -eq 'subject' -and $record.status -ceq 'active' -and $record.horizon -ceq 'now') {
+            $underNow += @{ id = $file.id; about = $about; updated = $record.date_updated }
         }
+    }
+    foreach ($subject in $underNow) {
+        $updated = if ($touched[$subject.id] -gt $subject.updated) { $touched[$subject.id] } else { $subject.updated }
+        if ((Get-DaysSince $updated) -gt $delays.subject_stale) { @{ rule = 'subject_stale'; about = $subject.about; detail = $details.updated -f $updated } }
     }
 
     # A note waits in the inbox itself: the notes filed under inbox\done are processed.

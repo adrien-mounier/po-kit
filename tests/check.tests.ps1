@@ -233,6 +233,37 @@ Test 'a subject under Now that was not updated within the stale delay is a warni
     Assert-Equal '' (Get-Listed $check.Report $rule) 'stale subjects once the subject is updated'
 }
 
+Test 'a commitment, a decision or a risk recorded or updated for a subject counts as an update of that subject, which is not stale on that day' {
+    $ws = New-CheckedWorkspace @((New-SubjectOperation @{ title = 'Paper statements' }))
+    $rule = '### Subject under Now not updated for more than 7 day(s)'
+    $paper = 'Paper statements [paper-statements] (last updated: 2026-03-02)'
+
+    $check = Invoke-Check $ws 2026-03-10
+
+    Assert-Equal "Mobile onboarding [mobile-onboarding] (last updated: 2026-03-02)`n$paper" (Get-Listed $check.Report $rule) 'stale subjects before anything is recorded'
+
+    Set-Proposal $ws @{ operations = @(New-RecordOperation risk @{ title = 'The committee room is not booked' }) }
+    $applied = Invoke-Register $ws apply -Today 2026-03-10
+    Assert-Equal 0 $applied.ExitCode "exit code when the risk is recorded, with output: $($applied.Output)"
+
+    $check = Invoke-Check $ws 2026-03-10
+
+    # The other subject, for which nothing was recorded, is still stale.
+    Assert-Equal $paper (Get-Listed $check.Report $rule) 'stale subjects on the day a risk is recorded for one of them'
+
+    $check = Invoke-Check $ws 2026-03-18
+
+    Assert-Equal "Mobile onboarding [mobile-onboarding] (last updated: 2026-03-10)`n$paper" (Get-Listed $check.Report $rule) 'stale subjects eight days after the risk was recorded'
+
+    Set-Proposal $ws @{ operations = @(New-UpdateOperation 'C-2026-001' @{ due_date = '2026-04-10' }) }
+    $applied = Invoke-Register $ws apply -Today 2026-03-18
+    Assert-Equal 0 $applied.ExitCode "exit code when the commitment is updated, with output: $($applied.Output)"
+
+    $check = Invoke-Check $ws 2026-03-18
+
+    Assert-Equal $paper (Get-Listed $check.Report $rule) 'stale subjects on the day a commitment of one of them is updated'
+}
+
 Test 'records that are done, dropped, closed or superseded raise no staleness warning' {
     $ws = New-CheckedWorkspace @(
         (New-RecordOperation commitment @{ title = 'Send the pilot figures to the sponsor'; due_date = '2026-03-10' }),
