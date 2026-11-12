@@ -1,0 +1,20 @@
+{
+  "routine": "weekly",
+  "collected": {
+    "collected_at": "{today}T08:30:00+01:00",
+    "sources_read": [ { "source": "notes", "cutoff": "{today}T08:30:00+01:00", "items": 1 } ],
+    "sources_not_covered": [ "mail", "tracker" ],
+    "notes_processed": [ "call-with-the-head-of-payments.md" ],
+    "operations": [
+      { "op": "update", "id": "payments-api-contribution", "interpreted": true,
+        "source": { "where": "inbox/call-with-the-head-of-payments.md", "read_on": "{today}" },
+        "fields": { "next_step": "Review the API contract [v2] with the head of payments" } }
+    ]
+  },
+  "prompt": "Weekly. There is no earlier synthesis: the period starts on 2026-03-09. I have nothing to say on team capacity this week.",
+  "expect": [
+    { "file": "views/portfolio.md", "line": "Review the API contract [v2] with the head of payments" },
+    { "file": "../agent-output.txt", "line": "v2" },
+    { "file": "views/weekly/{today}.md", "absent": true }
+  ]
+}

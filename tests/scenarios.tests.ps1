@@ -509,6 +509,21 @@ Test 'the scenario "weekly with errors in the check" passes when the agent shows
     Assert-Equal 1 $run.ExitCode 'exit code when a synthesis is stored'
 }
 
+Test 'the scenario "weekly that verify refuses" passes when the agent names what failed and leaves no synthesis stored, and fails when it leaves one' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Say `"Not verified: v2 is not in the register. No synthesis is stored and no mail draft was created.`"" weekly-verify-fails
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file views/portfolio\.md has a line containing "Review the API contract \[v2\] with the head of payments"' 'the portfolio view holds square brackets that cite no record'
+    Assert-Match $run.Output '  ok    file \.\./agent-output\.txt has a line containing "v2"' 'what failed is named'
+
+    # Whatever the blocks say, the portfolio view of this register cannot be verified.
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent source-off) weekly-verify-fails
+
+    Assert-Match $run.Output "  FAIL  file views/weekly/$Day\.md is absent" 'the synthesis left stored although it is not verified'
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has a line containing "v2"' 'what failed is not named'
+    Assert-Equal 1 $run.ExitCode 'exit code when a synthesis is left stored'
+}
+
 Test 'the scenario "weekly without a start date" passes when the agent asks for the date and stores no synthesis, and fails when it stores one' {
     $run = Invoke-Scenarios -Agent "$FakeAgent -Say `"No synthesis is stored yet: on which date does the period start?`"" weekly-no-start-date
 
