@@ -150,36 +150,29 @@ Test 'a blank text is refused where only listed values are allowed, in a created
     )
 }
 
-Test 'a text of a record that holds a square bracket is refused, in a created record and in an update: square brackets cite records in a view' {
-    $ws = New-TestWorkspaceWithSubject
-    $sourced = New-UpdateOperation 'mobile-onboarding' @{ horizon = 'next' }
-    $sourced.source = @{ where = 'mail from the tech lead, "[EXT] Target journey"'; read_on = '2026-03-10' }
+Test 'a subject and a commitment whose texts hold a ticket reference in square brackets are previewed and applied as they are written' {
+    $ws = New-TestWorkspace
     Set-Proposal $ws @{ operations = @(
-            (New-SubjectOperation @{ title = 'Payments API [v2] contribution' }),
-            (New-RecordOperation commitment @{ owner = 'the tech lead]' }),
-            (New-UpdateOperation 'mobile-onboarding' @{ next_step = 'Review the API contract [v2]'; watch_list = @{ keywords = @('onboarding', '[pilot') } }),
-            $sourced
+            (New-SubjectOperation @{ title = 'Card dispute form [REQ#4521]' }),
+            (New-RecordOperation commitment @{ title = 'Review the wording [REQ#4522] of the form'; subject = 'line 1'; notes = 'Asked again in [REQ#4530].'
+                    source = @{ where = 'mail from the tech lead, "[EXT] Card dispute form"'; read_on = '2026-03-03' } })
         )
     }
 
-    $reserved = 'holds a square bracket: square brackets are reserved for citing records in a view, write parentheses instead'
-    Assert-Refused $ws @(
-        "Line 1: field 'title' $reserved",
-        "Line 2: field 'owner' $reserved",
-        "Line 3: field 'next_step' $reserved",
-        "Line 3: field 'watch_list\.keywords' $reserved",
-        "Line 4: field 'source\.where' $reserved"
-    )
+    $preview = Invoke-Register $ws preview
 
-    # What a proposal says of its collect reaches no view: a note keeps the name the PO gave it.
-    Add-InboxNote $ws 'call [draft].md'
-    Set-Proposal $ws @{
-        collected_at    = '2026-03-02T08:30:00+01:00'
-        notes_processed = @('call [draft].md')
-        unclassified    = @(@{ source = 'inbox/call [draft].md'; text = 'The cards team asks who reviews its form [urgent].' })
-    }
-    $run = Invoke-Register $ws preview
-    Assert-Equal 0 $run.ExitCode "exit code of preview for a collect whose note is named with square brackets, with output: $($run.Output)"
+    Assert-Equal 0 $preview.ExitCode "exit code of preview, with output: $($preview.Output)"
+    Assert-Match $preview.Output '\| Card dispute form \[REQ#4521\] +\|' 'title of the subject in the preview'
+    Assert-Match $preview.Output '\| Review the wording \[REQ#4522\] of the form +\|' 'title of the commitment in the preview'
+
+    $run = Invoke-Register $ws apply -Today 2026-03-03
+
+    Assert-Equal 0 $run.ExitCode "exit code of apply, with output: $($run.Output)"
+    Assert-Equal 'Card dispute form [REQ#4521]' (Read-Json (Join-Path $ws 'register\subjects\card-dispute-form-req-4521.json')).title 'title of the subject recorded'
+    $commitment = Read-Json (Join-Path $ws 'register\commitments\2026\C-2026-001.json')
+    Assert-Equal 'Review the wording [REQ#4522] of the form' $commitment.title 'title of the commitment recorded'
+    Assert-Equal 'Asked again in [REQ#4530].' $commitment.notes 'notes of the commitment recorded'
+    Assert-Equal 'mail from the tech lead, "[EXT] Card dispute form"' $commitment.source.where 'source of the commitment recorded'
 }
 
 Test 'a record that does not state its evidence level, its source, when the source was read or the date of the fact is refused' {

@@ -43,7 +43,7 @@ Done when you hold the export.
 Write the template, filled, to `views/weekly/<today's date>.md`, as UTF-8 without a byte order mark. A synthesis already stored today is replaced.
 
 - **Copy the stamp and the portfolio view** from the export line for line and character for character: every space, every bar and every dash of the tables as printed, and the words of the records as they are.
-- **Write the other blocks in the sponsor's language, from the lines of the export.** Each statement says what one line of the export says and ends with the identifier of that record in square brackets, as the export prints it: `[C-2026-004]`, or `[C-2026-004, D-2026-002]` for two. Square brackets serve for identifiers alone.
+- **Write the other blocks in the sponsor's language, from the lines of the export.** Each statement says what one line of the export says and ends with the identifier of that record in square brackets, as the export prints it: `[C-2026-004]`, or `[C-2026-004, D-2026-002]` for two. A text taken from the export may hold square brackets of its own, as a ticket reference in a title, `[REQ#4521]`: copy it as it is.
 - **Keep to the export.** A fact, a date or a name is in the synthesis because a line of the export gives it. The only other sources are the PO's sentence on team capacity and the date the period starts on.
 - **Keep the evidence level.** Each line of the export gives one: `fact` is stated plainly, `reported` as what a person said, `hypothesis` as a guess.
 - **Keep the headings and the set phrases** of the template word for word.
@@ -65,7 +65,7 @@ Done when `verify` answers `Verified`.
 - **It does**: create one mail draft through that connector, and leave it in the PO's drafts for the PO to review and send.
   - To: `sponsor.email` of `settings.json`. When it is empty, create no draft and tell the PO to fill it in.
   - Subject: in the sponsor's language, that this is the weekly synthesis, and today's date.
-  - Body: the synthesis as stored, with its identifiers taken out: each pair of square brackets, what it holds and the space before it.
+  - Body: the synthesis as stored, with its identifiers taken out: each pair of square brackets that cites records, with what it holds and the space before it. A pair cites records when all it holds is identifiers as the export prints them. Any other pair is text of a record, as `[REQ#4521]`, and stays.
 - **It does not**, or the draft cannot be created: the stored synthesis is the output.
 
 The stored synthesis keeps what was generated: it stays as verified, whatever the PO changes in the draft before sending it.

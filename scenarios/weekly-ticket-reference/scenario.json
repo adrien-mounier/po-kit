@@ -1,0 +1,23 @@
+{
+  "routine": "weekly",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "commitment", "interpreted": false,
+        "fields": {
+          "title": "Fix the address check of the onboarding form [REQ#4521]",
+          "subject": "mobile-onboarding", "date_of_fact": "2026-03-11",
+          "owner": "the tech lead", "owed_to": "the PO", "due_date": "2026-03-27",
+          "evidence_level": "fact",
+          "source": { "where": "conversation with the PO", "read_on": "{today}" } } }
+    ]
+  },
+  "prompt": "Weekly. There is no earlier synthesis: the period starts on 2026-03-09. I have nothing to say on team capacity this week.",
+  "expect": [
+    { "record": "C-{year}-002", "field": "title", "is": "Fix the address check of the onboarding form [REQ#4521]" },
+    { "verified": "views/weekly/{today}.md" },
+    { "exported": "views/weekly/{today}.md", "since": "2026-03-09" },
+    { "file": "views/weekly/{today}.md", "lines": [ "Open commitments:", "[REQ#4521]", "# Proposed priorities" ] },
+    { "file": "views/weekly/{today}.md", "lines": [ "Open commitments:", "[C-{year}-002]", "# Proposed priorities" ] },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

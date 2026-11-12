@@ -34,13 +34,43 @@ Test 'verify succeeds on a stored view that carries its stamp and cites, in brac
     Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
 }
 
-Test 'verify fails when a cited record is superseded or missing, and lists each identifier concerned' {
+Test 'verify reads square brackets as a citation only when all they hold is record identifiers: a ticket reference in a title is text, in the portfolio view and in a synthesis' {
+    $ws = New-TestWorkspaceWithWeek
+    Set-Proposal $ws @{ operations = @(
+            (New-SubjectOperation @{ title = 'Card dispute form [REQ#4521]' }),
+            (New-RecordOperation commitment @{ title = 'Review the wording [REQ#4522, REQ#4523] of the form'; subject = 'line 1'; owner = 'the PO' })
+        )
+    }
+    $applied = Invoke-Register $ws apply -Today 2026-03-10
+    Assert-Equal 0 $applied.ExitCode "exit code of apply, with output: $($applied.Output)"
+
+    # apply regenerated the portfolio view, which names the subject by its title.
+    $run = Invoke-Register $ws verify views\portfolio.md
+
+    Assert-Match ([IO.File]::ReadAllText((Join-Path $ws 'views\portfolio.md'), $Utf8)) '\| Card dispute form \[REQ#4521\] \[card-dispute-form-req-4521\] +\|' 'the subject in the portfolio view'
+    Assert-Equal 0 $run.ExitCode "exit code for the portfolio view, with output: $($run.Output)"
+
+    $view = Set-StoredView $ws (@('# Weekly synthesis', '') + (Get-ExportedStamp $ws) + @(
+            '', '## Progress and commitments', '',
+            'The card dispute form [REQ#4521] is under way [card-dispute-form-req-4521].',
+            'The PO reviews the wording [REQ#4522, REQ#4523] of the form [C-2026-007].',
+            'Nothing else is open [x], as agreed with [the sponsor] and the branch network [branch-network] [].'
+        ))
+
+    $run = Invoke-Register $ws verify $view
+
+    Assert-Equal 0 $run.ExitCode "exit code for the synthesis, with output: $($run.Output)"
+    Assert-Match $run.Output '\b2 record\(s\)' 'records cited: the subject and the commitment'
+}
+
+Test 'verify fails when a cited record is superseded, or is a numbered identifier that the register does not hold, and lists each identifier concerned' {
     $ws = New-TestWorkspaceWithWeek
     $view = Set-StoredView $ws (@('# Weekly synthesis', '') + (Get-ExportedStamp $ws) + @(
             '', '## Progress and commitments', '',
             'The onboarding pilot is presented to the retail steering committee on 20 March [C-2026-001].',
-            'The kiosks are ordered [C-2026-003, C-2026-099] for the branch network [branch-network].',
-            'The presentation of 20 March is confirmed [C-2026-001], as agreed with [the sponsor].'
+            # A text in brackets beside them changes nothing.
+            'The kiosks [REQ#4521] are ordered [C-2026-003, C-2026-099] for the branch network [branch-network].',
+            'The presentation of 20 March is confirmed [C-2026-001], as the architecture board decided [D-2025-031].'
         ))
     $before = Get-WorkspaceSnapshot $ws
 
@@ -52,8 +82,7 @@ Test 'verify fails when a cited record is superseded or missing, and lists each 
     Assert-Equal (@(
             '- C-2026-001 is superseded by D-2026-005.'
             '- C-2026-099 is not in the register.'
-            '- branch-network is not in the register.'
-            '- the sponsor is not in the register.'
+            '- D-2025-031 is not in the register.'
         ) -join "`n") ($problems -join "`n") 'problems listed'
     Assert-True ($run.Output -notmatch 'C-2026-003') "the output names a record that is cited rightly: $($run.Output)"
     Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'

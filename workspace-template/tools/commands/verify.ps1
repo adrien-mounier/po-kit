@@ -11,8 +11,10 @@
 #
 # A view cites a record by its identifier in square brackets, as the portfolio view does:
 # Title [identifier]. Several identifiers share brackets when commas separate them:
-# [C-2026-001, D-2026-002]. So square brackets hold identifiers and nothing else in a view:
-# anything else between them is reported as a record that is not in the register.
+# [C-2026-001, D-2026-002]. A pair of square brackets is a citation only when every part between
+# its commas is the identifier of a record: a numbered identifier by its shape (C-2026-004),
+# whether the register holds it or not, or the identifier of a subject that the register holds.
+# Any other pair is text, as a ticket reference in a title, [REQ#4521], and is not read.
 #
 # A view that is not verified ends the run with a failure code, and one line per problem: the
 # stamp, then each identifier concerned, once.
@@ -36,8 +38,14 @@ foreach ($file in Get-ChildItem (Join-Path $Tools 'labels\*.json')) {
     if ($lines -cmatch "(?m)^$generated\n$state\n(?:$noCollect|$collect\n$notCovered)$") { $stamped = $true }
 }
 
-$cited = @([regex]::Matches($text, '\[([^\[\]]*)\]') | ForEach-Object { $_.Groups[1].Value -split ',' } |
-        ForEach-Object { $_.Trim() } | Where-Object { $_ } | Select-Object -Unique)
+# The shape of a numbered identifier, whatever its type: the prefix of a type, a year, a number.
+$prefixes = @(Get-ChildItem (Join-Path $Tools 'definitions\*.json') -Exclude common.json | ForEach-Object { (Read-JsonFile $_.FullName).identifier_prefix } | Where-Object { $_ })
+$numbered = "^($($prefixes -join '|'))-[0-9]{4}-[0-9]+$"
+$cited = @([regex]::Matches($text, '\[([^\[\]]*)\]') | ForEach-Object {
+        $parts = @($_.Groups[1].Value -split ',' | ForEach-Object { $_.Trim() })
+        # Text, unless every part is an identifier.
+        if (-not @($parts | Where-Object { $_ -cnotmatch $numbered -and (Find-Record $_).type -ne 'subject' }).Count) { $parts }
+    } | Select-Object -Unique)
 $problems = @(
     if (-not $stamped) { 'The stamp is absent, or not whole as the register tool gives it. export prints the stamp of the view to write from it.' }
     foreach ($id in $cited) {
