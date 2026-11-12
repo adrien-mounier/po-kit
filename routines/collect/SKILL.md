@@ -22,7 +22,7 @@ Done when no proposal is pending.
        powershell -NoProfile -Command "Get-Date -Format yyyy-MM-ddTHH:mm:sszzz"
 
    It prints the time of this collect, as `2026-03-02T08:30:00+01:00`. Its first ten characters are today's date.
-2. Text the PO pasted into the conversation becomes a note first. Save it unchanged as `inbox/pasted-<today's date>.md`, as `inbox/pasted-2026-03-02.md`. When `inbox/` or `inbox/done/<this month>/` already holds that name, end it with `-2`, then `-3`.
+2. Text the PO pasted into the conversation becomes a note first. Save it unchanged as `inbox/pasted-<today's date>.md`, as `inbox/pasted-2026-03-02.md`, written as UTF-8 without a byte order mark. When `inbox/` or `inbox/done/<this month>/` already holds that name, end it with `-2`, then `-3`.
 3. The notes are the files directly in `inbox/`. Read each one whole. `inbox/done/` holds the notes already processed.
 4. `connections.json` declares the other sources, `mail` and `tracker`. A source whose `mode` is `off` is not read: it is not covered. To read one in any other mode, follow `sources.md`, in the folder of this routine, before you look into the source: it gives you the mails and the tickets to treat as notes.
 
