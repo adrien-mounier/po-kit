@@ -513,10 +513,12 @@ Test 'the scenario "weekly without a start date" passes when the agent asks for 
     $run = Invoke-Scenarios -Agent "$FakeAgent -Say `"No synthesis is stored yet: on which date does the period start?`"" weekly-no-start-date
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file \.\./agent-output\.txt has a line containing "period"' 'the agent speaks of the period'
     Assert-Match $run.Output "  ok    file views/weekly/$Day\.md is absent" 'no synthesis is stored'
 
     $run = Invoke-Scenarios -Agent (New-WeeklyAgent source-off) weekly-no-start-date
 
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has a line containing "period"' 'nothing asked about the period'
     Assert-Match $run.Output "  FAIL  file views/weekly/$Day\.md is absent" 'the synthesis stored on a date of its own'
     Assert-Equal 1 $run.ExitCode 'exit code when a synthesis is stored'
 }

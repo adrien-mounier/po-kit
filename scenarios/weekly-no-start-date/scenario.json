@@ -2,7 +2,7 @@
   "routine": "weekly",
   "prompt": "Weekly. For team capacity: the team is complete this week.",
   "expect": [
-    { "file": "../agent-output.txt", "line": "?" },
+    { "file": "../agent-output.txt", "line": "period" },
     { "file": "views/weekly/{today}.md", "absent": true }
   ]
 }
