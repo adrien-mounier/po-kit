@@ -1,0 +1,57 @@
+{
+  "routine": "weekly",
+  "collected": {
+    "collected_at": "{today}T08:30:00+01:00",
+    "sources_read": [ { "source": "notes", "cutoff": "{today}T08:30:00+01:00", "items": 1 } ],
+    "sources_not_covered": [ "mail", "tracker" ],
+    "notes_processed": [ "call-with-the-sponsor.md" ],
+    "operations": [
+      { "op": "create", "type": "decision", "interpreted": true,
+        "fields": {
+          "title": "Suspend the presentation of the target journey to the retail steering committee",
+          "subject": "mobile-onboarding", "date_of_fact": "2026-03-09",
+          "status": "taken", "decided_by": "the sponsor",
+          "supersedes": "C-{year}-001",
+          "evidence_level": "fact",
+          "source": { "where": "inbox/call-with-the-sponsor.md", "read_on": "{today}" } } },
+      { "op": "update", "id": "mobile-onboarding", "interpreted": true,
+        "source": { "where": "inbox/call-with-the-sponsor.md", "read_on": "{today}" },
+        "fields": { "next_step": "" } }
+    ]
+  },
+  "prompt": "Weekly. For team capacity: the team is complete this week.",
+  "expect": [
+    { "record": "C-{year}-001", "field": "superseded_by", "is": "D-{year}-001" },
+    { "file": "views/weekly/{today}.md", "lines": [
+        "# Portfolio view",
+        "> Generated: {today}T",
+        "> Register state: ",
+        "> Last collect: {today}T08:30:00+01:00.",
+        "> Sources not covered by the last collect: mail, tracker.",
+        "## Now",
+        "| Subject                               | Kind    | Clearance                            | Next date | Next step |",
+        "|---------------------------------------|---------|--------------------------------------|-----------|-----------|",
+        "| Mobile onboarding [mobile-onboarding] | Product | Cleared by the sponsor on 2026-02-20 |           |           |",
+        "## Next",
+        "| Subject                                               | Kind         | Clearance | Next date | Next step |",
+        "|-------------------------------------------------------|--------------|-----------|-----------|-----------|",
+        "| Payments API contribution [payments-api-contribution] | Contribution | Pending   |           | Agree the scope of the contribution with the head of payments |",
+        "## Later",
+        "| Subject                                               | Kind    | Clearance | Next date | Next step |",
+        "|-------------------------------------------------------|---------|-----------|-----------|-----------|",
+        "| Branch opening hours page [branch-opening-hours-page] | Service | None      |           | Hand the page over to the branch network |",
+        "# Progress and commitments",
+        "# Proposed priorities",
+        "# Blockers and decisions expected from the sponsor",
+        "# Team capacity",
+        "# Not covered this week" ] },
+    { "verified": "views/weekly/{today}.md" },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Progress and commitments", "Since 2026-03-03", "[D-{year}-001]", "Open commitments:", "No commitment is open.", "# Proposed priorities" ] },
+    { "file": "views/weekly/{today}.md", "line": "C-{year}-001", "absent": true },
+    { "file": "views/weekly/{today}.md", "line": "2026-03-16", "absent": true },
+    { "file": "views/weekly/{today}.md", "line": "16 March", "absent": true },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Team capacity", "According to the PO: ", "# Not covered this week" ] },
+    { "file": "views/weekly/2026-03-03.md", "line": "due 2026-03-16 [C-2026-001]" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

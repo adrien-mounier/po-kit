@@ -1,0 +1,36 @@
+{
+  "routine": "weekly",
+  "prompt": "Weekly. There is no earlier synthesis: the period starts on 2026-03-09. For team capacity: one developer joins the team on Monday.",
+  "expect": [
+    { "file": "views/weekly/{today}.md", "lines": [
+        "# Vue portefeuille",
+        "> Génération : {today}T",
+        "> État du registre : ",
+        "> Aucune collecte n'a encore eu lieu : aucune source n'est couverte.",
+        "## Maintenant",
+        "| Sujet                                 | Nature  | Feu vert                              | Prochaine date | Prochaine étape |",
+        "|---------------------------------------|---------|---------------------------------------|----------------|-----------------|",
+        "| Mobile onboarding [mobile-onboarding] | Produit | Accordé par the sponsor le 2026-02-20 |                | Present the target journey to the retail steering committee |",
+        "## Ensuite",
+        "| Sujet                                                 | Nature       | Feu vert   | Prochaine date | Prochaine étape |",
+        "|-------------------------------------------------------|--------------|------------|----------------|-----------------|",
+        "| Payments API contribution [payments-api-contribution] | Contribution | En attente |                | Agree the scope of the contribution with the head of payments |",
+        "## Plus tard",
+        "| Sujet                                                 | Nature  | Feu vert | Prochaine date | Prochaine étape |",
+        "|-------------------------------------------------------|---------|----------|----------------|-----------------|",
+        "| Branch opening hours page [branch-opening-hours-page] | Service | Aucun    |                | Hand the page over to the branch network |",
+        "# Avancement et engagements",
+        "Depuis le 2026-03-09",
+        "Engagements ouverts :",
+        "[C-{year}-001]",
+        "# Priorités proposées",
+        "# Blocages et décisions attendues du sponsor",
+        "Décisions attendues du sponsor :",
+        "Aucune décision n'est attendue du sponsor.",
+        "# Capacité de l'équipe",
+        "Selon le PO : ",
+        "# Non couvert cette semaine" ] },
+    { "verified": "views/weekly/{today}.md" },
+    { "file": "views/portfolio.md", "lines": [ "# Portfolio view", "## Now", "## Next", "## Later" ] }
+  ]
+}

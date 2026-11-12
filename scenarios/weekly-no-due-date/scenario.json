@@ -1,0 +1,37 @@
+{
+  "routine": "weekly",
+  "collected": {
+    "collected_at": "{today}T08:30:00+01:00",
+    "sources_read": [ { "source": "notes", "cutoff": "{today}T08:30:00+01:00", "items": 1 } ],
+    "sources_not_covered": [ "mail", "tracker" ],
+    "notes_processed": [ "call-with-the-architect.md" ],
+    "operations": [
+      { "op": "create", "type": "commitment", "interpreted": false,
+        "fields": {
+          "title": "Share the sequence diagrams of the onboarding journey",
+          "subject": "mobile-onboarding", "date_of_fact": "2026-03-11",
+          "owner": "the architect", "owed_to": "the PO",
+          "evidence_level": "fact",
+          "source": { "where": "inbox/call-with-the-architect.md", "read_on": "{today}" } } },
+      { "op": "create", "type": "decision", "interpreted": true,
+        "fields": {
+          "title": "Choose the branches of the onboarding pilot",
+          "subject": "mobile-onboarding", "date_of_fact": "2026-03-11",
+          "status": "pending", "needed_from": "the sponsor", "needed_by": "2026-03-27",
+          "evidence_level": "fact",
+          "source": { "where": "inbox/call-with-the-architect.md", "read_on": "{today}" } } }
+    ]
+  },
+  "prompt": "Weekly. There is no earlier synthesis: the period starts on 2026-03-09. I have nothing to say on team capacity this week.",
+  "expect": [
+    { "record": "C-{year}-002", "field": "due_date", "is": null },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Portfolio view", "# Progress and commitments", "# Proposed priorities", "# Blockers and decisions expected from the sponsor", "# Team capacity", "# Not covered this week" ] },
+    { "verified": "views/weekly/{today}.md" },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Progress and commitments", "Since 2026-03-09", "Open commitments:", "[C-{year}-002]", "# Proposed priorities" ] },
+    { "file": "views/weekly/{today}.md", "lines": [ "Open commitments:", "no due date", "# Proposed priorities" ] },
+    { "file": "views/weekly/{today}.md", "lines": [ "Decisions expected from the sponsor:", "[D-{year}-001]", "# Team capacity" ] },
+    { "file": "views/weekly/{today}.md", "lines": [ "Decisions expected from the sponsor:", "2026-03-27", "# Team capacity" ] },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Team capacity", "The PO provided no statement on team capacity.", "# Not covered this week" ] },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "routine": "weekly",
+  "prompt": "Weekly. There is no earlier synthesis: the period starts on 2026-03-09. I have nothing to say on team capacity this week.",
+  "expect": [
+    { "file": "views/check-report.md", "line": "### Unknown field or value" },
+    { "file": "../agent-output.txt", "line": "security review" },
+    { "file": "views/weekly/{today}.md", "absent": true }
+  ]
+}

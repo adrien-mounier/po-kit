@@ -4,7 +4,7 @@ This folder is the workspace of a Product Owner (PO): one register of the PO's s
 
 ## Rules
 
-1. **The register tool is the only writer of `register/` and `views/`.** To change the register, leave a proposal in `state/proposal.json` and have the register tool apply it.
+1. **The register tool is the only writer of `register/` and `views/`.** To change the register, leave a proposal in `state/proposal.json` and have the register tool apply it. The weekly synthesis, `views/weekly/<date>.md`, is the one view you draft: from what `export` prints, and it counts once `verify` passes on it.
 2. **A record is updated, superseded or closed, never deleted.**
 3. **Every outward action is the PO's.** You send nothing and modify nothing in any source: mail and the tracker are read-only. A mail draft is the only thing you write outside this workspace.
 4. **Notes about a person's performance or career stay out of this workspace.**
@@ -37,6 +37,11 @@ When the PO names a gate or an objective that is not listed, the PO adds it ther
 
 `validation_mode` says what a collect records without asking the PO: `all`, nothing; `interpreted`, the plain facts, while the interpreted lines wait for the PO.
 
+Two settings shape the weekly synthesis:
+
+- `sponsor`: who it is written for, as `{ "name": "The sponsor", "email": "sponsor@example.com" }`.
+- `languages`: as `{ "default": "en", "sponsor": "fr" }`, the weekly synthesis is in French and every other view in English.
+
 ## The connections
 
 `connections.json` is the PO's too: it says how each source is read on this machine. A source goes by the name it is declared under there (`notes`, `mail`, `tracker`), in one of three modes:
@@ -44,5 +49,7 @@ When the PO names a gate or an objective that is not listed, the PO adds it ther
 - `{ "mode": "off" }`: the source is not read.
 - `{ "mode": "folder", "folder": "exports/mail" }`: the source is read from the files of that folder, named from this folder or by its full path.
 - `{ "mode": "connector", "connector": "<name>" }`: the source is read through the connector that the agent of this machine knows under that name, for reading only. The collect verifies a connector once, with a harmless read, and writes in the entry what it gave and when: `"verified": { "result": "ok", "on": "2026-03-02" }`, or `"result": "failed"` with the reason in `"detail"`.
+
+The entry of `mail` also says whether its connector can create mail drafts: `{ "mode": "connector", "connector": "<name>", "drafts": true }`. The weekly synthesis is then left as a draft in the PO's mailbox. Without `"drafts": true`, no draft is created.
 
 A routine names a source as the connections do, and reads it as its mode says.

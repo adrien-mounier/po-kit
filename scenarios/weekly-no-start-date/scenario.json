@@ -1,0 +1,8 @@
+{
+  "routine": "weekly",
+  "prompt": "Weekly. For team capacity: the team is complete this week.",
+  "expect": [
+    { "file": "../agent-output.txt", "line": "?" },
+    { "file": "views/weekly/{today}.md", "absent": true }
+  ]
+}

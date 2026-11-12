@@ -8,11 +8,15 @@
 #   -Proposal <file>  leaves this proposal pending, then has the register tool apply it
 #   -Pending          leaves the proposal pending: nothing is applied
 #   -Plain            has the register tool apply the plain facts only: the other lines stay pending
+#   -Check            has the register tool run the check
+#   -Weekly <file>    stores this text as the weekly synthesis of the day, with the stamp and the
+#                     portfolio view that export prints in place of {stamp} and {portfolio}
 #   -ByHand           writes a record itself, which no routine may do
 #   -Report <file>    writes down the folder it was started in, then the prompt it received
 #   -Say <text>       prints this text, as an agent prints its answer
 #   -ExitCode <n>     ends with this exit code
-param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$ByHand, [string]$Report, [string]$Say, [int]$ExitCode)
+param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [string]$Weekly, [switch]$ByHand,
+    [string]$Report, [string]$Say, [int]$ExitCode)
 
 $prompt = [Console]::In.ReadToEnd()
 if ($Say) { $Say }
@@ -23,5 +27,15 @@ if ($Connections) { Copy-Item -LiteralPath $Connections -Destination 'connection
 if ($Proposal) {
     Copy-Item -LiteralPath $Proposal -Destination 'state\proposal.json'
     if (-not $Pending) { & powershell.exe -NoProfile -File tools\register.ps1 apply $(if ($Plain) { 'plain' }) }
+}
+if ($Check) { & powershell.exe -NoProfile -File tools\register.ps1 check }
+if ($Weekly) {
+    # The register tool prints UTF-8; read it as such.
+    try { [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false } catch { }
+    $today = (Get-Date).ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+    $export = @(& powershell.exe -NoProfile -File tools\register.ps1 export $today)
+    $stamp = @($export | Where-Object { $_ -like '> *' }) -join "`n"
+    $portfolio = (@($export | Select-Object -Skip ([Array]::IndexOf($export, '## Portfolio view') + 1)) -join "`n").Trim()
+    [IO.File]::WriteAllText("views\weekly\$today.md", [IO.File]::ReadAllText($Weekly).Replace('{stamp}', $stamp).Replace('{portfolio}', $portfolio))
 }
 exit $ExitCode

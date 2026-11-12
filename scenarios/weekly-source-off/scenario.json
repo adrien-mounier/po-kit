@@ -1,0 +1,22 @@
+{
+  "routine": "weekly",
+  "collected": {
+    "collected_at": "{today}T08:30:00+01:00",
+    "sources_read": [
+      { "source": "notes", "cutoff": "{today}T08:30:00+01:00", "items": 0 },
+      { "source": "mail", "cutoff": "{today}T07:50:00+01:00", "items": 50, "cap_reached": true }
+    ],
+    "sources_not_covered": [ "tracker" ],
+    "operations": []
+  },
+  "prompt": "Weekly. There is no earlier synthesis: the period starts on 2026-03-09. For team capacity: two developers are on leave, so the team runs at half capacity this week.",
+  "expect": [
+    { "file": "state/last-collect.json", "field": "sources.mail.cap_reached", "is": true },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Portfolio view", "> Sources not covered by the last collect: tracker.", "# Progress and commitments", "# Proposed priorities", "# Blockers and decisions expected from the sponsor", "# Team capacity", "# Not covered this week", "tracker" ] },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Not covered this week", "mail" ] },
+    { "verified": "views/weekly/{today}.md" },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Team capacity", "According to the PO: ", "# Not covered this week" ] },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Team capacity", "half capacity", "# Not covered this week" ] },
+    { "file": "views/weekly/{today}.md", "line": "Every source was covered", "absent": true }
+  ]
+}

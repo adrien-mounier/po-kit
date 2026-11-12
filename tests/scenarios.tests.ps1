@@ -416,6 +416,111 @@ Test 'the scenario "collect with a connector that fails" passes when the connect
     Assert-Equal 1 $run.ExitCode 'exit code when the verification is not recorded'
 }
 
+# --- The weekly synthesis scenarios --------------------------------------------------------------
+# A scenario that starts after a collect gives the proposal of that collect, which the runner has
+# the register tool apply before the agent starts. The fake agent stores a synthesis written ahead,
+# under tests\fixtures\weekly, with the stamp and the portfolio view that export prints.
+
+function New-WeeklyAgent([string]$Synthesis, [scriptblock]$Change = { $args[0] }) {
+    # The command of a fake agent that stores this synthesis of tests\fixtures\weekly, where {year}
+    # is the year of the run. $Change rewrites its text first.
+    New-Item -ItemType Directory -Path $TestRoot -Force | Out-Null
+    $path = Join-Path $TestRoot ([Guid]::NewGuid().ToString('N').Substring(0, 8) + '.weekly.md')
+    $text = [IO.File]::ReadAllText((Join-Path $Fixtures "weekly\$Synthesis.md"), $Utf8).Replace('{year}', $Year)
+    [IO.File]::WriteAllText($path, (& $Change $text), $Utf8)
+    "$FakeAgent -Weekly `"$path`""
+}
+
+Test 'the scenario "weekly after a decision" passes when the synthesis cites the decision and announces no presentation, and fails when it still cites the superseded commitment' {
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent after-decision) weekly-after-decision
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    record C-$Year-001: superseded_by is `"D-$Year-001`"" 'the collect the scenario gives was applied before the agent started'
+    Assert-Match $run.Output "  ok    the register tool verifies views/weekly/$Day\.md" 'the verdict of verify'
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has lines containing, in this order: `"# Portfolio view`", .*`"## Now`", .*`"# Not covered this week`"" 'the portfolio view, then the blocks in order'
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has no line containing `"2026-03-16`"" 'the date of the presentation'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $announced = { $args[0].Replace('No commitment is open.', "- Present the target journey to the retail steering committee: the PO, due 2026-03-16 [C-$Year-001]") }
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent after-decision $announced) weekly-after-decision
+
+    Assert-Match $run.Output "  FAIL  the register tool verifies views/weekly/$Day\.md\n        found: Not verified: views/weekly/$Day\.md\n- C-$Year-001 is superseded by D-$Year-001\." 'the superseded commitment, named by verify'
+    Assert-Match $run.Output "  FAIL  file views/weekly/$Day\.md has no line containing `"2026-03-16`"" 'the presentation still announced'
+    Assert-Match $run.Output '  FAIL  file views/weekly/\S+ has lines containing, in this order: "# Progress and commitments", .*\n        found: no line containing "No commitment is open\." further down' 'the commitment still listed as open'
+    Assert-Equal 1 $run.ExitCode 'exit code when the presentation is still announced'
+}
+
+Test 'the scenario "weekly with a commitment without a due date" passes when the synthesis lists it as having no due date and the decision expected from the sponsor with its date, and fails when the blocks are not in order' {
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent no-due-date) weekly-no-due-date
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has lines containing, in this order: `"Open commitments:`", `"no due date`", `"# Proposed priorities`"" 'the commitment without a due date'
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has lines containing, in this order: `"Decisions expected from the sponsor:`", `"2026-03-27`", `"# Team capacity`"" 'the date the decision is needed by'
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has lines containing, in this order: `"# Team capacity`", `"The PO provided no statement on team capacity\.`"" 'no sentence on team capacity'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    # The block of team capacity moved above the proposed priorities.
+    $moved = {
+        $capacity = "# Team capacity`n`nThe PO provided no statement on team capacity.`n`n"
+        ($args[0] -replace '\r\n', "`n").Replace($capacity, '').Replace('# Proposed priorities', "$capacity# Proposed priorities")
+    }
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent no-due-date $moved) weekly-no-due-date
+
+    Assert-Match $run.Output '  FAIL  file views/weekly/\S+ has lines containing, in this order: "# Portfolio view", .*\n        found: no line containing "# Team capacity" further down' 'the blocks out of order'
+    Assert-Equal 1 $run.ExitCode 'exit code when the blocks are not in order'
+}
+
+Test 'the scenario "weekly with a source off" passes when the stamp and the block of what is not covered both name the tracker, and the block names the mail read in part, and fails when the block names neither' {
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent source-off) weekly-source-off
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '"> Sources not covered by the last collect: tracker\.", .*"# Not covered this week", "tracker"' 'the stamp and the block name the tracker'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $covered = { ($args[0] -replace '(?s)(# Not covered this week\r?\n\r?\n).*$', '$1Every source was covered by the last collect.') + "`n" }
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent source-off $covered) weekly-source-off
+
+    Assert-Match $run.Output '  FAIL  file views/weekly/\S+ has lines containing, in this order: .*\n        found: no line containing "tracker" further down' 'the source off left out of the block'
+    Assert-Match $run.Output '  FAIL  file views/weekly/\S+ has lines containing, in this order: "# Not covered this week", "mail"' 'the source read in part left out of the block'
+    Assert-Equal 1 $run.ExitCode 'exit code when the block names no source'
+}
+
+Test 'the scenario "weekly in the language of the sponsor" passes when the six blocks and the labels of the portfolio view are in French, and the portfolio view of the workspace stays in the default language' {
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent sponsor-language) weekly-sponsor-language
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has lines containing, in this order: `"# Vue portefeuille`", .*`"## Maintenant`", .*`"# Non couvert cette semaine`"" 'the portfolio view and the blocks in French'
+    Assert-Match $run.Output "  ok    the register tool verifies views/weekly/$Day\.md" 'the verdict of verify'
+    Assert-Match $run.Output '  ok    file views/portfolio\.md has lines containing, in this order: "# Portfolio view", "## Now"' 'the portfolio view of the workspace'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
+Test 'the scenario "weekly with errors in the check" passes when the agent shows the errors and stores no synthesis, and fails when it stores one' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Check -Say `"The check found errors: the gate security review is not listed in the settings.`"" weekly-check-errors
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file views/check-report\.md has a line containing "### Unknown field or value"' 'the error the scenario plants'
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md is absent" 'no synthesis is stored'
+
+    $run = Invoke-Scenarios -Agent "$(New-WeeklyAgent source-off) -Check" weekly-check-errors
+
+    Assert-Match $run.Output "  FAIL  file views/weekly/$Day\.md is absent" 'the synthesis stored in spite of the errors'
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has a line containing "security review"' 'the errors not shown'
+    Assert-Equal 1 $run.ExitCode 'exit code when a synthesis is stored'
+}
+
+Test 'the scenario "weekly without a start date" passes when the agent asks for the date and stores no synthesis, and fails when it stores one' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Say `"No synthesis is stored yet: on which date does the period start?`"" weekly-no-start-date
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md is absent" 'no synthesis is stored'
+
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent source-off) weekly-no-start-date
+
+    Assert-Match $run.Output "  FAIL  file views/weekly/$Day\.md is absent" 'the synthesis stored on a date of its own'
+    Assert-Equal 1 $run.ExitCode 'exit code when a synthesis is stored'
+}
+
 Test 'when the agent does nothing, each fact is reported as passed or failed with what was found, the folder is kept and the run fails' {
     $run = Invoke-Scenarios -Agent $FakeAgent subject-modify
 
@@ -453,7 +558,7 @@ Test 'the agent is started in a temporary Example Bank workspace, and its prompt
     Assert-Equal '' "$(git -C $workspace status --porcelain register)" 'changes to the register left out of its history'
 }
 
-Test 'a scenario given as a folder lays its own files over the workspace, and every kind of fact is checked exactly: records, fields, files and lines' {
+Test 'a scenario given as a folder lays its own files over the workspace, and every kind of fact is checked exactly: records, fields, files, lines, their order and the verdict of verify' {
     $run = Invoke-Scenarios -Agent $FakeAgent (Join-Path $Fixtures 'scenarios\every-kind-of-fact')
 
     $expected = @(
@@ -487,6 +592,14 @@ Test 'a scenario given as a folder lays its own files over the workspace, and ev
         '        found: - Mobile onboarding: cleared by the sponsor.'
         '  FAIL  file views/weekly/2026-03-09.md has a line containing "Mobile onboarding"'
         '        found: nothing: it is absent'
+        '  ok    file views/weekly/2026-03-02.md has lines containing, in this order: "# Weekly synthesis", "## Now", "Mobile onboarding"'
+        '  FAIL  file views/weekly/2026-03-02.md has lines containing, in this order: "# Weekly synthesis", "Mobile onboarding", "## Now"'
+        '        found: no line containing "## Now" further down'
+        '  FAIL  file views/weekly/2026-03-09.md has lines containing, in this order: "# Weekly synthesis", "## Now"'
+        '        found: nothing: it is absent'
+        '  FAIL  the register tool verifies views/weekly/2026-03-02.md'
+        '        found: Not verified: views/weekly/2026-03-02.md'
+        '- The stamp is absent, or not whole as the register tool gives it. export prints the stamp of the view to write from it.'
         '  ok    the register holds only what the register tool committed'
     ) -join "`n"
     Assert-True $run.Output.Contains($expected) "the report differs from:`n$expected`ngot:`n$($run.Output)"

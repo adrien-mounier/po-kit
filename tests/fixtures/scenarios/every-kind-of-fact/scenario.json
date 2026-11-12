@@ -19,6 +19,10 @@
     { "file": "views/weekly/2026-03-02.md", "line": "mobile onboarding" },
     { "file": "views/weekly/2026-03-02.md", "line": "Savings simulator", "absent": true },
     { "file": "views/weekly/2026-03-02.md", "line": "Mobile onboarding", "absent": true },
-    { "file": "views/weekly/2026-03-09.md", "line": "Mobile onboarding" }
+    { "file": "views/weekly/2026-03-09.md", "line": "Mobile onboarding" },
+    { "file": "views/weekly/2026-03-02.md", "lines": ["# Weekly synthesis", "## Now", "Mobile onboarding"] },
+    { "file": "views/weekly/2026-03-02.md", "lines": ["# Weekly synthesis", "Mobile onboarding", "## Now"] },
+    { "file": "views/weekly/2026-03-09.md", "lines": ["# Weekly synthesis", "## Now"] },
+    { "verified": "views/weekly/2026-03-02.md" }
   ]
 }

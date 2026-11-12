@@ -79,6 +79,32 @@ Test 'the workspace rules say how the connections declare a source: off, read fr
     Assert-Match $rules '"result": "failed"' 'a verification that failed'
 }
 
+Test 'the workspace rules name the weekly synthesis as the one view the agent drafts, and say how the connections allow a mail draft and where the settings name the sponsor' {
+    $rules = Get-Content -LiteralPath (Join-Path $Template 'AGENTS.md') -Raw -Encoding UTF8
+
+    Assert-Match $rules 'weekly synthesis, `views/weekly/<date>\.md`, is the one view you draft' 'the view the agent drafts'
+    Assert-Match $rules '`verify`' 'the command that makes the synthesis count'
+    Assert-Match $rules '\{ "mode": "connector", "connector": "[^"]+", "drafts": true \}' 'a mail source that can create drafts'
+    Assert-Match $rules '`sponsor`: .*\{ "name": "[^"]+", "email": "[^"]+" \}' 'how the settings name the sponsor'
+    Assert-Match $rules '`languages`: .*\{ "default": "en", "sponsor": "fr" \}' 'how the settings give the languages'
+}
+
+Test 'the weekly routine ships a template of the six blocks in every language of the kit, each opening with the title the portfolio view carries in that language' {
+    $languages = @(Get-ChildItem (Join-Path $Template 'tools\labels\*.json') | Sort-Object Name)
+    Assert-Equal 'en fr' (@($languages | ForEach-Object { $_.BaseName }) -join ' ') 'languages of the kit'
+    foreach ($language in $languages) {
+        $path = Join-Path $KitRoot "routines\weekly\template-$($language.BaseName).md"
+        Assert-True (Test-Path -LiteralPath $path) "the weekly routine has no template in '$($language.BaseName)'"
+        Assert-True ([IO.File]::ReadAllBytes($path)[0] -ne 0xEF) "the template in '$($language.BaseName)' opens with a byte order mark"
+        $blocks = @([IO.File]::ReadAllLines($path, $Utf8) | Where-Object { $_ -like '# *' })
+        Assert-Equal 6 $blocks.Count "blocks of the template in '$($language.BaseName)': $($blocks -join ' | ')"
+        Assert-Equal "# $((Read-Json $language.FullName).portfolio.title)" $blocks[0] "first block of the template in '$($language.BaseName)'"
+        if ($language.BaseName -eq 'en') {
+            Assert-Equal '# Portfolio view | # Progress and commitments | # Proposed priorities | # Blockers and decisions expected from the sponsor | # Team capacity | # Not covered this week' ($blocks -join ' | ') 'the six blocks, in order'
+        }
+    }
+}
+
 Test 'every script of the kit is plain ASCII, so Windows PowerShell 5.1 reads it right' {
     $scripts = @(git -C $KitRoot ls-files --cached --others --exclude-standard -- '*.ps1')
     Assert-True ($scripts.Count -gt 0) 'no script found'

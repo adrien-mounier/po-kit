@@ -20,6 +20,8 @@
 #
 # A scenario is a folder that holds scenario.json:
 #   { "routine": "subject",    the routine to follow: the name of a folder under routines
+#     "collected": { ... },    when the scenario starts after a collect: the proposal of that
+#                              collect, which the register tool applies before the agent starts
 #     "prompt": "...",         all that the PO says: nobody answers a question of the agent
 #     "expect": [ ... ] }      the expected facts
 # and, when the scenario needs them, a folder workspace: its own files (notes for the inbox, a
@@ -38,6 +40,9 @@
 #   { "file": "<path>", "field": "<path>", "is": <value> }          the file, read as JSON, holds this value
 #   { "file": "<path>", "line": "<text>" }                          a line of the file contains the text
 #   { "file": "<path>", "line": "<text>", "absent": true }          no line of the file does
+#   { "file": "<path>", "lines": ["<text>", "<text>"] }             lines of the file contain these texts, in this
+#                                                                   order, each on a line further down than the one before
+#   { "verified": "<path>" }                                        the register tool's verify passes on this stored view
 # A file is named from the workspace: the pending proposal is state/proposal.json, the portfolio
 # view is views/portfolio.md. What the agent printed is ../agent-output.txt, beside the workspace:
 # its answer, and all that it opened when its command prints that too (for Claude Code,
@@ -56,7 +61,8 @@
 # 1. installs the kit: a workspace and a skills folder, as install.ps1 does on any machine;
 # 2. lays the Example Bank workspace over it: the files under example-bank\workspace, the register
 #    that example-bank\register.proposal.json describes, applied by the register tool on the day
-#    of the run, then the scenario's own files;
+#    of the run, then the scenario's own files, then the proposal the scenario gives as collected,
+#    applied the same way;
 # 3. starts the agent in the workspace, with a prompt that names the routine and gives what the PO
 #    says. What the agent prints is kept beside the workspace, in agent-output.txt;
 # 4. checks each expected fact, and that the register holds only what the register tool committed.
@@ -98,9 +104,9 @@ function Invoke-Script {
     @{ Output = ($lines -join "`n"); ExitCode = $LASTEXITCODE }
 }
 
-function New-ExampleBankWorkspace([string]$Folder, [string]$Scenario) {
+function New-ExampleBankWorkspace([string]$Folder, [string]$Scenario, $Collected) {
     # Steps 1 and 2: the workspace of the scenario, in $Folder\workspace, and the routines in
-    # $Folder\skills.
+    # $Folder\skills. $Collected is the proposal the scenario gives as collected, if any.
     $workspace = Join-Path $Folder 'workspace'
     $run = Invoke-Script (Join-Path $Kit 'install.ps1') -Workspace $workspace -SkillsFolder (Join-Path $Folder 'skills')
     if ($run.ExitCode -ne 0) { throw "the kit did not install: $($run.Output)" }
@@ -110,6 +116,11 @@ function New-ExampleBankWorkspace([string]$Folder, [string]$Scenario) {
     if ($run.ExitCode -ne 0) { throw "the register of Example Bank was refused: $($run.Output)" }
     $own = Join-Path $Scenario 'workspace'
     if (Test-Path -LiteralPath $own) { Copy-Item (Join-Path $own '*') $workspace -Recurse -Force }
+    if ($Collected) {
+        [IO.File]::WriteAllText((Join-Path $workspace 'state\proposal.json'), (ConvertTo-Json -InputObject $Collected -Depth 20), $Utf8)
+        $run = Invoke-Script (Join-Path $workspace 'tools\register.ps1') apply
+        if ($run.ExitCode -ne 0) { throw "the proposal the scenario gives as collected was refused: $($run.Output)" }
+    }
 }
 
 function Start-Agent([string]$Folder, [string]$Prompt) {
@@ -147,6 +158,10 @@ function Test-Fact($Fact, [string]$Workspace) {
         $count = @(Get-ChildItem -LiteralPath (Join-Path $Workspace "register\$($Fact.records)") -Recurse -File -Filter *.json).Count
         return @{ What = "register/$($Fact.records) holds $($Fact.count) record(s)"; Holds = ($count -eq $Fact.count); Found = "$count record(s)" }
     }
+    if ($Fact.verified) {
+        $run = Invoke-Script (Join-Path $Workspace 'tools\register.ps1') verify $Fact.verified
+        return @{ What = "the register tool verifies $($Fact.verified)"; Holds = ($run.ExitCode -eq 0); Found = $run.Output }
+    }
     if ($Fact.record) {
         # An identifier is the file name of its record, wherever the register files it.
         $name = "record $($Fact.record)"
@@ -158,12 +173,26 @@ function Test-Fact($Fact, [string]$Workspace) {
         $path = Join-Path $Workspace $Fact.file
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { $path = $null }
     }
-    else { throw "an expected fact names a record, a file or records: $(ConvertTo-FactJson $Fact)" }
+    else { throw "an expected fact names a record, a file, records or a view to verify: $(ConvertTo-FactJson $Fact)" }
 
     if ($Fact.PSObject.Properties['field']) {
         $expected = ConvertTo-FactJson $Fact.is
         $found = if ($path) { Get-FieldJson (Read-Json $path) $Fact.field } else { 'nothing: it is absent' }
         return @{ What = "${name}: $($Fact.field) is $expected"; Holds = ($found -ceq $expected); Found = $found }
+    }
+    if ($Fact.PSObject.Properties['lines']) {
+        # Each text is looked for further down than the line that holds the text before it.
+        $all = @(if ($path) { [IO.File]::ReadAllLines($path) })
+        $at = -1
+        $missing = foreach ($text in $Fact.lines) {
+            do { $at++ } while ($at -lt $all.Count -and -not $all[$at].Contains($text))
+            if ($at -ge $all.Count) { $text; break }
+        }
+        $texts = @($Fact.lines | ForEach-Object { '"' + $_ + '"' }) -join ', '
+        return @{
+            What = "$name has lines containing, in this order: $texts"; Holds = ($path -and -not $missing)
+            Found = $(if ($path) { "no line containing `"$missing`" further down" } else { 'nothing: it is absent' })
+        }
     }
     if ($Fact.PSObject.Properties['line']) {
         $lines = @(if ($path) { [IO.File]::ReadAllLines($path) | Where-Object { $_.Contains($Fact.line) } })
@@ -183,7 +212,7 @@ function Invoke-Scenario([string]$Scenario, [string]$Folder) {
         $text = $text.Replace($part.Key, $day.ToString($part.Value, [Globalization.CultureInfo]::InvariantCulture))
     }
     $definition = $text | ConvertFrom-Json
-    New-ExampleBankWorkspace $Folder $Scenario
+    New-ExampleBankWorkspace $Folder $Scenario $definition.collected
     $workspace = Join-Path $Folder 'workspace'
     $routine = Join-Path $Folder "skills\$($definition.routine)\SKILL.md"
     if (-not (Test-Path -LiteralPath $routine)) { throw "the kit has no routine '$($definition.routine)'" }
