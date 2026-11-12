@@ -38,7 +38,7 @@ function Format-Record($Record, [string[]]$More = @()) {
             "horizon: $($Record.horizon)"
             "clearance: $(Format-Clearance $Record $Record.clearance 'by {0}' 'on {0}')"
         }
-        else { "subject: $($Record.subject)"; "date of fact: $($Record.date_of_fact)"; "status: $($Record.status)" }
+        else { "subject: $($Record.subject)$(if ($closed -ccontains $Record.subject) { ' (closed)' })"; "date of fact: $($Record.date_of_fact)"; "status: $($Record.status)" }
         if ($Record.type -ceq 'commitment') { "owner: $(Get-OrMissing $Record.owner)"; "due date: $(Get-OrMissing $Record.due_date)" }
         if ($Record.type -ceq 'decision') {
             if ($Record.status -ceq 'pending') { "needed from: $(Get-OrMissing $Record.needed_from)"; "needed by: $(Get-OrMissing $Record.needed_by)" }
@@ -66,14 +66,17 @@ $labels = Get-Labels $Settings.languages.sponsor
 $all = @(Get-RecordFiles | ForEach-Object { Read-JsonFile $_.path })
 
 # What the export leaves out, so that an abandoned plan cannot resurface: a record that is
-# superseded or closed, and a record attached to a closed subject, which would name that subject.
-# The identifier of a record left out appears nowhere: no line says which record another supersedes.
+# superseded or closed, and a record attached to a closed subject unless it is still open. An open
+# commitment, a pending decision or an open risk is listed whatever the state of its subject,
+# because someone still owes something, as the check keeps its warnings on it: its line says that
+# its subject is closed. The identifier of a record left out is cited nowhere: no line says which
+# record another supersedes.
 $closed = @($all | Where-Object { $_.type -ceq 'subject' -and $_.status -ceq 'closed' } | ForEach-Object { $_.id })
-$records = @($all | Where-Object { 'superseded', 'closed' -cnotcontains $_.status -and $closed -cnotcontains $_.subject })
+$records = @($all | Where-Object { 'superseded', 'closed' -cnotcontains $_.status -and ($closed -cnotcontains $_.subject -or 'open', 'pending' -ccontains $_.status) })
 
 "# Export of the register since $since"
 ''
-'Each record is one line: Title [identifier] | type | evidence level | what it says. The records that are superseded or closed, and those of a closed subject, are left out.'
+'Each record is one line: Title [identifier] | type | evidence level | what it says. The records that are superseded or closed are left out, and so are those of a closed subject unless they are still open: an open commitment, a pending decision or an open risk of a closed subject is listed, and its line says "(closed)" after its subject.'
 Write-Section 'Stamp' (Get-Stamp $labels)
 Write-Section 'Active subjects' @($records | Where-Object { $_.type -ceq 'subject' } | ForEach-Object { Format-Record $_ })
 

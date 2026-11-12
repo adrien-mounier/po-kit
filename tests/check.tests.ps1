@@ -294,6 +294,25 @@ Test 'records that are done, dropped, closed or superseded raise no staleness wa
     Assert-Equal "# Check report`n## Errors`n## Warnings`n$source" (Get-Headings $check.Report) 'headings once the records are done, dropped, closed or superseded'
 }
 
+Test 'a commitment and a decision still open on a closed subject keep their warnings, as the export keeps listing them: someone still owes something' {
+    $ws = New-CheckedWorkspace @(
+        (New-RecordOperation commitment @{ title = 'Book the committee room' }),
+        (New-RecordOperation decision @{ title = 'Choose the pilot branches'; needed_from = 'the sponsor'; needed_by = '2026-03-10' })
+    )
+    Set-Proposal $ws @{ operations = @(New-UpdateOperation 'mobile-onboarding' @{ status = 'closed' }) }
+    $applied = Invoke-Register $ws apply -Today 2026-03-03
+    Assert-Equal 0 $applied.ExitCode "exit code of apply, with output: $($applied.Output)"
+
+    $check = Invoke-Check $ws 2026-03-21
+
+    Assert-Equal 0 $check.ExitCode "exit code, with output: $($check.Output)"
+    Assert-Equal 'Present the onboarding pilot to the retail steering committee [C-2026-001] (owner: the tech lead, due: 2026-03-20)' (Get-Listed $check.Report '### Overdue commitment') 'overdue commitments'
+    Assert-Equal 'Book the committee room [C-2026-002]' (Get-Listed $check.Report '### Open commitment without due date') 'commitments without due date'
+    Assert-Equal 'Choose the pilot branches [D-2026-002] (needed from: the sponsor, needed by: 2026-03-10)' (Get-Listed $check.Report '### Pending decision past its date') 'decisions past their date'
+    # The closed subject itself has stopped going stale.
+    Assert-True ($check.Report -notmatch 'Subject under Now') "the closed subject is listed as stale: $($check.Report)"
+}
+
 Test 'a source that is not off and was never read is a warning, and a source set to off raises none' {
     # The connections of a new workspace read the notes from the inbox and set mail and tracker to off.
     $ws = New-TestWorkspaceWithSubject

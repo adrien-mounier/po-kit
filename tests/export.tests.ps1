@@ -47,7 +47,7 @@ Test 'export lists what changed since the date given, that date included: each r
     $run = Invoke-Register $ws export 2026-03-03 -Now $Tuesday
     Assert-Equal 0 $run.ExitCode "exit code since the first apply, with output: $($run.Output)"
     $changes = @((Get-Section $run.Output 'Changes since 2026-03-03') -split "`n")
-    Assert-Equal 14 $changes.Count "records changed since the first apply, in: $($changes -join "`n")"
+    Assert-Equal 15 $changes.Count "records changed since the first apply, in: $($changes -join "`n")"
     Assert-True ($changes -ccontains '- Order the kiosks [C-2026-003] | commitment | fact | subject: branch-kiosks-pilot | date of fact: 2026-03-02 | status: open | owner: the tech lead | due date: 2026-04-16 | recorded 2026-03-03 | changed 2026-03-10: due_date: 2026-04-02 -> 2026-04-16') "the record recorded then corrected, in: $($changes -join "`n")"
 }
 
@@ -55,6 +55,8 @@ Test 'export lists the open commitments with owner and due date, and says so whe
     Assert-Equal (@(
             '- Send the onboarding figures to the sponsor [C-2026-002] | commitment | reported | subject: mobile-onboarding | date of fact: 2026-03-02 | status: open | owner: missing | due date: missing'
             '- Order the kiosks [C-2026-003] | commitment | fact | subject: branch-kiosks-pilot | date of fact: 2026-03-02 | status: open | owner: the tech lead | due date: 2026-04-16'
+            # Still open on a subject that is closed: someone still owes it.
+            '- Archive the paper statement templates [C-2026-004] | commitment | fact | subject: paper-statements (closed) | date of fact: 2026-03-02 | status: open | owner: the PO | due date: missing'
             '- Brief the branch managers [C-2026-006] | commitment | fact | subject: branch-kiosks-pilot | date of fact: 2026-03-09 | status: open | owner: the PO | due date: 2026-03-24'
         ) -join "`n") (Get-Section (Get-WeekExport) 'Open commitments') 'open commitments'
 }
@@ -131,26 +133,52 @@ Test 'export ends with the portfolio view as view writes it under its stamp, in 
 }
 
 Test 'export counts the records attached to each objective of the settings' {
-    # Three records name the objective 3: one is closed. The only record that names the objective 5
-    # is attached to a closed subject.
+    # Three records name the objective 3: one is closed. The record that names the objective 5 is a
+    # commitment still open on a closed subject.
     Assert-Equal (@(
             '- Objective 1, Halve the time to open an account: 3 record(s)'
             '- Objective 3, Bring the branch network on board: 1 record(s)'
-            '- Objective 5, Retire the paper statements: 0 record(s)'
+            '- Objective 5, Retire the paper statements: 1 record(s)'
         ) -join "`n") (Get-Section (Get-WeekExport) 'Records per objective') 'records per objective'
 }
 
-Test 'a record that is superseded or closed, or attached to a closed subject, is listed in no section, and its identifier appears nowhere in the export' {
+Test 'a record that is superseded or closed, and a closed subject, are listed in no section, and their identifiers are cited nowhere in the export' {
     # Since the first apply, so that the export says all it can of every record.
     $run = Invoke-Register (New-TestWorkspaceWithWeek) export 2026-03-03 -Now $Tuesday
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    $left = 'C-2026-001', 'Present the onboarding pilot', 'R-2026-003', 'The print contract', 'paper-statements', 'Paper statements',
-        'C-2026-004', 'Archive the paper statement templates'
+    $left = 'C-2026-001', 'Present the onboarding pilot', 'R-2026-003', 'The print contract', '[paper-statements]', 'Paper statements'
     foreach ($text in $left) { Assert-True ($run.Output -cnotmatch [regex]::Escape($text)) "'$text' appears in the export: $($run.Output)" }
     # The record that supersedes, and the record that left the closed subject, are listed.
     Assert-Match $run.Output '(?m)^- Suspend the presentation of the pilot \[D-2026-005\] ' 'the decision that supersedes the commitment'
     Assert-Match $run.Output '(?m)^- Customers keep asking for paper \[R-2026-004\] ' 'the risk that left the closed subject'
+}
+
+Test 'a commitment, a decision or a risk still open on a closed subject is listed, and its line says that its subject is closed; what is done, taken or closed on that subject stays out' {
+    $ws = New-TestWorkspaceWithSubject
+    Set-Proposal $ws @{ operations = @(
+            (New-RecordOperation commitment @{ title = 'Hand the onboarding guide over to the branch network'; owner = 'the PO' }),
+            (New-RecordOperation commitment @{ title = 'Book the committee room'; status = 'done' }),
+            (New-RecordOperation decision @{ title = 'Choose who maintains the onboarding guide'; needed_from = 'the sponsor' }),
+            (New-RecordOperation decision @{ title = 'Stop the pilot'; status = 'taken'; decided_by = 'the sponsor' }),
+            (New-RecordOperation risk @{ title = 'Nobody maintains the onboarding guide' }),
+            (New-RecordOperation risk @{ title = 'The pilot branches are not staffed'; status = 'closed' }),
+            (New-UpdateOperation 'mobile-onboarding' @{ status = 'closed' })
+        )
+    }
+    $applied = Invoke-Register $ws apply -Today 2026-03-10
+    Assert-Equal 0 $applied.ExitCode "exit code of apply, with output: $($applied.Output)"
+
+    $run = Invoke-Register $ws export 2026-03-10 -Now $Tuesday
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $said = 'fact | subject: mobile-onboarding (closed) | date of fact: 2026-03-02'
+    Assert-Equal "- Hand the onboarding guide over to the branch network [C-2026-001] | commitment | $said | status: open | owner: the PO | due date: missing" (Get-Section $run.Output 'Open commitments') 'open commitments'
+    Assert-Equal "### Awaited from: the sponsor`n- Choose who maintains the onboarding guide [D-2026-001] | decision | $said | status: pending | needed from: the sponsor | needed by: missing" (Get-Section $run.Output 'Pending decisions') 'pending decisions'
+    Assert-Equal "- Nobody maintains the onboarding guide [R-2026-001] | risk | $said | status: open | severity: watch" (Get-Section $run.Output 'Open risks') 'open risks'
+    Assert-Equal 'None.' (Get-Section $run.Output 'Active subjects') 'active subjects'
+    $left = 'C-2026-002', 'Book the committee room', 'D-2026-002', 'Stop the pilot', 'R-2026-002', 'not staffed', '[mobile-onboarding]', 'Mobile onboarding'
+    foreach ($text in $left) { Assert-True ($run.Output -cnotmatch [regex]::Escape($text)) "'$text' appears in the export: $($run.Output)" }
 }
 
 Test 'export includes the stamp of the view to write from it, as view writes it, in the language of the sponsor' {
