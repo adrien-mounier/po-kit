@@ -136,6 +136,25 @@ Test 'when the commit cannot be made, apply fails, says so and leaves the propos
     Assert-True (Test-Path (Join-Path $ws 'state\proposal.json')) 'the proposal is no longer pending'
 }
 
+Test 'on a machine where git does not know who commits, apply stops before it writes anything and says what to run' {
+    $ws = New-TestWorkspace
+    git -C $ws config --unset user.name
+    git -C $ws config --unset user.email
+    Add-InboxNote $ws 'steering committee.md'
+    Set-Proposal $ws @{ collected_at = '2026-03-02T08:30:00+01:00'; notes_processed = @('steering committee.md'); operations = @(New-SubjectOperation) }
+    $before = Get-WorkspaceSnapshot $ws
+
+    $run = Invoke-WithoutIdentity { Invoke-Register $ws apply }
+
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'git does not know who commits' 'reason given'
+    Assert-Match $run.Output '(?m)^  git config --global user\.name "Your Name"$' 'the command that gives the name'
+    Assert-Match $run.Output '(?m)^  git config --global user\.email "you@example\.com"$' 'the command that gives the address'
+    Assert-True ($run.Output -notmatch 'fatal|\*\*\*') "the output holds git's own error: $($run.Output)"
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+    Assert-Equal '' "$(git -C $ws config user.name)$(git -C $ws config user.email)" 'identity set for the PO in the workspace'
+}
+
 Test 'after apply, the last commit holds the new record and no proposal is pending' {
     $ws = New-TestWorkspace
     Set-Proposal $ws @{ operations = @(New-SubjectOperation) }

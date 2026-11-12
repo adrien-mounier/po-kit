@@ -68,6 +68,23 @@ function Invoke-Register([string]$Workspace) {
     @{ Output = ($lines -join "`n"); ExitCode = $LASTEXITCODE }
 }
 
+function Invoke-WithoutIdentity([scriptblock]$Run) {
+    # Runs a script block as on a machine where git does not know who commits: no name and no
+    # address in its settings or in the environment, and no guess from the name of the machine.
+    $names = 'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'GIT_COMMITTER_NAME', 'GIT_COMMITTER_EMAIL', 'GIT_CONFIG_GLOBAL', 'GIT_CONFIG_NOSYSTEM'
+    $saved = @{}
+    foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
+    $settings = Join-Path $TestRoot 'git-knows-nobody.gitconfig'
+    [IO.File]::WriteAllText($settings, "[user]`n`tuseConfigOnly = true`n")
+    try {
+        foreach ($name in $names) { [Environment]::SetEnvironmentVariable($name, $null) }
+        $env:GIT_CONFIG_GLOBAL = $settings
+        $env:GIT_CONFIG_NOSYSTEM = '1'
+        & $Run
+    }
+    finally { foreach ($name in $names) { [Environment]::SetEnvironmentVariable($name, $saved[$name]) } }
+}
+
 function Read-Json([string]$Path) {
     Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
 }

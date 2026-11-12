@@ -55,6 +55,23 @@ $SkillsFolder = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFro
 $version = "$(& git -C $Kit describe --tags --always --dirty)"
 if (-not $version) { Stop-Install 'Install from a clone of the kit made with git: its commit is the version the workspace records.' }
 
+function Test-CommitterKnown([string]$Folder) {
+    # Whether git knows who commits in a folder. git answers on its error stream, which Windows
+    # PowerShell 5.1 takes for errors once captured: errors may continue, in this function only.
+    $ErrorActionPreference = 'Continue'
+    & git -C $Folder var GIT_COMMITTER_IDENT 2>&1 | Out-Null
+    $LASTEXITCODE -eq 0
+}
+
+# The workspace is saved by commits, and git refuses to commit when it does not know who commits:
+# asked before anything is written, of the workspace or, when it is yet to create, of the kit's
+# clone, which knows whom the machine knows. The installer sets no name for the PO.
+if (-not (Test-CommitterKnown $(if (Test-Path -LiteralPath (Join-Path $Workspace '.git')) { $Workspace } else { $Kit }))) {
+    Stop-Install 'git does not know who commits on this machine, and the workspace is saved by commits. Nothing was installed.',
+        'Tell git once, with your own name and address, then run this installer again:',
+        '  git config --global user.name "Your Name"', '  git config --global user.email "you@example.com"'
+}
+
 # --- The workspace ------------------------------------------------------------------------------
 
 if (-not (Test-Path -LiteralPath $Workspace) -or -not (Get-ChildItem -LiteralPath $Workspace -Force)) {

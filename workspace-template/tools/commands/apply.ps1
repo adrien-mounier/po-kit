@@ -44,7 +44,23 @@ function Update-Record($Found, $Fields, $Source) {
     Write-JsonFile $Found.path $record
 }
 
+function Assert-CommitterKnown {
+    # apply ends with a commit, and git refuses to commit when it does not know who commits: asked
+    # here, before anything is written. git answers on its error stream, so errors may continue in
+    # this function, as in Push-ToBackup.
+    # ponytail: the committer alone is asked. git takes the author from the same two settings,
+    # unless a machine sets the two apart.
+    $ErrorActionPreference = 'Continue'
+    & git -C $Workspace var GIT_COMMITTER_IDENT 2>&1 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        Stop-Run 'git does not know who commits on this machine, and apply saves the register with a commit. Nothing was done.',
+            'Tell git once, with your own name and address, then apply again:',
+            '  git config --global user.name "Your Name"', '  git config --global user.email "you@example.com"'
+    }
+}
+
 Assert-RegisterCommitted
+Assert-CommitterKnown
 # The portfolio view is regenerated in the default language. Its labels are read before anything
 # is written, so that a language without labels refuses the run whole.
 $labels = Get-Labels $Settings.languages.default

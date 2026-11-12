@@ -278,10 +278,25 @@ Test 'a folder that holds files and is not a workspace is refused and left as it
     Assert-Equal 1 @(git -C $to.Workspace log --format=%H).Count 'commits of the new workspace'
 }
 
+Test 'on a machine where git does not know who commits, the installer stops before it writes anything and says what to run' {
+    $kit = New-TestKit
+    Save-TestKit $kit 'v1'
+    $to = New-InstallTarget
+
+    $run = Invoke-WithoutIdentity { Invoke-Install $kit -Workspace $to.Workspace -SkillsFolder $to.Skills }
+
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'git does not know who commits' 'reason given'
+    Assert-Match $run.Output '(?m)^  git config --global user\.name "Your Name"$' 'the command that gives the name'
+    Assert-Match $run.Output '(?m)^  git config --global user\.email "you@example\.com"$' 'the command that gives the address'
+    Assert-True ($run.Output -notmatch 'fatal|\*\*\*') "the output holds git's own error: $($run.Output)"
+    Assert-True (-not (Test-Path $to.Workspace)) 'a workspace was created'
+    Assert-True (-not (Test-Path $to.Skills)) 'a skills folder was created'
+}
+
 Test 'a first installation that could not commit is completed by running the installer again' {
     $to = New-InstallTarget
-    # git refuses to commit with a date it cannot read, as it does on a machine where it does not
-    # know who is committing.
+    # git refuses to commit with a date it cannot read.
     $env:GIT_AUTHOR_DATE = 'not a date'
     try { $failed = Invoke-Install $KitRoot -Workspace $to.Workspace -SkillsFolder $to.Skills }
     finally { $env:GIT_AUTHOR_DATE = $null }
