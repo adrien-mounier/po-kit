@@ -98,59 +98,88 @@ if ($left.Count -eq $lines.Count -and -not (Get-PendingCollect)) {
     return
 }
 
-# The notes are filed first, all or none, so that a note that cannot be moved stops the run before
-# anything is written.
-$settled = @(Save-Collect)
+# A run that fails once it has started to write is undone, so that apply can simply be run again:
+# no note is lost, and the last commit is the recovery point. The register is as its last commit
+# when the run starts (Assert-RegisterCommitted). What the run rewrites outside the register is
+# kept here as it is before the first write, a file that is absent as nothing.
+$rewritten = @{}
+foreach ($file in 'state\last-collect.json', 'state\unclassified.md', 'views\portfolio.md', 'views\check-report.md') {
+    $path = Join-Path $Workspace $file
+    $rewritten[$path] = $null
+    if (Test-Path -LiteralPath $path) { $rewritten[$path] = [IO.File]::ReadAllBytes($path) }
+}
+$committed = $false
+try {
+    # The notes are filed first, all or none, so that a note that cannot be moved stops the run
+    # before anything else is written.
+    $settled = @(Save-Collect)
 
-# A line keeps the number preview gave it, whatever the selection.
-$line = 0
-$identifiers = @{}
-$applied = @(foreach ($operation in $operations) {
-        $line++
-        if ($left -contains $line) { continue }
-        if ($operation.op -ceq 'update') {
-            $found = Find-Record $operation.id
-            Update-Record $found $operation.fields $operation.source
-            "update $($found.type) $($operation.id)"
-            continue
-        }
-        $definition = Get-Definition $operation.type
-        $folder = Join-Path $Workspace $definition.folder
-        if ($definition.folder_per_year) { $folder = Join-Path $folder $Today.Substring(0, 4) }
-        New-Item -ItemType Directory -Path $folder -Force | Out-Null
-        $record = Complete-Value $definition.record $operation.fields
-        $record.id = if ($definition.identifier_prefix) { New-NumberedIdentifier $definition.identifier_prefix $folder }
-        else { New-Identifier $record.title $folder }
-        $identifiers[$line] = $record.id
-        $named = Get-LineNamed $record.subject
-        if ($named) { $record.subject = $identifiers[$named] }
-        $record.type = $operation.type
-        $record.date_recorded = $Today
-        $record.date_updated = $Today
-        Write-JsonFile (Join-Path $folder "$($record.id).json") $record
-        $said = "$($operation.op) $($operation.type) $($record.id)"
-        if ($record.supersedes) {
-            # The record superseded is kept: it is marked and linked to the new one, and its history
-            # shows it, with the source of the new record as the source of the change.
-            Update-Record (Find-Record $record.supersedes) ([pscustomobject]@{ status = 'superseded'; superseded_by = $record.id }) $record.source
-            $said += ", which supersedes $($record.supersedes)"
-        }
-        $said
-    }) + $settled
+    # A line keeps the number preview gave it, whatever the selection.
+    $line = 0
+    $identifiers = @{}
+    $applied = @(foreach ($operation in $operations) {
+            $line++
+            if ($left -contains $line) { continue }
+            if ($operation.op -ceq 'update') {
+                $found = Find-Record $operation.id
+                Update-Record $found $operation.fields $operation.source
+                "update $($found.type) $($operation.id)"
+                continue
+            }
+            $definition = Get-Definition $operation.type
+            $folder = Join-Path $Workspace $definition.folder
+            if ($definition.folder_per_year) { $folder = Join-Path $folder $Today.Substring(0, 4) }
+            New-Item -ItemType Directory -Path $folder -Force | Out-Null
+            $record = Complete-Value $definition.record $operation.fields
+            $record.id = if ($definition.identifier_prefix) { New-NumberedIdentifier $definition.identifier_prefix $folder }
+            else { New-Identifier $record.title $folder }
+            $identifiers[$line] = $record.id
+            $named = Get-LineNamed $record.subject
+            if ($named) { $record.subject = $identifiers[$named] }
+            $record.type = $operation.type
+            $record.date_recorded = $Today
+            $record.date_updated = $Today
+            Write-JsonFile (Join-Path $folder "$($record.id).json") $record
+            $said = "$($operation.op) $($operation.type) $($record.id)"
+            if ($record.supersedes) {
+                # The record superseded is kept: it is marked and linked to the new one, and its history
+                # shows it, with the source of the new record as the source of the change.
+                Update-Record (Find-Record $record.supersedes) ([pscustomobject]@{ status = 'superseded'; superseded_by = $record.id }) $record.source
+                $said += ", which supersedes $($record.supersedes)"
+            }
+            $said
+        }) + $settled
 
-# The proposal stays pending until the commit is made, so that a failed run can be applied again
-# from the last commit. The commit holds all that the run wrote: the records, the notes filed, the
-# collect state and the unclassified list, and never the proposal.
-Invoke-Git add -A register inbox state ':(exclude)state/proposal.json'
-# The portfolio view is generated from the register as staged, and goes in the same commit: the
-# view of a commit is never behind its register.
-Write-PortfolioView $labels
-# So is the check report. What the check finds never undoes the apply: it is said, and committed.
-$check = Write-CheckReport $labels
-# The commit takes every view: a weekly synthesis stored since the last apply, under views\weekly,
-# is saved and pushed with the rest. The next synthesis starts its period from it.
-Invoke-Git add -A views
-Invoke-Git commit -q -m "Apply proposal: $($operations.Count - $left.Count) operation(s)" -m ($applied -join "`n")
+    # The proposal stays pending until the commit is made, so that a failed run can be applied again
+    # from the last commit. The commit holds all that the run wrote: the records, the notes filed, the
+    # collect state and the unclassified list, and never the proposal. It also saves the settings
+    # and the connections as they are, so that a change to them reaches the backup.
+    Invoke-Git add -A register inbox state settings.json connections.json ':(exclude)state/proposal.json'
+    # The portfolio view is generated from the register as staged, and goes in the same commit: the
+    # view of a commit is never behind its register.
+    Write-PortfolioView $labels
+    # So is the check report. What the check finds never undoes the apply: it is said, and committed.
+    $check = Write-CheckReport $labels
+    # The commit takes every view: a weekly synthesis stored since the last apply, under views\weekly,
+    # is saved and pushed with the rest. The next synthesis starts its period from it.
+    Invoke-Git add -A views
+    Invoke-Git commit -q -m "Apply proposal: $($operations.Count - $left.Count) operation(s)" -m ($applied -join "`n")
+    $committed = $true
+}
+finally {
+    if (-not $committed) {
+        foreach ($note in $FiledNotes.Keys) { [IO.File]::Move($FiledNotes[$note], $note) }
+        foreach ($path in $rewritten.Keys) {
+            if ($null -ne $rewritten[$path]) { [IO.File]::WriteAllBytes($path, $rewritten[$path]) }
+            elseif (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path }
+        }
+        # Nothing stays staged, and the register is again the one of the last commit.
+        & git -C $Workspace reset -q
+        & git -C $Workspace checkout -q -- register
+        & git -C $Workspace clean -fdq -- register
+        Write-Host 'Nothing was applied: the register, the notes, the collect state and the views are as they were before this run, and the proposal is still pending. Apply again once the cause is settled.'
+    }
+}
 if ($waiting) {
     # The lines that wait become the pending proposal, numbered again from 1. Each one still names
     # its subject: by the identifier the subject received, or by the new number of the line that

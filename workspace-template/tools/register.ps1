@@ -92,6 +92,11 @@ function Push-ToBackup {
     # is an error for Windows PowerShell 5.1, and would stop the run: errors may continue, in this
     # function only.
     $ErrorActionPreference = 'Continue'
+    # Nobody may be there to answer: git and its credential manager must not ask for a password,
+    # in the terminal or in a window. A push that cannot authenticate then fails, which is the
+    # warning below.
+    $env:GIT_TERMINAL_PROMPT = '0'
+    $env:GCM_INTERACTIVE = 'never'
     $remotes = @(Invoke-Git remote)
     if (-not $remotes) { 'Not pushed: the workspace has no remote.' }
     foreach ($remote in $remotes) {
@@ -575,6 +580,9 @@ function Test-PendingCollect {
 function Save-Collect {
     # Settles the collect of the pending proposal, and says what it did, one line per thing.
     # Nothing when the proposal comes from no collect.
+    # Where each note filed by this run was in the inbox, and where it is now: apply puts the notes
+    # back when the run fails.
+    $script:FiledNotes = @{}
     $collect = Get-PendingCollect
     if (-not $collect) { return }
     $statePath = Join-Path $Workspace 'state\last-collect.json'
@@ -587,7 +595,6 @@ function Save-Collect {
     $inbox = Join-Path $Workspace 'inbox'
     $done = Join-Path $inbox "done\$($Today.Substring(0, 7))"
     New-Item -ItemType Directory -Path $done -Force | Out-Null
-    $filed = [ordered]@{}
     foreach ($note in $collect.notes_processed | Sort-Object -Unique) {
         # A note already filed this month under the same name stays: the new one is filed beside it.
         $name = $note
@@ -596,12 +603,11 @@ function Save-Collect {
         }
         try { [IO.File]::Move((Join-Path $inbox $note), (Join-Path $done $name)) }
         catch {
-            # All the notes or none: the notes are filed before anything else is written, and
-            # those already filed go back to the inbox, so that apply can simply be run again.
-            foreach ($back in $filed.Keys) { [IO.File]::Move((Join-Path $done $filed[$back]), (Join-Path $inbox $back)) }
+            # All the notes or none: the notes are filed before anything else is written, and apply
+            # puts those already filed back in the inbox, so that it can simply be run again.
             Stop-Run "The note '$note' could not be filed, so nothing was written: $($_.Exception.GetBaseException().Message) Close it if it is open in another program, then apply again."
         }
-        $filed[$note] = $name
+        $script:FiledNotes[(Join-Path $inbox $note)] = Join-Path $done $name
         "file note $note$(if ($name -ne $note) { " as $name" })"
     }
 

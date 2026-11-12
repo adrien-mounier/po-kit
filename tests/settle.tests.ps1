@@ -164,6 +164,43 @@ Test 'when a note cannot be filed, apply writes nothing and every note stays in 
     Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
 }
 
+Test 'when the commit cannot be made, apply puts the workspace back as it was: applied again once the cause is gone, it works, and no note is lost' {
+    $ws = New-TestWorkspaceWithSubject
+    Add-InboxNote $ws 'steering committee.md'
+    # The PO sorted the unclassified list by hand since the last apply.
+    [IO.File]::WriteAllText((Join-Path $ws 'state\unclassified.md'), "Sorted on Monday.`r`n", $Utf8)
+    Set-Proposal $ws (New-CollectProposal @{
+            notes_processed = @('steering committee.md')
+            unclassified    = @(@{ source = 'inbox/steering committee.md'; text = 'Mentions a possible merger of two branches.' })
+            operations      = @(
+                (New-UpdateOperation 'mobile-onboarding' @{ horizon = 'next' }),
+                (New-RecordOperation commitment @{ owner = 'the tech lead' })
+            )
+        })
+    [IO.File]::WriteAllText((Join-Path $ws '.git\hooks\pre-commit'), "#!/bin/sh`necho 'This hook refuses every commit.'`nexit 1`n")
+    $before = Get-WorkspaceSnapshot $ws
+    $changed = @(git -C $ws status --porcelain --untracked-files=all) -join "`n"
+    $head = git -C $ws rev-parse HEAD
+
+    $run = Invoke-Register $ws apply -Today 2026-03-10
+
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'This hook refuses every commit\.' 'why the commit failed'
+    Assert-Match $run.Output 'Nothing was applied: .* the proposal is still pending' 'what the PO is told'
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+    Assert-Equal $changed (@(git -C $ws status --porcelain --untracked-files=all) -join "`n") 'what differs from the last commit'
+    Assert-Equal $head (git -C $ws rev-parse HEAD) 'last commit'
+
+    Remove-Item (Join-Path $ws '.git\hooks\pre-commit')
+    $run = Invoke-Register $ws apply -Today 2026-03-10
+
+    Assert-Equal 0 $run.ExitCode "exit code once the cause is gone, with output: $($run.Output)"
+    Assert-Equal 'next' (Read-Json (Join-Path $ws 'register\subjects\mobile-onboarding.json')).horizon 'horizon of the subject'
+    Assert-True (Test-Path (Join-Path $ws 'register\commitments\2026\C-2026-001.json')) 'the commitment was not recorded'
+    Assert-True (Test-Path -LiteralPath (Join-Path $ws 'inbox\done\2026-03\steering committee.md')) 'the note is not filed'
+    Assert-Equal '' (@(git -C $ws status --porcelain) -join ' ') 'changes left out of the commit'
+}
+
 Test 'a note listed as processed that is not in the inbox makes the proposal refused before any write' {
     $ws = New-TestWorkspace
     Add-InboxNote $ws 'steering committee.md'

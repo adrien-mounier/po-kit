@@ -76,6 +76,44 @@ Test 'after apply, the commit is pushed to the backup when the workspace has a r
     Assert-Match $run.Output "Pushed to 'backup'" 'output'
 }
 
+Test 'the push to the backup cannot wait for a password: git and its credential manager are told not to ask' {
+    $ws = New-TestWorkspace
+    $backup = Join-Path $TestRoot ('backup-' + [Guid]::NewGuid().ToString('N').Substring(0, 8))
+    git init -q --bare $backup
+    git -C $ws remote add backup $backup
+    # The hook that git runs before a push writes down what the push was told.
+    [IO.File]::WriteAllText((Join-Path $ws '.git\hooks\pre-push'), "#!/bin/sh`necho `"`$GIT_TERMINAL_PROMPT `$GCM_INTERACTIVE`" > .git/told-to-the-push.txt`n")
+    Set-Proposal $ws @{ operations = @(New-SubjectOperation) }
+
+    # On a machine that lets them ask.
+    $terminal, $manager = $env:GIT_TERMINAL_PROMPT, $env:GCM_INTERACTIVE
+    $env:GIT_TERMINAL_PROMPT, $env:GCM_INTERACTIVE = '1', 'always'
+    try { $run = Invoke-Register $ws apply } finally { $env:GIT_TERMINAL_PROMPT, $env:GCM_INTERACTIVE = $terminal, $manager }
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "Pushed to 'backup'" 'output'
+    Assert-Equal '0 never' "$(Get-Content -LiteralPath (Join-Path $ws '.git\told-to-the-push.txt'))".Trim() 'whether git may ask in the terminal, and its credential manager in a window'
+}
+
+Test 'apply commits the settings and the connections with the rest, so that a change to them reaches the backup' {
+    $ws = New-TestWorkspace
+    $settings = Read-Json (Join-Path $ws 'settings.json')
+    $settings.sponsor.name = 'The sponsor'
+    Write-Json (Join-Path $ws 'settings.json') $settings
+    # A collect writes there what the verification of a connector gave.
+    $connections = Read-Json (Join-Path $ws 'connections.json')
+    $connections.tracker = @{ mode = 'connector'; connector = 'Example Bank tracker'; verified = @{ result = 'ok'; on = '2026-03-02' } }
+    Write-Json (Join-Path $ws 'connections.json') $connections
+    Set-Proposal $ws @{ operations = @(New-SubjectOperation) }
+
+    $run = Invoke-Register $ws apply
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $committed = @(git -C $ws show --name-only --format= HEAD)
+    foreach ($file in 'settings.json', 'connections.json') { Assert-True ($committed -contains $file) "the last commit lacks $file; it holds: $($committed -join ', ')" }
+    Assert-Equal '' (@(git -C $ws status --porcelain) -join ' ') 'changes left out of the commit'
+}
+
 Test 'with no remote, apply does not try to push and says so without alarm' {
     $ws = New-TestWorkspace
     Set-Proposal $ws @{ operations = @(New-SubjectOperation) }
