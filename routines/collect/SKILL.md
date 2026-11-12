@@ -63,6 +63,8 @@ Every created record also gives:
 - `evidence_level`: see below.
 - `source`: `{ "where": "inbox/<file name of the note>", "read_on": "<today's date>" }`.
 
+When the note says which of the PO's objectives a record serves, the record gives `objectives` too: their numbers as `settings.json` lists them, as `[1]`. A note that names no objective leaves it out.
+
 Name a person as the register already does (`the tech lead`), otherwise as the note does. "I" in a note is the PO: `the PO`.
 
 **Evidence level.** How the note knows what it states:

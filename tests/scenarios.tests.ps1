@@ -85,16 +85,16 @@ function New-NoteOperation([string]$Type, [string]$Note, [hashtable]$Fields) {
     New-RecordOperation $Type (@{ source = @{ where = "inbox/$Note"; read_on = '2026-03-12' } } + $Fields)
 }
 
-Test 'the scenario "collect an action" passes when the note becomes a commitment with its owner and due date, attached to its subject, and is filed' {
+Test 'the scenario "collect an action" passes when the note becomes a commitment with its owner, its due date and the objective the note names, attached to its subject, and is filed' {
     $note = 'onboarding workshop.md'
     $agent = New-CollectAgent $note @(
-        New-NoteOperation commitment $note @{ title = 'Send the list of the onboarding screens'; owner = 'the tech lead'; owed_to = 'the PO'; due_date = '2026-03-20'; date_of_fact = '2026-03-10' }
+        New-NoteOperation commitment $note @{ title = 'Send the list of the onboarding screens'; owner = 'the tech lead'; owed_to = 'the PO'; due_date = '2026-03-20'; date_of_fact = '2026-03-10'; objectives = @(1) }
     )
 
     $run = Invoke-Scenarios -Agent $agent collect-action
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    foreach ($fact in 'owner is "the tech lead"', 'due_date is "2026-03-20"', 'subject is "mobile-onboarding"', 'source\.where is "inbox/onboarding workshop\.md"') {
+    foreach ($fact in 'owner is "the tech lead"', 'due_date is "2026-03-20"', 'subject is "mobile-onboarding"', 'objectives is \[1\]', 'source\.where is "inbox/onboarding workshop\.md"') {
         Assert-Match $run.Output "  ok    record C-$Year-002: $fact" 'expected fact reported as passed'
     }
     Assert-Match $run.Output "  ok    file inbox/done/$Month/onboarding workshop\.md is there" 'the note is filed as processed'

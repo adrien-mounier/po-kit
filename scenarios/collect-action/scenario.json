@@ -6,6 +6,7 @@
     { "record": "C-{year}-002", "field": "owner", "is": "the tech lead" },
     { "record": "C-{year}-002", "field": "due_date", "is": "2026-03-20" },
     { "record": "C-{year}-002", "field": "status", "is": "open" },
+    { "record": "C-{year}-002", "field": "objectives", "is": [1] },
     { "record": "C-{year}-002", "field": "source.where", "is": "inbox/onboarding workshop.md" },
     { "records": "commitments", "count": 2 },
     { "records": "decisions", "count": 0 },

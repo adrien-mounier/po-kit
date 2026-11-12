@@ -4,4 +4,4 @@ Present: the PO, the tech lead, the architect.
 
 We walked through the target journey screen by screen.
 
-Action: the tech lead sends the list of the onboarding screens to the PO by 20 March 2026.
+Action: the tech lead sends the list of the onboarding screens to the PO by 20 March 2026. This action serves objective 1.
