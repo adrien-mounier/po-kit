@@ -91,6 +91,9 @@ Write-Section "Changes since $since" @(foreach ($record in $records) {
         $changes = @(
             if ($record.date_recorded -ge $since) { "recorded $($record.date_recorded)" }
             foreach ($entry in $record.history | Where-Object { $_.date -ge $since }) {
+                # A next date that is not confirmed is not shown, as in the portfolio view: the
+                # synthesis never promises it.
+                if ($entry.field -ceq 'next_date' -and -not $record.next_date_confirmed) { continue }
                 # A change of subject is named without its values: the subject left may be closed
                 # since, and the line already says the subject of the record.
                 "changed $($entry.date): $(if ($entry.field -ceq 'subject') { 'subject' } else { Format-Change $entry })"

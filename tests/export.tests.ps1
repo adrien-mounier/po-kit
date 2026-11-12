@@ -224,6 +224,27 @@ Test 'export refuses to run when the register differs from its last commit, as i
     Assert-True ($run.Output -notmatch '## ') "export printed a section: $($run.Output)"
 }
 
+Test 'export shows the next date of a subject only once it is confirmed, as the portfolio view does: among the changes too' {
+    $ws = New-TestWorkspaceWithSubject
+    Set-Proposal $ws @{ operations = @(New-UpdateOperation 'mobile-onboarding' @{ next_step = 'Present the target journey'; next_date = '2026-04-01' }) }
+    $dated = Invoke-Register $ws apply -Today 2026-03-10
+    Assert-Equal 0 $dated.ExitCode "exit code when the date is recorded, with output: $($dated.Output)"
+
+    $run = Invoke-Register $ws export 2026-03-10 -Now 2026-03-10T09:15:00+01:00
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'changed 2026-03-10: next_step: \(none\) -> Present the target journey' 'the change of the next step'
+    Assert-True ($run.Output -notmatch '2026-04-01') "the date that is not confirmed appears in the export: $($run.Output)"
+
+    Set-Proposal $ws @{ operations = @(New-UpdateOperation 'mobile-onboarding' @{ next_date_confirmed = $true }) }
+    $confirmed = Invoke-Register $ws apply -Today 2026-03-11
+    Assert-Equal 0 $confirmed.ExitCode "exit code when the date is confirmed, with output: $($confirmed.Output)"
+
+    $run = Invoke-Register $ws export 2026-03-10 -Now 2026-03-11T09:15:00+01:00
+
+    Assert-Match $run.Output 'changed 2026-03-10: next_date: \(none\) -> 2026-04-01' 'the change of the next date, once confirmed'
+}
+
 Test 'export lists the open risks with their severity, the urgent ones first' {
     Assert-Equal (@(
             '- The kiosk supplier may withdraw [R-2026-002] | risk | fact | subject: branch-kiosks-pilot | date of fact: 2026-03-02 | status: open | severity: urgent | owner: the tech lead'
