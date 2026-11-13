@@ -4,6 +4,7 @@
   "expect": [
     { "file": "views/morning.html", "lines": ["id=\"h-meetings\"", "id=\"h-owe\""] },
     { "file": "views/morning.html", "line": "not read: calendar</span></span></h2>" },
+    { "file": "views/morning.html", "line": "not read: mail, chat</span></span></h2>" },
     { "file": "state/calendar.json", "absent": true }
   ]
 }

@@ -331,6 +331,7 @@ Test 'the scenario "morning with the calendar off" passes when the meetings bloc
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output '  ok    file views/morning\.html has a line containing "not read: calendar</span></span></h2>"' 'the meetings block'
+    Assert-Match $run.Output '  ok    file views/morning\.html has a line containing "not read: mail, chat</span></span></h2>"' 'the messages block, with mail and chat off'
 
     $run = Invoke-Scenarios -Agent "$FakeAgent -Snapshot `"$Fixtures\calendar.json`" -Morning" morning-calendar-off
 
