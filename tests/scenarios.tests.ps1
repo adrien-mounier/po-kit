@@ -414,7 +414,12 @@ Test 'the scenario "morning with the calendar off" passes when the meetings bloc
 }
 
 Test 'the scenario "morning start today" passes when the commitment due in three working days with two days of effort is under Start soon, to start today, and among the actions to do first, and fails when no page is written' {
-    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning" morning-start-today
+    # No task is to start today on a Saturday or a Sunday: the morning is then that of the last
+    # working day, three working days before the due date the scenario gives, whatever day the
+    # tests run.
+    $day = (Get-Date).Date
+    while ('Saturday', 'Sunday' -contains $day.DayOfWeek) { $day = $day.AddDays(-1) }
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning -Now $($day.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture))T08:00:00+01:00" morning-start-today
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output '  ok    file views/morning\.html has lines containing, in this order: .*1 to start today' 'the line to start today'

@@ -251,7 +251,7 @@ The view written each week for the sponsor.
 _Avoid_: weekly report, weekly brief, status report
 
 **Steering pack**:
-The view the register tool writes for a steering committee of the calendar snapshot, from the register and the agent's commentary: one HTML deck of six slides in a fixed order, one landscape page each, verified like the weekly synthesis. The morning page offers it from five working days before the committee until it exists. The PO presents it and shares it as a PDF; it counts for nothing until the PO uses it. (French: dossier du comité.)
+The view the register tool writes for a steering committee of the calendar snapshot, from the register and the agent's commentary: one HTML deck of six slides in a fixed order, one landscape page each, a long list going on over the slides after its own, verified like the weekly synthesis. The morning page offers it from five working days before the committee until it exists. The PO presents it and shares it as a PDF; it counts for nothing until the PO uses it. (French: dossier du comité.)
 _Avoid_: board pack, presentation, slides
 
 **Meeting brief**:

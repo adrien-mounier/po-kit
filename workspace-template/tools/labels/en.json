@@ -94,7 +94,7 @@
     "stamp": "Drawn from the register",
     "page": "{0} / {1}",
     "none": "None.",
-    "more": "And {0} more.",
+    "continued": "{0} ({1}/{2})",
     "portfolio": "The portfolio, ranked",
     "portfolio_note": "Ranked by value times feasibility, each scored 1 to 5. Risk, the AI Act mark and whether the work changes stand beside the score, never in it.",
     "rank": "Rank",
