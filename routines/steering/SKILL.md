@@ -57,13 +57,15 @@ Run the register tool's `steering` with the date of the committee, as `steering 
 
 When it prints `Not verified: state\steering.json`, a sentence cites a record that is missing or superseded: correct it from the export, where a superseded record no longer appears, and run `steering` again.
 
+When it prints `Not verified: views\steering\<date>.html`, the deck it would write fails the check of `verify`, and it wrote none: a record's own text cites a record missing or superseded, or the stamp is cut. You cannot correct that: tell the PO the deck was not written and each line of why, offer no deck, and end there.
+
 Done when it prints where the deck is written.
 
 ## 6. Have the register tool verify it
 
 Run the register tool's `verify` with the path of the deck, as `verify views/steering/2026-03-09.html`.
 
-`Verified` means the deck counts as drawn from the register. `Not verified` comes with what failed: run `steering` once more, as step 5 says, and verify again. When it fails again, delete the deck, tell the PO each identifier that failed, and end there: a deck that fails is never offered.
+`Verified` means the deck counts as drawn from the register. `Not verified` comes with what failed: correct the commentary from the export, run `steering` once more, as step 5 says, and verify again. When it fails again, tell the PO the deck failed `verify` and each line of why, offer nothing, and end there: a deck that fails is never offered. The deck is the register tool's: you never edit, move or delete it.
 
 Done when `verify` answers `Verified`.
 

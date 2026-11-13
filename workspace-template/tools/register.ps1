@@ -826,6 +826,25 @@ function Test-Cited([string[]]$Ids) {
     }
 }
 
+function Test-View([string]$Text, [switch]$Html) {
+    # What is wrong with a view, as verify reads it: one line when its stamp is absent or not whole,
+    # then one per record it cites that is missing or superseded. Nothing when it is verified. A
+    # deck (-Html) is read as its reader sees it: its text without its tags, each line trimmed, and
+    # its stamp lines without the quote mark of Markdown.
+    if ($Html) { $Text = [Net.WebUtility]::HtmlDecode(($Text -replace '<[^>]*>', '')) }
+    $lines = ($Text -split '\r?\n' | ForEach-Object { if ($Html) { $_.Trim() } else { $_.TrimEnd() } }) -join "`n"
+    $quote = if ($Html) { '(?:> )?' } else { '> ' }
+    $stamped = $false
+    foreach ($file in Get-ChildItem (Join-Path $Tools 'labels\*.json')) {
+        $stamp = (Read-JsonFile $file.FullName).stamp
+        $generated, $state, $collect, $notCovered, $noCollect = $stamp.generated, $stamp.register_state, $stamp.last_collect, $stamp.not_covered, $stamp.no_collect |
+            ForEach-Object { $quote + [regex]::Escape($_).Replace('\{0}', '.+') }
+        if ($lines -cmatch "(?m)^$generated\n$state\n(?:$noCollect|$collect\n$notCovered)$") { $stamped = $true }
+    }
+    if (-not $stamped) { 'The stamp is absent, or not whole as the register tool gives it. export prints the stamp of the view to write from it.' }
+    Test-Cited @(Get-Cited $Text)
+}
+
 # --- Calendar -----------------------------------------------------------------------------------
 # The calendar is read, never written: nothing here creates, changes or cancels an event. It is no
 # source of the collect. The morning routine reads the working day before today, today and the

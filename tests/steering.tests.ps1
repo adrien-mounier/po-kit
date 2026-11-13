@@ -198,6 +198,23 @@ Test 'the agent''s commentary of state\steering.json goes on its slides, citing 
     Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
 }
 
+Test 'steering writes no deck that verify would fail, as one whose record text cites a superseded record, and says why; the morning page then still offers the pack' {
+    $ws = New-SteeringWorkspace
+    Set-Proposal $ws @{ operations = @(New-RecordOperation risk @{ title = 'The branches may reopen the paper option [D-2026-004]'; subject = 'mobile-onboarding' }) }
+    $run = Invoke-Register $ws apply -Today 2026-03-02
+    Assert-Equal 0 $run.ExitCode "exit code when recording the risk, with output: $($run.Output)"
+    $before = Get-WorkspaceSnapshot $ws
+
+    $run = Invoke-Register $ws steering $Committee -Now $SteeringNow
+
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'Not verified: views\\steering\\2026-03-09\.html' 'output'
+    Assert-Match $run.Output '(?m)^- D-2026-004 is superseded by D-2026-005\.$' 'the superseded record'
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+    $run = Invoke-Register $ws morning -Now $SteeringNow
+    Assert-Match $run.Output '(?m)^Steering pack to offer: Retail steering committee on 2026-03-09\.$' 'the pack still offered'
+}
+
 Test 'the deck takes the sponsor''s language, as the weekly synthesis does: its labels, its dates and its stamp, and verify recognises it' {
     $ws = New-SteeringWorkspace
     $settings = Read-Json (Join-Path $ws 'settings.json')
@@ -309,6 +326,7 @@ Test 'the kit ships the steering routine and the deck template, and the workspac
     $routine = Get-Content -LiteralPath (Join-Path $KitRoot 'routines\steering\SKILL.md') -Raw -Encoding UTF8
     Assert-Match $routine '`verify views/steering/2026-03-09\.html`' 'the routine verifies the deck'
     Assert-Match $routine 'a deck that fails is never offered' 'a deck that fails'
+    Assert-True ($routine -notmatch '(?i)delete the deck') 'the routine has the agent delete a deck, a view only the register tool writes'
     Assert-Match $routine 'You send nothing' 'the routine sends nothing'
     $template = Join-Path $KitRoot 'workspace-template\tools\templates\steering.html'
     Assert-True ([IO.File]::ReadAllBytes($template)[0] -ne 0xEF) 'the deck template opens with a byte order mark'

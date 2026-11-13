@@ -20,7 +20,8 @@
 #     "next_steps": [ "...", "..." ] }
 # one sentence for the title slide and for each slide named, then the next steps. Each cites the
 # records it speaks of as a view does, [identifier]; one that cites a record missing or superseded
-# is refused, and nothing is written.
+# is refused, and nothing is written. The deck itself is checked as verify checks it before it is
+# written: one that would fail, as when the text of a record cites a superseded one, is not.
 #
 # The deck is written from a template: templates\steering.html in the workspace when the
 # organisation has its own, otherwise the kit's, tools\templates\steering.html. Its {{language}},
@@ -265,6 +266,9 @@ $lacking = @('{{language}}', '{{title}}', '{{slides}}' | Where-Object { -not $pa
 if ($lacking) { Stop-Run "The template $name lacks $($lacking -join ', '). Nothing was written. A deck template holds each of {{language}}, {{title}} and {{slides}}." }
 # What a record says goes in last, so that no text of a record is read as a place to fill.
 $page = $page.Replace('{{language}}', $Settings.languages.sponsor).Replace('{{title}}', (Html ($words.title -f $meeting, $when))).Replace('{{slides}}', ($slides -join [Environment]::NewLine))
+# A deck that verify would fail is never written: the morning page offers the pack until one is.
+$problems = @(Test-View $page -Html)
+if ($problems) { Stop-Run (@("Not verified: views\steering\$date.html. Nothing was written; correct what it names, then run steering again.") + @($problems | ForEach-Object { "- $_" })) }
 $folder = Join-Path $Workspace 'views\steering'
 New-Item -ItemType Directory -Path $folder -Force | Out-Null
 Write-TextFile (Join-Path $folder "$date.html") $page
