@@ -117,7 +117,7 @@ The folder where the PO drops raw notes for the next collect.
 _Avoid_: drop zone, staging
 
 **Watch list**:
-The people, keywords and tracker projects attached to a subject. It bounds what a collect may read.
+The people, keywords, tracker projects and chat channels attached to a subject. It bounds what a collect may read. A chat channel is a channel or a group chat; a one-to-one chat is never read.
 _Avoid_: filter, scope, query
 
 **Unclassified**:

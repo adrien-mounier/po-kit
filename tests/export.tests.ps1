@@ -78,6 +78,7 @@ Test 'export says how each source is covered: its mode, whether the last collect
             '- notes | mode: folder | covered: yes | read up to 2026-03-10T08:12:00+01:00 by the collect of 2026-03-10T08:30:00+01:00: 2 item(s)'
             '- mail | mode: folder | covered: no | read up to 2026-03-03T08:20:00+01:00 by the collect of 2026-03-03T08:30:00+01:00: 14 item(s)'
             '- tracker | mode: off | covered: no | never read'
+            '- chat | mode: off | covered: no | never read'
         ) -join "`n") (Get-Section (Get-WeekExport) 'Coverage per source') 'coverage after two collects'
 
     $ws = New-TestWorkspaceWithSubject
@@ -87,6 +88,7 @@ Test 'export says how each source is covered: its mode, whether the last collect
             '- notes | mode: folder | covered: no | never read'
             '- mail | mode: off | covered: no | never read'
             '- tracker | mode: off | covered: no | never read'
+            '- chat | mode: off | covered: no | never read'
         ) -join "`n") (Get-Section $run.Output 'Coverage per source') 'coverage before any collect'
 }
 
@@ -109,6 +111,7 @@ Test 'export says of a source that the last collect stopped at the cap, so that 
             '- notes | mode: folder | covered: yes | read up to 2026-03-10T08:30:00+01:00 by the collect of 2026-03-10T08:30:00+01:00: 1 item(s)'
             '- mail | mode: off | covered: yes | read up to 2026-03-09T16:45:00+01:00 by the collect of 2026-03-10T08:30:00+01:00: 50 item(s), cap reached: the rest waits for the next collect'
             '- tracker | mode: off | covered: no | never read'
+            '- chat | mode: off | covered: no | never read'
         ) -join "`n") (Get-Section $run.Output 'Coverage per source') 'coverage after a collect that stopped at the cap'
 }
 
@@ -184,7 +187,7 @@ Test 'a commitment, a decision or a risk still open on a closed subject is liste
 Test 'export includes the stamp of the view to write from it, as view writes it, in the language of the sponsor' {
     $ws = New-TestWorkspaceWithWeek
     $state = "$(git -C $ws rev-parse HEAD:register)".Substring(0, 12)
-    $english = "> Generated: $Tuesday.`n> Register state: $state.`n> Last collect: 2026-03-10T08:30:00+01:00.`n> Sources not covered by the last collect: mail, tracker."
+    $english = "> Generated: $Tuesday.`n> Register state: $state.`n> Last collect: 2026-03-10T08:30:00+01:00.`n> Sources not covered by the last collect: mail, tracker, chat."
     Assert-Equal $english (Get-Section (Get-WeekExport) 'Stamp') 'stamp when the sponsor reads English'
 
     $settings = Read-Json (Join-Path $ws 'settings.json')

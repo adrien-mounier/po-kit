@@ -524,6 +524,62 @@ Test 'the scenario "collect with a connector that fails" passes when the connect
     Assert-Equal 1 $run.ExitCode 'exit code when the verification is not recorded'
 }
 
+# --- The collect scenarios of chat ---------------------------------------------------------------
+# Chat is supplied as a folder of exported files, exports/chat, one file per message under the
+# folder of its channel, its group chat or its one-to-one chat.
+
+$ChatRead = @{ sources_read = (New-SourceRead notes 0), (New-SourceRead chat 1); sources_not_covered = @('mail', 'tracker') }
+
+Test 'the scenario "collect chat" passes when the message of a channel a watch list names yields a record with the message as its source, and fails when a message of another channel or of a one-to-one chat is quoted, or shows in what the agent printed' {
+    $named = New-ItemOperation 'exports/chat/channels/onboarding squad/2026-03-10 0915 the tech lead.txt' @{ title = 'Create the test accounts of the onboarding pilot'; owner = 'the tech lead'; due_date = '2026-03-25'; date_of_fact = '2026-03-10' }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named -Do '-Pending' -Collect $ChatRead) collect-chat
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[0\]\.fields\.source\.where is "exports/chat/channels/onboarding squad/2026-03-10 0915 the tech lead\.txt"' 'the message is the source of the record'
+    Assert-Match $run.Output '  ok    file state/proposal\.json: sources_read\[1\]\.items is 1' 'one message is read'
+    Assert-Match $run.Output '  ok    file \.\./agent-output\.txt has no line containing "vendor"' 'nothing of the one-to-one chat in what the agent printed'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $private = New-ItemOperation 'exports/chat/one-to-one/the tech lead/2026-03-10 1130 the tech lead.txt' @{ title = 'The onboarding vendor is late again'; owner = 'the tech lead' }
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named, $private -Do '-Pending' -Collect $ChatRead) collect-chat
+
+    Assert-Match $run.Output '  FAIL  file state/proposal\.json has no line containing "vendor"' 'the one-to-one chat quoted in the proposal'
+    Assert-Equal 1 $run.ExitCode 'exit code when the one-to-one chat is read'
+
+    $other = $ChatRead + @{ unclassified = @(@{ source = 'exports/chat/channels/branch staff/2026-03-10 1000 the head of cards.txt'; text = 'The staff canteen moves to the second floor.' }) }
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named -Do '-Pending' -Collect $other) collect-chat
+
+    Assert-Match $run.Output '  FAIL  file state/proposal\.json has no line containing "canteen"' 'the message of a channel no watch list names, quoted as unclassified'
+    Assert-Equal 1 $run.ExitCode 'exit code when the message of another channel is read'
+
+    # What the agent printed is checked too: its answer and, when its command prints them, the
+    # files it listed and opened. Even the name of a one-to-one chat is private.
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named -Do '-Pending -Say "I left aside a private message, 2026-03-10 1130 the tech lead.txt: the onboarding vendor is late again."' -Collect $ChatRead) collect-chat
+
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "vendor"' 'the one-to-one chat in what the agent printed'
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "1130 the tech lead"' 'the name of the one-to-one chat in what the agent printed'
+    Assert-Equal 1 $run.ExitCode 'exit code when the agent prints something of the one-to-one chat'
+}
+
+Test 'the scenario "collect with chat off" passes when the collect completes, the collect state lists chat as not covered and the stamp of the portfolio view says so' {
+    $note = 'call with the architect.md'
+    $action = New-NoteOperation commitment $note @{ title = 'Send the sequence diagrams of the onboarding journey'; owner = 'the architect'; owed_to = 'the PO'; due_date = '2026-03-24'; date_of_fact = '2026-03-11' }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $action -Collect @{ sources_not_covered = @('mail', 'tracker', 'chat') }) collect-chat-off
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file state/last-collect\.json: not_covered is \["mail","tracker","chat"\]' 'chat is not covered'
+    Assert-Match $run.Output '  ok    file views/portfolio\.md has a line containing "> Sources not covered by the last collect: mail, tracker, chat\."' 'the stamp of the portfolio view'
+    Assert-Match $run.Output "  ok    record C-$Year-002: owner is `"the architect`"" 'the collect completed'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $action) collect-chat-off
+
+    Assert-Match $run.Output '  FAIL  file state/last-collect\.json: not_covered is \["mail","tracker","chat"\]' 'chat left out of what was not covered'
+    Assert-Equal 1 $run.ExitCode 'exit code when chat is not listed as not covered'
+}
+
 # --- The weekly synthesis scenarios --------------------------------------------------------------
 # A scenario that starts after a collect gives the proposal of that collect, which the runner has
 # the register tool apply before the agent starts. The fake agent stores a synthesis written ahead,

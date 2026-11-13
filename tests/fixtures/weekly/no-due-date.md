@@ -36,3 +36,4 @@ The PO provided no statement on team capacity.
 
 - mail: it is off
 - tracker: it is off
+- chat: it is off

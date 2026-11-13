@@ -69,6 +69,7 @@ Test 'the record carries the common fields and every subject field, with its dat
     Assert-Equal 'the tech lead' ($record.watch_list.people -join ', ') 'people watched'
     Assert-Equal ($proposed.watch_list.keywords -join ', ') ($record.watch_list.keywords -join ', ') 'keywords watched'
     Assert-Equal 'ONB' ($record.watch_list.tracker_projects -join ', ') 'tracker projects watched'
+    Assert-Equal 'onboarding squad, Harbour Bank onboarding' ($record.watch_list.chat_channels -join ', ') 'chat channels and group chats watched'
     Assert-Equal 'https://example.com/onboarding' ($record.links -join ', ') 'links'
 }
 
@@ -84,7 +85,7 @@ Test 'a subject proposed with its required fields only is recorded with the defa
     Assert-Equal $false $record.next_date_confirmed 'next date confirmed'
     Assert-True ($null -eq $record.next_date) 'a next date was recorded'
     foreach ($list in $record.objectives, $record.history, $record.banks, $record.gates, $record.links,
-        $record.watch_list.people, $record.watch_list.keywords, $record.watch_list.tracker_projects) {
+        $record.watch_list.people, $record.watch_list.keywords, $record.watch_list.tracker_projects, $record.watch_list.chat_channels) {
         Assert-True ($list -is [array] -and $list.Count -eq 0) 'a list left out of the proposal is not recorded as an empty list'
     }
 }

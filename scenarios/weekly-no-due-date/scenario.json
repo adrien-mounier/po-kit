@@ -3,7 +3,7 @@
   "collected": {
     "collected_at": "{today}T08:30:00+01:00",
     "sources_read": [ { "source": "notes", "cutoff": "{today}T08:30:00+01:00", "items": 1 } ],
-    "sources_not_covered": [ "mail", "tracker" ],
+    "sources_not_covered": [ "mail", "tracker", "chat" ],
     "notes_processed": [ "call-with-the-architect.md" ],
     "operations": [
       { "op": "create", "type": "commitment", "interpreted": false,

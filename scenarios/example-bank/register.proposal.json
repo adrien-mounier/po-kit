@@ -25,7 +25,8 @@
         "watch_list": {
           "people": ["the tech lead", "the architect"],
           "keywords": ["onboarding"],
-          "tracker_projects": ["ONB"]
+          "tracker_projects": ["ONB"],
+          "chat_channels": ["onboarding squad"]
         }
       }
     },

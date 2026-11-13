@@ -26,7 +26,8 @@
         "watch_list": {
           "people": ["the tech lead"],
           "keywords": ["onboarding", "entrée en relation"],
-          "tracker_projects": ["ONB"]
+          "tracker_projects": ["ONB"],
+          "chat_channels": ["onboarding squad", "Harbour Bank onboarding"]
         },
         "links": ["https://example.com/onboarding"]
       }
