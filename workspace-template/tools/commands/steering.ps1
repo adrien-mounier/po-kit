@@ -82,6 +82,12 @@ function Format-Note([string]$Text) {
 
 function Format-Key([string]$Name) { $said = "$($notes.$Name)".Trim(); if ($said) { "<p class=`"key`">$(Format-Note $said)</p>" } }
 
+filter Measure-Item {
+    # An item of a column, its tag and title over its line below, with its estimated height.
+    $_.h = 20 + 21.75 * (Get-Lines "$($_.tag)$($_.title)" 60) + 18.85 * (Get-Lines $_.meta 60)
+    $_
+}
+
 function Format-Items($Items) {
     # A list of items, each its title and a line below.
     $Items = @($Items)
@@ -108,17 +114,62 @@ function New-Slide([string]$Id, [string]$Heading, [string[]]$Body, [string]$Clas
     '</section>'
 }
 
-function New-ListSlides([string]$Id, [string]$Heading, [object[]]$Lists, [int[]]$Caps, [scriptblock]$Body) {
-    # The slides of lists: what a slide cannot hold, at most $Caps[i] items of $Lists[i], goes on
-    # over the slides after it, under the same title marked as continued, so that nothing is left
-    # out. $Body builds the body of one slide from the part of each list it holds, in order, and
-    # whether it is the first of these slides and the last.
-    $count = 1
-    for ($i = 0; $i -lt $Lists.Count; $i++) { $count = [Math]::Max($count, [int][Math]::Ceiling(@($Lists[$i]).Count / $Caps[$i])) }
-    for ($page = 0; $page -lt $count; $page++) {
-        $parts = @(for ($i = 0; $i -lt $Lists.Count; $i++) { , @(@($Lists[$i]) | Select-Object -Skip ($page * $Caps[$i]) -First $Caps[$i]) })
-        $title = if ($count -gt 1) { $words.continued -f $Heading, ($page + 1), $count } else { $Heading }
-        New-Slide $(if ($page) { "$Id-$($page + 1)" } else { $Id }) $title (& $Body $parts ($page -eq 0) ($page -eq $count - 1))
+# The height of what a slide shows, estimated in pixels of the slide of 1123 x 794 from its text.
+# Measured in the browser, on screen and printed: the body of a slide is 626 high under its
+# heading; a line is 21.75 at 15 px, 18.85 at 13 px, 26.6 at 19 px and 26.1 at 18 px. The
+# characters a line of a column holds were calibrated against the lines texts really took, in
+# English and French: each is set below the least that was measured, and the room below 626, so
+# that a slide is estimated fuller than it is and the body's clip, kept as a safety net, is never
+# reached.
+$room = 610
+function Get-Lines([string]$Html, [int]$PerLine) {
+    # The lines the text of $Html takes in a column that holds $PerLine characters a line, its
+    # words wrapped as a browser wraps them: a word that does not fit goes to the next line whole.
+    $lines = 1; $used = 0
+    foreach ($word in ([Net.WebUtility]::HtmlDecode(($Html -replace '<[^>]+>', ' ')) -split '\s+' | Where-Object { $_ })) {
+        if ($used -and $used + 1 + $word.Length -gt $PerLine) { $lines++; $used = 0 }
+        $used += $(if ($used) { 1 } else { 0 }) + $word.Length
+    }
+    $lines
+}
+
+function New-ListSlides([string]$Id, [string]$Heading, [object[]]$Lists, [scriptblock]$Body) {
+    # The slides of lists: what a slide cannot hold goes on over the slides after it, under the
+    # same title marked as continued, so that nothing is left out. Each list is
+    # @{ items; column; head; always }: its items, each with its estimated height h; the column it
+    # stands in, a column showing its lists one under the other; the height of its heading; and
+    # whether the first slide shows it, with "None.", when it is empty. A slide holds the items
+    # their heights allow, under the commentary of the slide, $notes.$Id, on the first. $Body
+    # builds the body of one slide from the part of each list it holds, in order, and whether it
+    # is the first of these slides.
+    $key = "$($notes.$Id)".Trim()
+    $next = @($Lists | ForEach-Object { 0 })
+    $pages = @()
+    do {
+        $first = -not $pages.Count
+        $parts = @($Lists | ForEach-Object { , @() })
+        foreach ($column in @($Lists | ForEach-Object { $_.column } | Select-Object -Unique)) {
+            $left = $room - $(if ($first -and $key) { 16 + 26.6 * (Get-Lines $key 106) })
+            $placed = $false
+            for ($i = 0; $i -lt $Lists.Count; $i++) {
+                $list = $Lists[$i]; $items = @($list.items)
+                if ($list.column -ne $column) { continue }
+                if ($next[$i] -ge $items.Count) { if ($first -and $list.always) { $left -= $list.head + 41 }; continue }
+                # The first item of a column goes on its slide whatever its height, so that the
+                # slides come to an end.
+                $used = $list.head; $take = 0
+                while ($next[$i] + $take -lt $items.Count -and (-not $placed -or $used + $items[$next[$i] + $take].h -le $left)) { $used += $items[$next[$i] + $take].h; $take++; $placed = $true }
+                if ($take) { $parts[$i] = @($items[$next[$i]..($next[$i] + $take - 1)]); $next[$i] += $take; $left -= $used }
+                # A list goes on over the next slide: the lists under it wait for it.
+                if ($next[$i] -lt $items.Count) { break }
+            }
+        }
+        $pages += , $parts
+        $more = $false; for ($i = 0; $i -lt $Lists.Count; $i++) { if ($next[$i] -lt @($Lists[$i].items).Count) { $more = $true } }
+    } while ($more)
+    for ($page = 0; $page -lt $pages.Count; $page++) {
+        $title = if ($pages.Count -gt 1) { $words.continued -f $Heading, ($page + 1), $pages.Count } else { $Heading }
+        New-Slide $(if ($page) { "$Id-$($page + 1)" } else { $Id }) $title (@($(if (-not $page) { Format-Key $Id })) + @(& $Body $pages[$page] ($page -eq 0)))
     }
 }
 
@@ -150,29 +201,31 @@ $rows = @(foreach ($subject in $ranked.scored) {
         $banks = @($subject.banks | Where-Object { $_ } | ForEach-Object { "<span class=`"bank`">$(Html $_)</span>" }) -join ''
         $mark = Format-AiActMark $subject "<span class=`"mark`">$($icon.warn) $(Html $words.high_risk)</span>" (Html $words.not_high_risk) (Html $words.not_given)
         $changes = if ($subject.work_changes) { Html $labels.intake.work_changes.($subject.work_changes) } else { Html $words.not_given }
-        @('<tr>'
-            "<td><span class=`"rank`">$rank</span></td>"
-            "<td class=`"t`">$(Format-Cited $subject)$banks</td>"
-            "<td><span class=`"score`">$(Html $score)<span class=`"gauge`" aria-hidden=`"true`"><i style=`"width: $([int]($score * 4))%`"></i></span></span></td>"
-            "<td class=`"n`">$(Html $subject.value_score)</td><td class=`"n`">$(Html $subject.feasibility_score)</td><td class=`"n`">$(& $given $subject.risk_score)</td>"
-            "<td>$mark</td><td>$changes</td>"
-            '</tr>') -join [Environment]::NewLine
+        $named = "$(Format-Cited $subject)$banks"
+        @{ h = 24.5 + 21.75 * (Get-Lines $named 47); html = @('<tr>'
+                "<td><span class=`"rank`">$rank</span></td>"
+                "<td class=`"t`">$named</td>"
+                "<td><span class=`"score`">$(Html $score)<span class=`"gauge`" aria-hidden=`"true`"><i style=`"width: $([int]($score * 4))%`"></i></span></span></td>"
+                "<td class=`"n`">$(Html $subject.value_score)</td><td class=`"n`">$(Html $subject.feasibility_score)</td><td class=`"n`">$(& $given $subject.risk_score)</td>"
+                "<td>$mark</td><td>$changes</td>"
+                '</tr>') -join [Environment]::NewLine
+        }
     })
-# Five rows of two lines each, under the commentary, leave room for the notes above the footer.
-$slides += New-ListSlides 'portfolio' $words.portfolio @(, $rows) 5 {
-    param($Parts, $First, $Last)
-    if ($First) { Format-Key 'portfolio' }
+# The notes under the ranking follow its last row.
+$portfolioNotes = @(
+    if ($ranked.others) { '<p class="note">' + (Html $words.not_scored).Replace('{0}', (@($ranked.others | ForEach-Object { Format-Cited $_ }) -join ', ')) + '</p>' }
+    "<p class=`"note`">$(Html $words.portfolio_note)</p>"
+) | ForEach-Object { @{ h = 10 + 18.85 * (Get-Lines $_ 134); html = $_ } }
+$slides += New-ListSlides 'portfolio' $words.portfolio @(@{ items = $rows; column = 0; head = 26; always = $true }, @{ items = $portfolioNotes; column = 0; head = 0 }) {
+    param($Parts, $First)
     '<div class="s-body">'
     if ($Parts[0]) {
         '<table class="tbl">'
         "<thead><tr><th>$(Html $words.rank)</th><th>$(Html $words.subject)</th><th>$(Html $words.score)</th><th class=`"n`">$(Html $words.value)</th><th class=`"n`">$(Html $words.feasibility)</th><th class=`"n`">$(Html $words.risk)</th><th>$(Html $words.ai_act)</th><th>$(Html $words.work_changes)</th></tr></thead>"
-        '<tbody>'; $Parts[0]; '</tbody></table>'
+        '<tbody>'; $Parts[0] | ForEach-Object { $_.html }; '</tbody></table>'
     }
-    else { "<p class=`"none`">$(Html $words.none)</p>" }
-    if ($Last) {
-        if ($ranked.others) { '<p class="note">' + (Html $words.not_scored).Replace('{0}', (@($ranked.others | ForEach-Object { Format-Cited $_ }) -join ', ')) + '</p>' }
-        "<p class=`"note`">$(Html $words.portfolio_note)</p>"
-    }
+    elseif ($First) { "<p class=`"none`">$(Html $words.none)</p>" }
+    $Parts[1] | ForEach-Object { $_.html }
     '</div>'
 }
 
@@ -187,23 +240,25 @@ $rows = @(foreach ($benefit in $benefits) {
             $share = [Math]::Max([double]0, [Math]::Min([double]1, [double]($benefit.current_value - $benefit.baseline) / ($benefit.target - $benefit.baseline)))
             "<span class=`"track`" aria-hidden=`"true`"><i style=`"width: $([int]($share * 100))%`"></i></span>"
         }
-        @('<tr>'
-            "<td class=`"t`">$(Format-Cited $benefit)<span class=`"sub one`">$(Html $titles[$benefit.subject]) &middot; $(Html $benefit.metric)</span></td>"
-            "<td class=`"nw`">$(if ($null -ne $benefit.baseline) { Html (& $measure $benefit $benefit.baseline) } else { Html $words.not_given })</td>"
-            "<td class=`"nw`">$latest</td>"
-            "<td class=`"nw`">$(if ($null -ne $benefit.target) { Html (& $measure $benefit $benefit.target) } else { Html $words.not_given })</td>"
-            "<td>$bar</td>"
-            "<td>$(if ("$($benefit.owner)".Trim()) { Html $benefit.owner } else { Html $words.not_given })</td>"
-            '</tr>') -join [Environment]::NewLine
+        $owner = if ("$($benefit.owner)".Trim()) { Html $benefit.owner } else { Html $words.not_given }
+        # The title over its line of subject and metric, beside who measures it, in a narrow column.
+        @{ h = 19 + [Math]::Max(21.75 * (Get-Lines (Format-Cited $benefit) 40) + 18.85, 21.75 * (Get-Lines $owner 20)); html = @('<tr>'
+                "<td class=`"t`">$(Format-Cited $benefit)<span class=`"sub one`">$(Html $titles[$benefit.subject]) &middot; $(Html $benefit.metric)</span></td>"
+                "<td class=`"nw`">$(if ($null -ne $benefit.baseline) { Html (& $measure $benefit $benefit.baseline) } else { Html $words.not_given })</td>"
+                "<td class=`"nw`">$latest</td>"
+                "<td class=`"nw`">$(if ($null -ne $benefit.target) { Html (& $measure $benefit $benefit.target) } else { Html $words.not_given })</td>"
+                "<td>$bar</td>"
+                "<td>$owner</td>"
+                '</tr>') -join [Environment]::NewLine
+        }
     })
-$slides += New-ListSlides 'value' $words.value_heading @(, $rows) 5 {
+$slides += New-ListSlides 'value' $words.value_heading @(@{ items = $rows; column = 0; head = 26; always = $true }) {
     param($Parts, $First)
-    if ($First) { Format-Key 'value' }
     '<div class="s-body">'
     if ($Parts[0]) {
         '<table class="tbl fixed"><colgroup><col style="width: 34%"><col style="width: 11%"><col style="width: 14%"><col style="width: 11%"><col style="width: 13%"><col style="width: 17%"></colgroup>'
         "<thead><tr><th>$(Html $words.benefit)</th><th>$(Html $words.baseline)</th><th>$(Html $words.latest)</th><th>$(Html $words.target)</th><th></th><th>$(Html $words.measured_by)</th></tr></thead>"
-        '<tbody>'; $Parts[0]; '</tbody></table>'
+        '<tbody>'; $Parts[0] | ForEach-Object { $_.html }; '</tbody></table>'
     }
     else { "<p class=`"none`">$(Html $words.none)</p>" }
     '</div>'
@@ -228,10 +283,16 @@ $awaited = {
 $committeeWords = '\b(?:' + ((@('committee') + @($Settings.steering_words | Where-Object { "$_".Trim() } | ForEach-Object { [regex]::Escape("$_".Trim()) })) -join '|') + ')\b'
 $fromCommittee = @($pending | Where-Object { "$($_.needed_from)" -imatch $committeeWords })
 $fromOthers = @($pending | Where-Object { "$($_.needed_from)" -inotmatch $committeeWords })
-$slides += New-ListSlides 'decisions' $words.decisions_heading @($taken, @(& $awaited $fromCommittee), @(& $awaited $fromOthers)) 6, 4, 2 {
+# Two columns: the decisions taken, then those awaited from the committee over those from others,
+# the heading of a list under another set apart from it.
+$lists = @(
+    @{ items = @($taken | Measure-Item); column = 0; head = 28; always = $true }
+    @{ items = @(& $awaited $fromCommittee | Measure-Item); column = 1; head = 28; always = $true }
+    @{ items = @(& $awaited $fromOthers | Measure-Item); column = 1; head = 50 }
+)
+$slides += New-ListSlides 'decisions' $words.decisions_heading $lists {
     # A list the slides before have shown whole is not repeated on the next.
     param($Parts, $First)
-    if ($First) { Format-Key 'decisions' }
     '<div class="s-body cols">'
     '<div>'; if ($First -or $Parts[0]) { "<h3>$(Html ($words.taken -f (Format-Day $since)))</h3>"; Format-Items $Parts[0] }; '</div>'
     '<div>'
@@ -251,9 +312,9 @@ $late = @($records | Where-Object { $_.type -ceq 'commitment' -and $_.status -ce
         $owner = if ("$($_.owner)".Trim()) { (Html ($words.owner -f (Format-Value $_.owner))) + ', ' }
         @{ title = Format-Cited $_; meta = "$owner<span class=`"late`">$($icon.alert) $(Html ($words.late_by -f (Format-Day $_.due_date), (Get-DaysSince $_.due_date)))</span>" }
     })
-$slides += New-ListSlides 'risks' $words.risks_heading @($risks, $late) 6, 6 {
+$lists = @(@{ items = @($risks | Measure-Item); column = 0; head = 28; always = $true }, @{ items = @($late | Measure-Item); column = 1; head = 28; always = $true })
+$slides += New-ListSlides 'risks' $words.risks_heading $lists {
     param($Parts, $First)
-    if ($First) { Format-Key 'risks' }
     '<div class="s-body cols">'
     '<div>'; if ($First -or $Parts[0]) { "<h3>$(Html $words.risks)</h3>"; Format-Items $Parts[0] }; '</div>'
     '<div>'; if ($First -or $Parts[1]) { "<h3>$(Html $words.late)</h3>"; Format-Items $Parts[1] }; '</div>'
@@ -261,31 +322,60 @@ $slides += New-ListSlides 'risks' $words.risks_heading @($risks, $late) 6, 6 {
 }
 
 # --- Next steps ---------------------------------------------------------------------------------
-$steps = @($notes.next_steps | Where-Object { "$_".Trim() })
-$next = @(
+$n = 0
+$steps = @($notes.next_steps | Where-Object { "$_".Trim() } | ForEach-Object { $n++; @{ h = 25 + [Math]::Max(30, 26.1 * (Get-Lines $_ 100)); html = "<li><span class=`"rank`">$n</span><span>$(Format-Note $_)</span></li>" } })
+$slides += New-ListSlides 'next' $words.next_heading @(@{ items = $steps; column = 0; head = 0; always = $true }) {
+    param($Parts, $First)
     '<div class="s-body">'
-    if ($steps) {
-        '<ol class="steps">'
-        $n = 0
-        foreach ($step in $steps) { $n++; "<li><span class=`"rank`">$n</span><span>$(Format-Note $step)</span></li>" }
-        '</ol>'
-    }
+    if ($Parts[0]) { '<ol class="steps">'; $Parts[0] | ForEach-Object { $_.html }; '</ol>' }
     else { "<p class=`"none`">$(Html $words.none)</p>" }
     '</div>'
-)
-$slides += New-Slide 'next' $words.next_heading $next
+}
 
 # --- The deck -----------------------------------------------------------------------------------
+function Test-ReachesOut([string]$Page) {
+    # Whether a template could run a script or reach anything outside the deck, the network or a
+    # file share, whoever wrote it. What may load is allowed, not what may not: an image or a font
+    # embedded as data, or a place in the page. Every way of hiding an address is refused outright:
+    # a backslash (a CSS escape, a file share) and a character reference other than the six plain
+    # ones. The attributes are found anywhere in the text, inside a tag or not, so that no quoting
+    # trick hides one.
+    $embedded = '^(?:data:(?:image|font)/|#)'
+    $refused = '<(?:script|iframe|object|embed)\b|[\s/"''](?:on[a-z]+|http-equiv)\s*=|\\|&(?!(?:amp|lt|gt|quot|apos|nbsp);)[#a-z]|@import|attributename\s*=\s*["'']?\s*(?:xlink:)?href|(?:url|src)\(\s*(?!["'']?\s*(?:data:(?:image|font)/|#))'
+    if ($Page -imatch $refused) { return $true }
+    $loads = '(?<=[\s/"''])(src|href|srcset|imagesrcset|data|action|formaction|poster|background|xlink:href|ping|cite|manifest)\s*=\s*("[^"]*"|''[^'']*''|[^\s>]*)'
+    foreach ($found in [regex]::Matches($Page, $loads, 'IgnoreCase')) {
+        # Only the white space a browser strips from an address is trimmed.
+        $value = $found.Groups[2].Value.Trim([char[]]'"''').Trim([char[]]" `t`n`r`f")
+        # srcset, imagesrcset and ping hold a list: each address of it, with its descriptors.
+        if ($found.Groups[1].Value -imatch 'srcset|ping') { if (@($value -split '\s+' | Where-Object { $_ -and $_ -inotmatch '^(?:,*data:(?:image|font)/|\d+(?:\.\d+)?[wxh],*$)' })) { return $true } }
+        elseif ($value -and $value -inotmatch $embedded) { return $true }
+    }
+    # image-set() takes an address as a string too: each string it holds, at any depth.
+    foreach ($found in [regex]::Matches($Page, 'image-set\(', 'IgnoreCase')) {
+        $depth = 1; $at = $found.Index + $found.Length
+        while ($depth -and $at -lt $Page.Length) {
+            $char = $Page[$at]
+            if ($char -eq '"' -or $char -eq "'") {
+                $end = $Page.IndexOf($char, $at + 1); if ($end -lt 0) { $end = $Page.Length }
+                if ($Page.Substring($at + 1, $end - $at - 1).Trim() -inotmatch $embedded) { return $true }
+                $at = $end
+            }
+            elseif ($char -eq '(') { $depth++ }
+            elseif ($char -eq ')') { $depth-- }
+            $at++
+        }
+    }
+    $false
+}
+
 $name = 'templates\steering.html'
 $template = Join-Path $Workspace $name
 if (-not (Test-Path -LiteralPath $template)) { $name = "tools\$name"; $template = Join-Path $Workspace $name }
 $page = [IO.File]::ReadAllText($template, $Utf8)
 $lacking = @('{{language}}', '{{title}}', '{{slides}}' | Where-Object { -not $page.Contains($_) })
 if ($lacking) { Stop-Run "The template $name lacks $($lacking -join ', '). Nothing was written. A deck template holds each of {{language}}, {{title}} and {{slides}}." }
-# The deck holds no script and calls no network, whoever wrote its template: no element that runs
-# or embeds something, no attribute run on an event, no @import, no address of another machine,
-# http:, https: or // (after an =, a comma of a list or the bracket of url()).
-if ($page -imatch '<(?:script|iframe|object|embed)\b|<meta\b[^>]*\bhttp-equiv|<[^>]*\son\w+\s*=|@import|https?:|[=,(]\s*["'']?\s*//') { Stop-Run "The template $name holds a script or calls the network. Nothing was written. A deck template holds no <script>, <iframe>, <object>, <embed> or <meta http-equiv>, no on... attribute, no @import, and no http://, https:// or // address: the deck is read with no script and no network." }
+if (Test-ReachesOut $page) { Stop-Run "The template $name holds a script or calls the network. Nothing was written. A deck template holds no <script>, <iframe>, <object>, <embed> or <meta http-equiv>, no on... attribute, no @import, no backslash, and no character reference but &amp; &lt; &gt; &quot; &apos; and &nbsp;; each address it holds, in src, href, srcset or another attribute that loads something, in url() or in image-set(), is an image or a font embedded as data:image/... or data:font/..., or a place in the page, #...: the deck is read with no script, no network and no file share." }
 # In one pass, so that a text of a record or of the calendar holding a place to fill is left as it is.
 $values = @{ language = $Settings.languages.sponsor; title = (Html ($words.title -f $meeting, $when)); slides = ($slides -join [Environment]::NewLine).Replace('<!--slides-->', "$script:number") }
 $page = [regex]::Replace($page, '\{\{(language|title|slides)\}\}', { param($Found) $values[$Found.Groups[1].Value] })

@@ -143,7 +143,7 @@ Test 'every list slide hides nothing: benefits, decisions, risks and commitments
     Write-Json (Join-Path $ws 'settings.json') $settings
     $source = @{ where = 'inbox/pilot review.md'; read_on = '2026-03-02' }
     Set-Proposal $ws @{ operations = @(
-            for ($i = 1; $i -le 9; $i++) {
+            for ($i = 1; $i -le 12; $i++) {
                 @{ op = 'create'; type = 'benefit'; interpreted = $false; fields = @{ title = "Gain $i of the onboarding pilot"; subject = 'mobile-onboarding'; metric = 'Minutes per file'; unit = 'minutes'; baseline = 40; target = 20; current_value = 31; measured_on = '2026-03-02'; owner = 'the head of retail operations'; evidence_level = 'fact'; source = $source } }
                 New-RecordOperation decision @{ title = "Taken decision $i of the pilot"; status = 'taken'; decided_by = 'the sponsor'; date_of_fact = '2026-03-02' }
                 New-RecordOperation decision @{ title = "Committee decision $i of the pilot"; needed_from = 'the retail steering committee'; needed_by = '2026-03-20' }
@@ -160,13 +160,73 @@ Test 'every list slide hides nothing: benefits, decisions, risks and commitments
     $deck = Read-Deck $ws
     $text = Get-DeckText $deck
     foreach ($kind in 'Gain', 'Taken decision', 'Committee decision', 'Other decision', 'Risk', 'Late commitment') {
-        foreach ($i in 1..9) { Assert-Match $text "\b$kind $i of (?:the|the onboarding) pilot\b" "$kind $i" }
+        foreach ($i in 1..12) { Assert-Match $text "\b$kind $i of (?:the|the onboarding) pilot\b" "$kind $i" }
     }
     $french = Read-Json (Join-Path $KitRoot 'workspace-template\tools\labels\fr.json')
     foreach ($id in 'value', 'decisions', 'risks') {
         $heading = [regex]::Escape($french.steering."$(if ($id -eq 'value') { 'value_heading' } else { "${id}_heading" })")
         Assert-Match ([Net.WebUtility]::HtmlDecode($deck)) "<h2 id=`"h-$id-2`">$heading \(2/\d\)</h2>" "the $id slide continued"
     }
+    Assert-DeckWhole $ws $deck
+}
+
+function Get-SlideCount([string]$Deck, [string]$Id) {
+    # How many slides a list slide takes: the first, then each continued one.
+    [regex]::Matches($Deck, "<section class=`"slide[^`"]*`" id=`"slide-$Id(?:-\d+)?`"").Count
+}
+
+Test 'a list slide holds the rows their estimated height allows, not a fixed number: long titles carry the rows of each list slide over to continued slides, and every title is there' {
+    $ws = New-SteeringWorkspace
+    $long = ' for the branch advisers, the call centre and the private banking arm of Example Bank in every region'
+    Set-Proposal $ws @{ operations = @(
+            for ($i = 1; $i -le 4; $i++) {
+                @{ op = 'create'; type = 'benefit'; interpreted = $false; fields = @{ title = "Gain $i of the pilot$long$long"; subject = 'mobile-onboarding'; metric = 'Minutes per file'; unit = 'minutes'; baseline = 40; target = 20; current_value = 31; measured_on = '2026-03-02'; owner = 'the head of retail operations'; evidence_level = 'fact'; source = @{ where = 'inbox/pilot review.md'; read_on = '2026-03-02' } } }
+                New-RecordOperation decision @{ title = "Taken decision $i$long"; status = 'taken'; decided_by = 'the sponsor'; date_of_fact = '2026-03-02' }
+                New-RecordOperation risk @{ title = "Risk $i$long$long" }
+                New-RecordOperation commitment @{ title = "Late commitment $i$long$long"; owner = 'the tech lead'; due_date = '2026-02-26' }
+            }
+            for ($i = 1; $i -le 3; $i++) {
+                New-SubjectOperation @{ title = "Use case $i$long$long"; value_score = 3; value_reason = 'It saves hours.'; feasibility_score = 3; feasibility_reason = 'The data is at hand.' }
+                New-RecordOperation decision @{ title = "Committee decision $i$long"; needed_from = 'the retail steering committee'; needed_by = '2026-03-20' }
+            }
+            New-RecordOperation decision @{ title = "Other decision 1$long"; needed_from = 'the architect' }
+        )
+    }
+    Assert-Equal 0 (Invoke-Register $ws apply -Today 2026-03-02).ExitCode 'exit code when recording the records'
+
+    $run = Invoke-Register $ws steering $Committee -Now $SteeringNow
+
+    # Five subjects, five benefits, six decisions taken, four awaited from the committee and two
+    # from others, six risks and five commitments late: what a slide of short titles holds. The
+    # titles of a hundred characters fill two lines, those of two hundred four.
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $deck = Read-Deck $ws
+    foreach ($id in 'portfolio', 'value', 'decisions', 'risks') { Assert-True ((Get-SlideCount $deck $id) -gt 1) "the $id slide continued, with long titles" }
+    $text = Get-DeckText $deck
+    foreach ($title in @(1..4 | ForEach-Object { "Gain $_ of the pilot", "Taken decision $_", "Risk $_", "Late commitment $_" }) + @(1..3 | ForEach-Object { "Use case $_", "Committee decision $_" }) + 'Other decision 1') {
+        Assert-Match $text ([regex]::Escape("$title$long")) "the title $title"
+    }
+    Assert-DeckWhole $ws $deck
+}
+
+Test 'the commentary of a slide counts in what it holds: eight risks share a slide with a sentence of commentary, and go on to a continued slide under a commentary of four lines' {
+    $ws = New-SteeringWorkspace
+    Set-Proposal $ws @{ operations = @(for ($i = 1; $i -le 6; $i++) { New-RecordOperation risk @{ title = "Risk $i of the pilot" } }) }
+    Assert-Equal 0 (Invoke-Register $ws apply -Today 2026-03-02).ExitCode 'exit code when recording the risks'
+    Write-Json (Join-Path $ws 'state\steering.json') @{ risks = 'The test accounts are late [C-2026-001].' }
+
+    Invoke-Register $ws steering $Committee -Now $SteeringNow | Out-Null
+
+    Assert-Equal 1 (Get-SlideCount (Read-Deck $ws) 'risks') 'the risks slides, under one sentence'
+
+    $sentence = ' The branches of the pilot wait on them, and the committee should know that the second wave depends on the same accounts.'
+    Write-Json (Join-Path $ws 'state\steering.json') @{ risks = "The test accounts are late [C-2026-001].$sentence$sentence$sentence" }
+    Invoke-Register $ws steering $Committee -Now $SteeringNow | Out-Null
+
+    $deck = Read-Deck $ws
+    Assert-Equal 2 (Get-SlideCount $deck 'risks') 'the risks slides, under four lines'
+    $text = Get-DeckText $deck
+    foreach ($i in 1..6) { Assert-Match $text "\bRisk $i of the pilot \[R-" "risk $i" }
     Assert-DeckWhole $ws $deck
 }
 
@@ -373,7 +433,19 @@ foreach ($added in '<script>alert(1)</script>', '<SCRIPT src="brand.js"></SCRIPT
         '<style>@import "brand.css";</style>', '<style>@import url(https://fonts.example.com/brand.css);</style>',
         '<link rel="stylesheet" href="https://fonts.example.com/brand.css">', '<style>body { background: url(http://cdn.example.com/logo.png); }</style>', '<style>body { background: url( "//cdn.example.com/logo.png"); }</style>',
         '<img src="https://cdn.example.com/logo.png">', '<img src="//cdn.example.com/logo.png">', "<img src='//cdn.example.com/logo.png'>", '<img srcset="logo.png 1x, https://cdn.example.com/logo2.png 2x">', '<img srcset="logo.png 1x, //cdn.example.com/logo2.png 2x">',
-        '<a href="http://intranet.example.com/">Harbour Group</a>') {
+        '<a href="http://intranet.example.com/">Harbour Group</a>',
+        # An address hidden behind a character reference or a CSS escape, a file share, a script
+        # address, and any address that is not an embedded image or a place in the page.
+        '<img src="&#104;ttps://cdn.example.com/a.png">', '<img src="&#47;&#47;cdn.example.com/b.png">', '<img src="&colon;//cdn.example.com/b.png">',
+        '<style>body { background: url(\68ttps://cdn.example.com/c.png); }</style>', '<style>body { background: image-set("\68ttps://cdn.example.com/h.png" 1x); }</style>',
+        '<style>body { background: image-set("data:image/png;base64,iVBORw0KGgo=" 1x, "https://cdn.example.com/h2.png" 2x); }</style>', '<style>body { background: url(brand/logo.png); }</style>',
+        '<style>@import url(data:text/css;base64,QGltcG9ydCB1cmwoaHR0cHM6Ly9jZG4uZXhhbXBsZS5jb20veC5jc3MpOw==);</style>',
+        '<img src="\\files.example.com\share\d.png">', '<link rel="stylesheet" href="\\files.example.com\f.css">', '<base href="\\files.example.com\"><link rel="icon" href="g.ico">',
+        '<a href="javascript:alert(1)">Harbour Group</a>', '<img src="logo.png">', '<img srcset="data:image/png;base64,iVBORw0KGgo= 1x, //cdn.example.com/x.png 2x">',
+        '<svg><use href="//cdn.example.com/e.svg#i"/></svg>', '<svg><image xlink:href="brand.svg"/></svg>', '<form action="//forms.example.com/"></form>', '<video poster="cover.png"></video>',
+        '<table background="paper.png"></table>', '<a href="#x" ping="https://track.example.com/">Harbour Group</a>', '<link rel="preload" as="image" imagesrcset="//cdn.example.com/x.png 1x">',
+        '<img alt=">" onerror="go()" src="data:image/png;base64,iVBORw0KGgo=">', '<img/onerror="go()" src="data:image/png;base64,iVBORw0KGgo=">', '<meta name=">" http-equiv="refresh" content="0; url=brand.html">',
+        '<link rel="stylesheet" href="data:text/css;base64,Ym9keXtiYWNrZ3JvdW5kOnVybChodHRwczovL2Nkbi5leGFtcGxlLmNvbS94LnBuZyl9">') {
     Test "a deck template of the organisation that could run a script or call the network is refused and writes nothing: $added" {
         # One workspace for every template of this table: each leaves it as it found it.
         if (-not $script:GuardWorkspace) { $script:GuardWorkspace = New-SteeringWorkspace; New-Item -ItemType Directory -Path (Join-Path $script:GuardWorkspace 'templates') | Out-Null }
@@ -388,6 +460,22 @@ foreach ($added in '<script>alert(1)</script>', '<SCRIPT src="brand.js"></SCRIPT
         Assert-Match $run.Output 'The template templates\\steering\.html holds a script or calls the network\. Nothing was written\.' 'the reason'
         Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
     }
+}
+
+Test 'a deck template of the organisation is accepted when it reaches nothing outside the page: the kit''s own, and a rebranded copy whose logo is embedded as data' {
+    $ws = $script:GuardWorkspace
+    $kit = [IO.File]::ReadAllText((Join-Path $ws 'tools\templates\steering.html'), $Utf8)
+    $logo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+    $rebranded = $kit.Replace('--brand: #0f5661;', '--brand: #aa0000;').Replace('</style>', ".deck { background-image: url(`"$logo`"); } .mark-x { background: image-set(url($logo) 1x, `"$logo`" 2x); }</style>").Replace('<main class="deck">', "<main class=`"deck`" data-org=`"example-bank`"><img class=`"logo`" src=`"$logo`" alt=`"Example Bank &amp; partners`"><a href=`"#slide-title`">Top</a>")
+    foreach ($template in $kit, $rebranded) {
+        [IO.File]::WriteAllText((Join-Path $ws 'templates\steering.html'), $template, $Utf8)
+
+        $run = Invoke-Register $ws steering $Committee -Now $SteeringNow
+
+        Remove-Item (Join-Path $ws 'templates\steering.html')
+        Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    }
+    Assert-Match (Read-Deck $ws) ([regex]::Escape("<img class=`"logo`" src=`"$logo`"")) 'the logo of the organisation'
 }
 
 Test 'steering alone names the committee whose pack to offer and the day its decisions are taken since, and writes nothing; a date that is not one is refused' {
