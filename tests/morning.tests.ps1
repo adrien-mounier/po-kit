@@ -29,7 +29,7 @@ Test 'morning writes views\morning.html: one self-contained file, UTF-8 without 
     Assert-Match $page '<script>' 'inline script'
     Assert-True ($page -notmatch '(?i)(src|href)="(https?:)?//|<link|@import|url\(') 'the page loads something from elsewhere'
     $order = @([regex]::Matches($page, '<section class="block" id="([a-z]+)"') | ForEach-Object { $_.Groups[1].Value }) -join ' '
-    Assert-Equal 'meetings start owe owed decisions sort' $order 'blocks of the page, in order'
+    Assert-Equal 'first meetings start owe owed decisions messages backlog sort' $order 'blocks of the page, in order'
 }
 
 function Get-Count([string]$Block) {
@@ -130,7 +130,7 @@ Test 'a late line is red with a warning icon and how late it is, a line due toda
     Assert-Match (Get-Row $page 'C-2026-004') '<li class="row">\s*<span class="when"><b>Fri 13</b></span>' 'the later line'
 }
 
-Test 'each line carries a button that copies a request for the agent: a reminder for what is owed late, a nudge for what is owed this week' {
+Test 'each line carries a button that copies a request for the agent: a reminder for what is owed late, a nudge for what is owed within three working days' {
     $ws = New-TestWorkspaceWithDay
 
     Invoke-Register $ws morning -Now $Early | Out-Null
@@ -139,7 +139,7 @@ Test 'each line carries a button that copies a request for the agent: a reminder
     $button = { param($Id) if ((Get-Row $page $Id) -match '<button class="ask" type="button" data-ask="([^"]*)"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">([^<]*)</span></button>') { [Net.WebUtility]::HtmlDecode("$($Matches[2]) | $($Matches[1])") } }
     Assert-Equal 'Prepare it | Help me prepare C-2026-001: Send the onboarding figures' (& $button 'C-2026-001') 'button of a line the PO owes'
     Assert-Equal 'Draft reminder | Draft the reminder for C-2026-005' (& $button 'C-2026-005') 'button of a line owed late'
-    Assert-Equal 'Nudge | Draft a nudge for C-2026-006' (& $button 'C-2026-006') 'button of a line owed this week'
+    Assert-Equal 'Nudge | Draft a nudge for C-2026-006' (& $button 'C-2026-006') 'button of a line owed within three working days'
     Assert-Equal 'Prepare it | Help me prepare decision D-2026-001: Choose the pilot branches' (& $button 'D-2026-001') 'button of a decision awaited from the PO'
     Assert-Equal "What's missing | Show what D-2026-002 is still waiting for" (& $button 'D-2026-002') 'button of a later decision awaited from others'
     # The button keeps its width when it says it copied, and a request the clipboard refuses shows in

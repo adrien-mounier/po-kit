@@ -800,9 +800,12 @@ function Test-Cited([string[]]$Ids) {
 # A meeting is accepted or tentative. An all-day absence is one entry per day. A time is read as
 # written, in the offset it carries.
 #
-# The agent leaves the parts of a brief that need judgement in state\morning.json:
+# The agent leaves the parts of the morning page that need judgement in state\morning.json, in the
+# format the workspace rules give: its notes on the meetings, the actions to do first, the messages
+# awaiting the PO's reply, the signs of progress of what others owe the PO and the backlog alerts:
 #   { "meetings": [ { "start": "2026-03-02T14:00:00+01:00", "title": "...", "key": "...",
-#                     "lacks": { "D-2026-004": "..." } } ] }
+#                     "lacks": { "D-2026-004": "..." } } ], "first": [...], "messages": [...],
+#     "progress": { "C-2026-006": "..." }, "backlog": { "contradictions": [...], ... } }
 # key is one sentence on what matters in the meeting, and lacks what each decision awaited still
 # lacks. A note goes with the meeting of the same start and title.
 
@@ -817,15 +820,36 @@ function Get-DayMeetings($Snapshot, [string]$Date) {
     @($Snapshot.meetings | Where-Object { (Read-Timestamp $_.start) -and (Read-Timestamp $_.end) -and $_.start.Substring(0, 10) -eq $Date } | Sort-Object start, title)
 }
 
-function Read-MeetingNotes {
-    # The agent's notes on meetings (notes), and what is wrong with the records they cite
-    # (problems), as verify checks a view. The notes are kept only when nothing is wrong.
+function Get-Texts($Value) {
+    # Every text a value read from JSON holds, at any depth.
+    if ($Value -is [string]) { $Value }
+    elseif ($Value -is [Management.Automation.PSCustomObject]) { foreach ($field in $Value.PSObject.Properties) { Get-Texts $field.Value } }
+    elseif ($Value -is [array]) { foreach ($item in $Value) { Get-Texts $item } }
+}
+
+function Read-MorningNotes {
+    # The agent's file of state\morning.json (items, nothing without one), its notes on meetings
+    # (notes), and what is wrong with it (problems): each record it cites missing or superseded,
+    # as verify checks a view, and an action that names no record without its button and request.
+    # The file is refused whole when anything is wrong: items and notes are then empty.
     $path = Join-Path $Workspace 'state\morning.json'
     if (-not (Test-Path -LiteralPath $path)) { return @{ notes = @(); problems = @() } }
-    $notes = try { @((Read-JsonFile $path).meetings | Where-Object { $null -ne $_ }) } catch { return @{ notes = @(); problems = @('state\morning.json cannot be read: it must hold JSON, saved as UTF-8.') } }
-    $texts = foreach ($note in $notes) { $note.key; foreach ($lack in $note.lacks.PSObject.Properties) { "[$($lack.Name)]"; $lack.Value } }
-    $problems = @(Test-Cited @(Get-Cited ($texts -join "`n")))
-    @{ notes = $(if ($problems) { @() } else { $notes }); problems = $problems }
+    $file = try { Read-JsonFile $path } catch { return @{ notes = @(); problems = @('state\morning.json cannot be read: it must hold JSON, saved as UTF-8.') } }
+    $notes = @($file.meetings | Where-Object { $null -ne $_ })
+    # A record is cited in a text between square brackets, and by its identifier alone where the
+    # file names one: the decisions of lacks, the record of an action, the commitments of progress,
+    # the decision a ticket contradicts.
+    $named = @(foreach ($note in $notes) { $note.lacks.PSObject.Properties | ForEach-Object { $_.Name } }) + @($file.progress.PSObject.Properties | ForEach-Object { $_.Name }) +
+        @($file.first | ForEach-Object { $_.record }) + @($file.backlog.contradictions | ForEach-Object { $_.decision })
+    $texts = @(Get-Texts $file) + @($named | Where-Object { "$_".Trim() } | ForEach-Object { "[$_]" })
+    $problems = @(Test-Cited @(Get-Cited ($texts -join "`n"))) + @(
+        $number = 0
+        foreach ($action in @($file.first | Where-Object { $null -ne $_ })) {
+            $number++
+            if (-not "$($action.record)".Trim() -and -not ("$($action.button)".Trim() -and "$($action.ask)".Trim())) { "Action $number of first names no record and gives no button and ask." }
+        })
+    if ($problems) { return @{ notes = @(); problems = $problems } }
+    @{ items = $file; notes = $notes; problems = @() }
 }
 
 function Get-MeetingBrief($Meeting, $Records, $Notes) {

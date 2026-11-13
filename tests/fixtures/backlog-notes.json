@@ -1,0 +1,4 @@
+{ "meetings": [], "first": [], "messages": [], "progress": {},
+  "backlog": { "contradictions": [ { "ticket": "ONB-150", "title": "Paper form fallback for the onboarding journey",
+                                     "decision": "D-{year}-001", "why": "the paper form was dropped" } ],
+               "not_ready": [], "stale": [] } }

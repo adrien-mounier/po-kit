@@ -12,7 +12,7 @@ function Read-StartBlock([string]$Workspace) {
 
 function Get-StartRow([string]$Block, [string]$Id) {
     # The HTML of the line of Start soon that names a record.
-    if ($Block -match "(?s)<li class=`"row start[^`"]*`">(?:(?!</li>).)*<span class=`"ref`">$Id</span>.*?</li>") { $Matches[0] }
+    if ($Block -match "(?s)<li class=`"row start[^`"]*`"[^>]*>(?:(?!</li>).)*<span class=`"ref`">$Id</span>.*?</li>") { $Matches[0] }
 }
 
 function Get-StartText([string]$Html) {
@@ -68,12 +68,13 @@ Test 'a commitment of the PO enters Start soon when its latest start, its due da
     Assert-True $block 'the page holds no Start soon block'
     Assert-Equal 'C-2026-007 C-2026-004 C-2026-005 C-2026-006' (@([regex]::Matches($block, '<span class="ref">([^<]+)</span>') | ForEach-Object { $_.Groups[1].Value }) -join ' ') 'lines of Start soon, the earliest start first'
     Assert-Match $block '<div class="cols start" aria-hidden="true"><span>Start by</span><span>Task</span><span>Effort<span class="adj-h">, adjusted from your past tasks</span></span><span>Due</span><span>Status</span><span></span></div>' 'the named columns'
-    Assert-Match (Get-StartRow $block 'C-2026-007') '<li class="row start is-late">\s*<span class="when"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><span class="sr k">Start by </span><b>Fri 27</b> <span class="lag">3 days late</span></span>' 'a latest start past'
-    Assert-Match (Get-StartRow $block 'C-2026-004') '<li class="row start is-soon">\s*<span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="sr k">Start by </span><b>Today</b></span>' 'a latest start today'
-    Assert-Equal 'Start by Today March steering pack C-2026-005 Effort 3 d est. 2 d, adjusted x1.5 from past steering pack: 3 d Due Fri 6 Not started What it needs' (Get-StartText (Get-StartRow $block 'C-2026-005')) 'a line: start by, task, effort with how it was adjusted, due, status, button'
-    Assert-Match (Get-StartRow $block 'C-2026-006') '<li class="row start">\s*<span class="when"><span class="sr k">Start by </span><b>Wed 4</b></span>' 'a latest start within the lead'
+    Assert-Match (Get-StartRow $block 'C-2026-007') '<li class="row start is-late" id="start-C-2026-007">\s*<span class="when"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><span class="sr k">Start by </span><b>Fri 27</b> <span class="lag">3 days late</span></span>' 'a latest start past'
+    Assert-Match (Get-StartRow $block 'C-2026-004') '<li class="row start is-soon" id="start-C-2026-004">\s*<span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="sr k">Start by </span><b>Today</b></span>' 'a latest start today'
+    Assert-Equal 'Start by Today March steering pack C-2026-005 Effort 3 d est. 2 d, adjusted x1.5 from past steering pack: 3 d Due Fri 6 Not started 3 In Do first , number 3' (Get-StartText (Get-StartRow $block 'C-2026-005')) 'a line: start by, task, effort with how it was adjusted, due, status, and its pointer to Do first, where its button is'
+    Assert-Match (Get-StartRow $block 'C-2026-006') '<li class="row start" id="start-C-2026-006">\s*<span class="when"><span class="sr k">Start by </span><b>Wed 4</b></span>' 'a latest start within the lead'
     Assert-Match (Get-StartRow $block 'C-2026-006') '<span class="status"><span class="dot on" aria-hidden="true"></span>Started</span>' 'a commitment started'
-    Assert-Match (Get-StartRow $block 'C-2026-005') 'data-ask="Tell me what C-2026-005 needs: March steering pack"' 'the request a line copies'
+    Assert-Match ([IO.File]::ReadAllText((Join-Path $ws 'views\morning.html'), $Utf8)) '(?s)<li id="first-3">(?:(?!</li>).)*data-ask="Tell me what C-2026-005 needs: March steering pack"' 'the request of a line to start today, in Do first'
+    Assert-Match (Get-StartRow $block 'C-2026-006') 'data-ask="Show me where I am on C-2026-006: Draft the pilot timeline"' 'the request a line copies'
     Assert-Match $run.Output '(?m)^Start soon 1 late to start, 2 to start today, 1 more, not read: notes$' 'what morning prints'
 }
 

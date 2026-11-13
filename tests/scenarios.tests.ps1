@@ -325,11 +325,12 @@ Test 'the scenario "morning with the calendar off" passes when the meetings bloc
     Assert-Equal 1 $run.ExitCode 'exit code when the calendar is read'
 }
 
-Test 'the scenario "morning start today" passes when the commitment due in three working days with two days of effort is under Start soon, to start today, and fails when no page is written' {
+Test 'the scenario "morning start today" passes when the commitment due in three working days with two days of effort is under Start soon, to start today, and among the actions to do first, and fails when no page is written' {
     $run = Invoke-Scenarios -Agent "$FakeAgent -Morning" morning-start-today
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output '  ok    file views/morning\.html has lines containing, in this order: .*1 to start today' 'the line to start today'
+    Assert-Match $run.Output '  ok    file views/morning\.html has lines containing, in this order: id="h-first"' 'the line to start today among the actions to do first'
 
     $run = Invoke-Scenarios -Agent $FakeAgent morning-start-today
 
@@ -349,6 +350,42 @@ Test 'the scenario "morning steering week" passes when the day before the steeri
     Assert-Equal 1 $run.ExitCode 'exit code when the calendar is not read'
 }
 
+Test 'the scenario "morning messages" passes when the chat message that asks the PO something is under the messages awaiting a reply and the one-to-one chat stays unread, and fails when the agent lists no message' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -MeetingNotes `"$Fixtures\messages-notes.json`" -Morning" morning-messages
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file views/morning\.html has lines containing, in this order: .*pilot branches' 'the message'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning" morning-messages
+
+    Assert-Match $run.Output '  FAIL  file views/morning\.html has lines containing' 'no message'
+    Assert-Equal 1 $run.ExitCode 'exit code when no message is listed'
+}
+
+Test 'the scenario "morning reminders" passes when the late commitment owed to the PO is offered a reminder and the one due in three working days a nudge, both named to the PO and left open, and fails when the agent writes no page and names neither' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning -Say `"Shall I draft the reminder for C-$Year-002, and a nudge for C-$Year-003?`"" morning-reminders
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    file views/morning\.html has a line containing `"data-ask=`"Draft a nudge for C-$Year-003`"`"" 'the nudge'
+
+    $run = Invoke-Scenarios -Agent $FakeAgent morning-reminders
+
+    Assert-Match $run.Output "  FAIL  file views/morning\.html has a line containing `"data-ask=`"Draft the reminder for C-$Year-002`"`"" 'no reminder on the page'
+    Assert-Match $run.Output "  FAIL  file \.\./agent-output\.txt has a line containing `"C-$Year-002`"" 'no reminder offered'
+    Assert-Equal 1 $run.ExitCode 'exit code when nothing is offered'
+}
+
+Test 'the scenario "morning backlog" passes when the ticket still open for the plan a decision dropped is a contradiction, and fails when the agent finds none' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -MeetingNotes `"$Fixtures\backlog-notes.json`" -Morning" morning-backlog
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    file views/morning\.html has lines containing, in this order: .*against D-$Year-001" 'the contradiction'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning" morning-backlog
+
+    Assert-Match $run.Output '  FAIL  file views/morning\.html has lines containing' 'no contradiction'
+    Assert-Equal 1 $run.ExitCode 'exit code when no contradiction is found'
+}
 Test 'the scenario "collect and drop a line" passes when the line kept is recorded alone and the note is filed, and fails when the line dropped is recorded too' {
     $note = 'pilot-preparation.md'
     $kept = New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }

@@ -89,6 +89,39 @@
     "show_more": "Show {0} more",
     "hide_more": "Hide {0} more",
     "calendar_read": "Calendar read at {0}",
+    "pointer": "In {0}",
+    "number": ", number {0}",
+    "not_written": "the agent wrote nothing for it",
+    "refused_block": "could not be written",
+    "refused": "The agent's notes are not shown: {0}",
+    "first": {
+      "heading": "Do first",
+      "count": "{0} action(s)",
+      "must_today": "Due {0}, {1} of work, not started: today is the latest start.",
+      "must_late": "Due {0}, {1} of work, not started: the latest start was {2}."
+    },
+    "messages": {
+      "heading": "Messages awaiting your reply",
+      "count": "{0} in {1}",
+      "from_in": "from {0} in {1}",
+      "button": "Draft reply",
+      "ask": "Draft my reply to {0} in {1}: {2}"
+    },
+    "backlog": {
+      "heading": "Backlog alerts",
+      "count_against": "{0} contradict(s) a decision",
+      "count_not_ready": "{0} not ready for the next refinement",
+      "count_stale": "{0} stale",
+      "against": "against {0}: {1}",
+      "not_ready": "not ready: {0}",
+      "stale": "stale: {0}",
+      "show": "Show conflict",
+      "ask_show": "Show me how {0} contradicts {1}",
+      "need": "What it needs",
+      "ask_need": "Tell me what {0} needs for the next refinement",
+      "close": "Close or keep",
+      "ask_close": "Show me the history of {0} and whether to close it"
+    },
     "meetings": {
       "heading": "Today's meetings",
       "count": "{0} meeting(s), {1} booked. Open a line for its brief.",
@@ -178,6 +211,7 @@
     "owed": {
       "heading": "What others owe you",
       "from": "from {0}",
+      "progress": "progress: {0}",
       "reminder": "Draft reminder",
       "ask_reminder": "Draft the reminder for {0}",
       "nudge": "Nudge",

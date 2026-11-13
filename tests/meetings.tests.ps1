@@ -96,8 +96,8 @@ Test 'with the calendar off, the meetings block opens the page and says the cale
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     $page = Read-MorningPage $ws
     $order = @([regex]::Matches($page, '<section class="block" id="([a-z]+)"') | ForEach-Object { $_.Groups[1].Value }) -join ' '
-    Assert-Equal 'meetings start owe owed decisions sort' $order 'blocks of the page, in order'
-    Assert-Match $page '(?s)<div class="sheet">\s*<section class="block" id="meetings"[^>]*>.*?</section>\s*</div>' 'the meetings in the white sheet'
+    Assert-Equal 'first meetings start owe owed decisions messages backlog sort' $order 'blocks of the page, in order'
+    Assert-Match $page '(?s)<div class="sheet">\s*<section class="block" id="first"[^>]*>.*?</section>\s*<section class="block" id="meetings"[^>]*>.*?</section>\s*</div>' 'the meetings in the white sheet, right of Do first'
     Assert-Equal "Today's meetings not read: calendar" (Get-Text ((Get-PageBlock $page 'meetings') -replace '(?s)^.*?(<h2.*?</h2>).*$', '$1')) 'the meetings block'
     Assert-Match $page '<span class="src">Off: mail, tracker, chat, calendar</span>' 'the bar'
     Assert-Match $run.Output "(?m)^Today's meetings not read: calendar$" 'what morning prints'
@@ -195,7 +195,7 @@ Test 'a meeting with a client bank keeps to that bank''s subjects, and shows the
     Assert-Match $both '<li>Share the test dataset <span class="who">the data lead owes the PO, <span class="late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> due Fri 27, 3 days late</span></span> <span class="id">C-2026-002</span></li>' 'a late commitment of the brief'
 }
 
-Test 'the agent''s notes give a meeting its sentence on what matters and each decision what it still lacks' {
+Test 'the agent''s notes give a meeting its sentence on what matters and each decision what it still lacks, a record they cite shown discreetly' {
     $ws = New-TestWorkspaceWithMeetings
     Write-Json (Join-Path $ws 'state\morning.json') @{ meetings = @(@{
                 start = '2026-03-02T14:00:00+01:00'; title = 'Credit memo pilot check-in'
@@ -208,7 +208,7 @@ Test 'the agent''s notes give a meeting its sentence on what matters and each de
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     $block = Get-PageBlock (Read-MorningPage $ws) 'meetings'
-    Assert-Match (Get-Meeting $block '14:00') '<span class="m-key">They will ask for the pilot scope \[D-2026-001\], still undecided\.</span>' 'the sentence on what matters'
+    Assert-Match (Get-Meeting $block '14:00') '<span class="m-key">They will ask for the pilot scope \(<span class="id">D-2026-001</span>\), still undecided\.</span>' 'the sentence on what matters, its record discreet'
     Assert-Match (Get-Meeting $block '14:00') '<span class="id">D-2026-001</span> <span class="missing">Still lacks: The sponsor&#39;s position</span></li>' 'what the decision lacks'
     Assert-True ((Get-Meeting $block '09:30') -notmatch 'm-key') 'a note goes to the meeting of another title'
 }

@@ -1,0 +1,5 @@
+Channel: onboarding squad
+From: the tech lead
+Date: 2026-03-10T09:15:00+01:00
+
+@the PO can you confirm the pilot branches by Friday? We need your answer to book the trainers.

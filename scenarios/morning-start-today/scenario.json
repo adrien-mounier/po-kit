@@ -13,10 +13,11 @@
   "expect": [
     { "file": "views/morning.html", "lines": [
         "id=\"h-start\">Start soon <span class=\"count\"><span class=\"soon\">1 to start today</span>",
-        "<li class=\"row start is-soon\">",
+        "<li class=\"row start is-soon\" id=\"start-C-{year}-002\">",
         "<span class=\"sr k\">Start by </span><b>Today</b>",
         "<span class=\"ref\">C-{year}-002</span>",
         "<span class=\"dot\" aria-hidden=\"true\"></span>Not started",
-        "id=\"h-owe\""] }
+        "id=\"h-owe\""] },
+    { "file": "views/morning.html", "lines": ["id=\"h-first\"", "data-ask=\"Tell me what C-{year}-002 needs", "id=\"h-meetings\""] }
   ]
 }

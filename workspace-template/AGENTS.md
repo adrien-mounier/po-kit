@@ -20,7 +20,7 @@ Written with a forward slash, the command runs the same in every shell.
 
 - `preview` shows the pending proposal as a numbered table and writes nothing.
 - `apply` validates the pending proposal again, writes it to the register, settles its collect and regenerates the portfolio view, `views/portfolio.md`. `apply 1 3` keeps lines 1 and 3 of the preview and drops the others. `apply none` drops every line. `apply plain` records the plain facts only: the lines that wait for the PO stay pending, and it shows them.
-- `morning` writes the morning page, `views/morning.html`, from the register, the calendar snapshot and your notes on the meetings, replacing the last one, and prints the counts of each of its blocks, then, when a day ahead does not fit, the one way out it proposes. The PO opens it in a browser.
+- `morning` writes the morning page, `views/morning.html`, from the register, the calendar snapshot and your notes for it, replacing the last one, and prints the counts of each of its blocks; then, when a day ahead does not fit, the one way out it proposes; then each task to start today, and each reminder and nudge to offer the PO. The PO opens it in a browser.
 - `brief` prints the brief of a meeting of the calendar snapshot: `brief 14:00` for today's, `brief 2026-03-04 14:00` for another day's, `brief` alone for every meeting of today. It lists the subjects the meeting concerns, their open commitments, the decisions awaited and your notes on it. It writes nothing.
 - `check` verifies the whole register and what has gone stale, and writes the check report, `views/check-report.md`. It fails on an error, not on a warning. `apply` runs it after every write and prints its summary, `Check: 0 error(s), 2 warning(s).`: when it counts anything, read the check report and tell the PO what it lists.
 
@@ -85,10 +85,29 @@ The calendar is no source of the collect: the morning routine reads it, never wr
 
 Write it as UTF-8 without a byte order mark, replacing the last one.
 
-Your notes on today's meetings, the parts of a brief that need judgement, are in `state/morning.json`:
+## Your notes for the morning page
+
+The parts of the morning page that need judgement are yours, in `state/morning.json`, written as UTF-8 without a byte order mark and replaced each morning:
 
     { "meetings": [ { "start": "2026-03-02T14:00:00+01:00", "title": "Credit memo pilot check-in",
                       "key": "They will ask for the pilot scope, still undecided [D-2026-004].",
-                      "lacks": { "D-2026-004": "The sponsor's position" } } ] }
+                      "lacks": { "D-2026-004": "The sponsor's position" } } ],
+      "first": [ { "record": "C-2026-005", "title": "Chase the tech lead for the test accounts",
+                   "why": "Three days late, and the pilot waits on them." },
+                 { "title": "Prepare the 14:00 with Harbour Bank", "why": "They will ask for the pilot scope [D-2026-004].",
+                   "button": "Brief me", "ask": "Brief me for the 14:00 with Harbour Bank" } ],
+      "messages": [ { "source": "chat", "from": "the tech lead", "where": "onboarding squad",
+                      "sent": "2026-03-02T09:15:00+01:00", "text": "Can you confirm the pilot branches by Friday?" } ],
+      "progress": { "C-2026-006": "The architect shared a first draft on Friday" },
+      "backlog": { "contradictions": [ { "ticket": "ONB-150", "title": "Build the paper form fallback",
+                                         "decision": "D-2026-002", "why": "the paper form was dropped" } ],
+                   "not_ready": [ { "ticket": "ONB-151", "title": "Branch finder", "why": "no acceptance criteria" } ],
+                   "stale": [ { "ticket": "ONB-120", "title": "Language switch", "why": "no update for 34 days" } ] } }
 
-A note goes with the meeting of the same `start` and `title` in the snapshot. `key` is one sentence on what matters in the meeting; `lacks` says, for a decision awaited that `brief` lists, what it still lacks. Cite a record as a view does, `[identifier]`: the register tool checks every record your notes cite as `verify` does, and leaves the notes off the page when one is missing or superseded.
+- `meetings`: a note goes with the meeting of the same `start` and `title` in the snapshot. `key` is one sentence on what matters in the meeting; `lacks` says, for a decision awaited that `brief` lists, what it still lacks.
+- `first`: the three actions you recommend the PO do first, the most important first, each with one line of why. `record` names the record an action is about: the page gives the action that record's button. An action about no record gives its own `button` and `ask`, the request the button copies. The page always puts first, in its own words, a commitment of the PO to start today or late to start that your actions leave out.
+- `messages`: each mail or chat message within the watch lists that asks the PO something and has no answer from the PO: its source (`mail` or `chat`), who sent it, where (the channel or group chat, or the mail's subject), when it was sent, and the question as it was asked, on one line.
+- `progress`: for a commitment owed to the PO, the sign that it is moving. One due within three working days with no sign here is offered a nudge.
+- `backlog`: the tickets of the watched projects that contradict a recorded decision, with that decision; those not ready for the next refinement; and the stale ones, each with why.
+
+Cite a record as a view does, `[identifier]`. The register tool checks every record the file cites, and every `record`, `decision` and key of `lacks` and `progress`, as `verify` does: when one is missing or superseded, it leaves the whole file off the page, which says so.

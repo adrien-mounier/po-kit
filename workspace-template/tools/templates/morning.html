@@ -92,7 +92,13 @@ h1 .sub { font: 400 0.875rem/1.2 "Segoe UI Variable Text", "Segoe UI", system-ui
 .ask { font: inherit; font-size: 0.8125rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; padding: 0.25rem 0.625rem; min-height: 2rem; border: 1px solid var(--edge); border-radius: 6px; background: var(--btn); color: var(--ink); cursor: pointer; white-space: nowrap; transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out; }
 .ask:hover { background: var(--btn-hover); border-color: var(--ink-2); }
 .ask:active { transform: translateY(1px); }
+.ask.strong { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+.ask.strong:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
 .ask.copied, .ask.copied:hover { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.up { display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2rem; font-size: 0.8125rem; font-weight: 600; color: var(--brand); text-decoration: underline; text-decoration-thickness: 1px; white-space: nowrap; }
+.up:hover { text-decoration-thickness: 2px; }
+.pick { display: inline-grid; place-items: center; flex: none; background: var(--brand); color: var(--on-brand); font-weight: 700; line-height: 1; border-radius: 6px; }
+.up .pick { width: 1.125rem; height: 1.125rem; font-size: 0.75rem; border-radius: 4px; }
 .chev { transition: transform 160ms ease-out; color: var(--muted); }
 details[open] > summary .chev { transform: rotate(90deg); }
 
@@ -100,6 +106,12 @@ details[open] > summary .chev { transform: rotate(90deg); }
 .sheet { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0 1.5rem; margin-top: 1.125rem; padding: 0.875rem 1.25rem 0.75rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; }
 .sheet > section + section { border-left: 1px solid var(--rule); padding-left: 1.5rem; }
 .sheet > .block { margin-top: 0; }
+.sheet h2 { margin-bottom: 0.5rem; }
+.actions li { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr) auto; gap: 0 0.75rem; align-items: start; padding: 0.4375rem 0; border-top: 1px solid var(--rule); scroll-margin-top: 20rem; }
+.actions li:target, .row:target { background: var(--tag); }
+.actions .pick { width: 1.75rem; height: 1.75rem; font-size: 0.9375rem; margin-top: 0.0625rem; }
+.actions .a-title { font-weight: 600; font-size: 1rem; line-height: 1.35; }
+.actions .a-why { color: var(--ink-2); margin-top: 0.0625rem; }
 .bank { display: inline-block; flex: none; font-size: 0.8125rem; font-weight: 400; line-height: 1.5; padding: 0 0.4375rem; border-radius: 4px; background: var(--tag); color: var(--ink-2); white-space: nowrap; }
 .id { white-space: nowrap; }
 
@@ -139,8 +151,10 @@ main.wrap { padding-top: 0.5rem; padding-bottom: 2rem; }
 
 .rows { border-bottom: 1px solid var(--rule); }
 .row { display: grid; grid-template-columns: 10rem minmax(0, 1fr) 12.5rem 9.25rem; gap: 0 1rem; align-items: center; min-height: 2.5rem; padding: 0.25rem 0; border-top: 1px solid var(--rule); }
-.when { position: relative; display: flex; align-items: baseline; gap: 0.5rem; padding-left: 1.375rem; white-space: nowrap; }
-.when > svg.i { position: absolute; left: 0; top: 50%; margin-top: -0.5rem; }
+/* A long date and how late it is wrap within their column rather than run over the title. */
+.when { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.5rem; padding-left: 1.375rem; min-width: 0; }
+.when b, .when .lag { white-space: nowrap; }
+.when > svg.i { position: absolute; left: 0; top: 0.2em; }
 .when b { font-weight: 600; }
 .when .lag { font-size: 0.8125rem; font-weight: 600; }
 .row.is-late .when { color: var(--late); }
@@ -231,6 +245,10 @@ footer p { padding-top: 0.875rem; border-top: 1px solid var(--rule); }
   .adj { display: inline; white-space: normal; }
   .weeks { grid-template-columns: 1fr; }
 }
+@media (max-width: 640px) {
+  .actions li { grid-template-columns: 1.75rem minmax(0, 1fr); }
+  .actions li > .ask { grid-column: 2; justify-self: start; margin-top: 0.5rem; }
+}
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -242,6 +260,7 @@ footer p { padding-top: 0.875rem; border-top: 1px solid var(--rule); }
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5"/><path d="M12 17.5v.01"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5.5"/><path d="M6 11l6-6 6 6"/></symbol>
 </svg>
 
 {{header}}

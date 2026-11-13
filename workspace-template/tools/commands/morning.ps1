@@ -7,6 +7,10 @@
 # The page opens on the stamp of a view, in a bar: the date, when the page was written, the
 # register state, the sources the last collect read and those it did not, and the calendar. Its
 # blocks follow, in this order:
+#   first      Do first, in the white sheet of the day, left of the meetings: the three actions the
+#              agent recommends in state\morning.json, each with its line of why and its button,
+#              and first, in the page's words, a commitment of the PO to start today or late to
+#              start, not started, that the agent's actions leave out.
 #   meetings   Today's meetings, in the white sheet of the day: a timeline of the meetings of the
 #              calendar snapshot, each with its duration, the agent's sentence on what matters and
 #              its brief opening in place, then the free time for work within the PO's working
@@ -16,10 +20,18 @@
 #              days in half-days, one sentence per week, a day that does not fit in red, and one
 #              way out when one does not. The calendar not read, the workload says so.
 #   owe        What you owe: the open commitments whose owner is the PO
-#   owed       What others owe you: the open commitments owed to the PO
+#   owed       What others owe you: the open commitments owed to the PO, with a reminder offered
+#              for one late and a nudge for one due within three working days with no sign of
+#              progress in state\morning.json
 #   decisions  Decisions: the pending decisions awaited from the PO, then those awaited from others
+#   messages   Messages awaiting your reply: those the agent found in mail and chat
+#   backlog    Backlog alerts: the tickets the agent found contradicting a decision, in red, then
+#              those not ready for the next refinement and the stale ones, folded
 #   sort       To sort: the pending proposal, the unclassified items and the stale subjects, as one
 #              count line that opens in place
+# The agent's file is verified as verify checks a view: one that cites a record missing or
+# superseded is left off whole, and the blocks it feeds say they could not be written. An item has
+# its button once, in its highest block; a lower block shows its line with a pointer to it.
 # Each block is one function below that gives its HTML, and $blocks puts them in order: adding a
 # block means adding its function and its place in that list. The styles and the script of the
 # page are in tools\templates\morning.html, after docs\design\morning.html in the kit.
@@ -32,7 +44,9 @@
 # last collect did not read a source that is not off, every block says so: what that source holds
 # may be missing from the register.
 #
-# It prints where the page is, then the heading of each block with its counts, one per line.
+# It prints where the page is, then the heading of each block with its counts, one per line, then
+# the way out of a day that does not fit, each task to start today, and each reminder and nudge to
+# offer the PO.
 
 # The stamp of the page names a committed register.
 Assert-RegisterCommitted
@@ -68,6 +82,28 @@ function Get-Dated([string]$Date) {
     if (-not $Date) { 'none' } elseif ($Date -lt $Today) { 'late' } elseif ($Date -eq $Today) { 'today' } elseif ($Date -le $sunday) { 'week' } else { 'later' }
 }
 
+function Format-Text([string]$Text) {
+    # A text of the agent as HTML: a record it cites between square brackets shows as its
+    # identifier, discreet, as the page shows identifiers.
+    [regex]::Replace((Html $Text), '\[([^\[\]]*)\]', { param($Found) if (@(Get-Cited $Found.Value).Count) { "(<span class=`"id`">$($Found.Groups[1].Value)</span>)" } else { $Found.Value } })
+}
+
+# Where an item has its full treatment, its sentence and its button: the identifier of its record,
+# then the anchor of its line, the heading of its block and, in Do first, its number. A block lower
+# down shows the item as a plain line with a pointer to it, and no second button.
+$placed = @{}
+
+function Format-Act([string]$Id, [string]$Button, [string]$Ask) {
+    # The button of a line, or its pointer to the line higher up that holds the item.
+    $at = if ($Id) { $placed[$Id] }
+    if ($at) {
+        $pick = if ($at.number) { "<span class=`"pick`" aria-hidden=`"true`">$($at.number)</span>" }
+        $number = if ($at.number) { "<span class=`"sr`">$(Html ($words.number -f $at.number))</span>" }
+        return "<a class=`"up`" href=`"#$($at.anchor)`">$pick<span>$(Html ($words.pointer -f $at.block))$number</span>$(Icon up)</a>"
+    }
+    "<button class=`"ask`" type=`"button`" data-ask=`"$(Html $Ask)`">$(Icon copy)<span class=`"lbl`">$(Html $Button)</span></button>"
+}
+
 function New-Line([string]$Date, [string]$Id, [string]$Title, [string]$Who, [string]$Subject, [string]$Button, [string]$Ask, [string]$Effort) {
     # One dated line of a block: its date, its title, who it concerns and its effort, its subject
     # and its identifier, and its button.
@@ -85,18 +121,18 @@ function New-Line([string]$Date, [string]$Id, [string]$Title, [string]$Who, [str
     $class = @{ late = ' is-late'; today = ' is-soon'; week = ' is-soon' }[$dated]
     @{
         date = $Date; id = $Id; dated = $dated
-        html = New-Row $class $when $Title $Who "$(Html $Subject) &middot; $(Html $Id)" $Button $Ask $Effort
+        html = New-Row $class $when $Title $Who "$(Html $Subject) &middot; $(Html $Id)" $Button $Ask $Effort $Id
     }
 }
 
-function New-Row([string]$Class, [string]$When, [string]$Title, [string]$Who, [string]$Ref, [string]$Button, [string]$Ask, [string]$Effort) {
-    # A line of a block, as HTML lines: one for the line, one per column.
+function New-Row([string]$Class, [string]$When, [string]$Title, [string]$Who, [string]$Ref, [string]$Button, [string]$Ask, [string]$Effort, [string]$Id) {
+    # A line of a block, as HTML lines: one for the line, one per column. $Id names its record.
     "<li class=`"row$Class`">"
     "<span class=`"when`">$When</span>"
     $who = -join @($Who, $Effort | Where-Object { $_ } | ForEach-Object { ' <span class="who">' + (Html $_) + '</span>' })
     "<span class=`"what`"><span class=`"t`">$(Html $Title)</span>$who</span>"
     "<span class=`"ref`">$Ref</span>"
-    "<span class=`"act`"><button class=`"ask`" type=`"button`" data-ask=`"$(Html $Ask)`">$(Icon copy)<span class=`"lbl`">$(Html $Button)</span></button></span>"
+    "<span class=`"act`">$(Format-Act $Id $Button $Ask)</span>"
     '</li>'
 }
 
@@ -119,8 +155,10 @@ function Format-Lines($Lines, [int]$Short = $shortList) {
     }
 }
 
-function Format-Count([string[]]$Counts, $Lines) {
-    # The counts that open a block: those given, then its lines by date, then the sources not read.
+function Format-Count([string[]]$Counts, $Lines, [string[]]$NotRead = $unread) {
+    # The counts that open a block: those given, then its lines by date, then the sources not read:
+    # by default those the collects should read and the last one did not.
+    $unread = $NotRead
     $parts = @($Counts)
     foreach ($kind in @(@('late', 'count_late', 'late'), @('today', 'count_today', 'soon'), @('week', 'count_week', 'soon'), @('later', 'count_later', ''), @('none', 'count_no_date', ''))) {
         $count = @($Lines | Where-Object { $_.dated -eq $kind[0] }).Count
@@ -148,6 +186,78 @@ $unread = @(Get-Coverage | Where-Object { $_.mode -cne 'off' -and -not $_.covere
 # The calendar snapshot when it was read today: one of an earlier day says nothing of today.
 $calendar = Read-CalendarSnapshot
 if ($calendar -and -not "$($calendar.read_at)".StartsWith($Today)) { $calendar = $null }
+# The agent's file, state\morning.json: nothing when there is none or it is refused.
+$notes = Read-MorningNotes
+$items = $notes.items
+# A commitment of the PO enters Start soon when its latest start falls within the lead; one owed
+# to the PO is nudged when it is due within three working days.
+$leadBy = Add-WorkingDays $Today (Get-StartSoon).lead
+$nudgeBy = Add-WorkingDays $Today 3
+# What morning prints after the counts: the tasks to start today, and the reminders and nudges
+# offered.
+$StartToday = @()
+$Offers = @()
+
+function Format-Unwritten([string]$Key) {
+    # What a block of the agent's says when the agent's file gives it nothing: in red when the file
+    # is refused, and that the agent wrote nothing for it when the file is absent or says nothing
+    # of it.
+    if ($notes.problems) { "<span class=`"late`">$(Icon alert) $(Html $words.refused_block)</span>" }
+    elseif ($null -eq $items -or $null -eq $items.$Key) { Html $words.not_written }
+}
+
+function Test-Read([string]$Source) {
+    # Whether the last collect read a source: one off, or never read, was not.
+    @(Get-Coverage | Where-Object { $_.source -ceq $Source -and $_.covered }).Count -gt 0
+}
+
+function Get-FirstBlock {
+    # Do first: the three actions the agent recommends, each with one line of why and its button.
+    # A commitment of the PO whose latest start is today or past and that is not started is always
+    # among them: in the agent's words when its action names it, in the page's own otherwise, first.
+    # An action that names a record takes the button of that record; another gives its own.
+    $said = $words.first
+    $musts = @($commitments | Where-Object { (Test-IsPo $_.owner) -and -not "$($_.started_on)".Trim() } | ForEach-Object {
+            $start = Get-LatestStart $_
+            if ($start -and $start -le $Today) { @{ start = $start; record = $_ } }
+        } | Sort-Object { $_.start }, { $_.record.id })
+    $script:StartToday = @($musts | ForEach-Object { $_.record })
+    $mustIds = @($musts | ForEach-Object { $_.record.id })
+    $picked = @($items.first | Where-Object { $null -ne $_ })
+    $named = @($picked | ForEach-Object { "$($_.record)".Trim() })
+    $own = @(foreach ($must in $musts | Where-Object { $named -cnotcontains $_.record.id }) {
+            $record = $must.record
+            $parts = (Format-Day $record.due_date), ($words.start.days -f ([decimal](Get-AdjustedEffort $record).adjusted).ToString('0.##', $culture))
+            $why = if ($must.start -eq $Today) { Html ($said.must_today -f $parts) } else { "<span class=`"late`">$(Icon alert) $(Html ($said.must_late -f ($parts + (Format-Day $must.start))))</span>" }
+            @{ record = $record.id; title = Html $record.title; why = $why }
+        })
+    # Up to three actions, more only when more must start today.
+    $room = [Math]::Max(3, $mustIds.Count) - $mustIds.Count
+    $actions = @(foreach ($action in $own + @($picked | ForEach-Object { @{ record = "$($_.record)".Trim(); title = Format-Text $_.title; why = Format-Text $_.why; button = $_.button; ask = $_.ask } })) {
+            if ($mustIds -ccontains $action.record) { $action } elseif ($room -gt 0) { $room--; $action }
+        })
+    $number = 0
+    $lines = foreach ($action in $actions) {
+        $number++
+        $button, $ask = $action.button, $action.ask
+        if ($action.record) {
+            $found = Find-Record $action.record
+            if ($found) { $button, $ask = Get-RecordAsk $found.record }
+        }
+        "<li id=`"first-$number`">"
+        "<span class=`"pick`" aria-hidden=`"true`">$number</span>"
+        "<div><p class=`"a-title`"><span class=`"sr`">$number. </span>$($action.title)</p><p class=`"a-why`">$($action.why)</p></div>"
+        "<button class=`"ask strong`" type=`"button`" data-ask=`"$(Html $ask)`">$(Icon copy)<span class=`"lbl`">$(Html $button)</span></button>"
+        '</li>'
+        if ($action.record) { $placed[$action.record] = @{ anchor = "first-$number"; block = $said.heading; number = $number } }
+    }
+    $counts = @(if ($number) { Html ($said.count -f $number) }; Format-Unwritten 'first')
+    $body = @(
+        if ($lines) { '<ol class="actions">'; $lines; '</ol>' }
+        if ($notes.problems) { "<p class=`"refused late`">$(Icon alert) $(Html ($words.refused -f ($notes.problems -join ' ')))</p>" }
+    )
+    Format-Block 'first' $said.heading (Format-Count $counts @()) $body
+}
 
 function Get-Minutes([string]$Timestamp) {
     $moment = Read-Timestamp $Timestamp
@@ -199,7 +309,7 @@ function Get-MeetingsBlock {
         "<span class=`"opener`">$(Icon chev 'i chev')</span>"
         '<span class="m">'
         "<span class=`"m-title`">$(Html $meeting.title)$banks <span class=`"dur`">$(Html $duration)</span></span>"
-        if ("$($brief.note.key)".Trim()) { "<span class=`"m-key`">$(Html $brief.note.key)</span>" }
+        if ("$($brief.note.key)".Trim()) { "<span class=`"m-key`">$(Format-Text $brief.note.key)</span>" }
         '</span>'
         '</summary>'
         '<dl class="brief">'
@@ -230,7 +340,7 @@ function Get-MeetingsBlock {
                     if ($decision.needed_by) { $said.by -f (Format-Day $decision.needed_by) }
                 ) -join ', '
                 $lacks = "$($brief.note.lacks.($decision.id))".Trim()
-                if ($lacks) { $lacks = ' <span class="missing">' + (Html ($said.lacks -f $lacks)) + '</span>' }
+                if ($lacks) { $lacks = ' <span class="missing">' + [string]::Format((Html $said.lacks), (Format-Text $lacks)) + '</span>' }
                 "<li>$(Html $decision.title) <span class=`"who`">$(Html $who)</span> <span class=`"id`">$(Html $decision.id)</span>$lacks</li>"
             }
             '</ul></dd>'
@@ -433,13 +543,45 @@ function Get-Workload($Days, [hashtable]$Room, $Plan, $Share) {
     '</div>'
 }
 
+function Get-StartAsk($Commitment) {
+    # The button of a commitment under Start soon, and its request.
+    $said = $words.start
+    $button, $ask = if ("$($Commitment.started_on)".Trim()) { $said.where, $said.ask_where } else { $said.need, $said.ask_need }
+    $button, ($ask -f $Commitment.id, (Format-Value $Commitment.title))
+}
+
+function Get-OwedAsk($Commitment) {
+    # The button of a commitment owed to the PO, and its request: a reminder once it is late, a
+    # nudge when it is due within three working days with no sign of progress, a look otherwise.
+    $owed = $words.owed
+    if ((Get-Dated $Commitment.due_date) -eq 'late') { return $owed.reminder, ($owed.ask_reminder -f $Commitment.id) }
+    if ($Commitment.due_date -and $Commitment.due_date -le $nudgeBy -and -not "$($items.progress.($Commitment.id))".Trim()) { return $owed.nudge, ($owed.ask_nudge -f $Commitment.id) }
+    $owed.show, ($owed.ask_show -f $Commitment.id)
+}
+
+function Get-DecisionAsk($Decision) {
+    # The button of a pending decision, and its request.
+    $said = $words.decisions
+    if (Test-IsPo $Decision.needed_from) { return $said.prepare, ($said.ask_prepare -f $Decision.id, (Format-Value $Decision.title)) }
+    $button, $ask = if ('late', 'today', 'week' -contains (Get-Dated $Decision.needed_by)) { $said.nudge, $said.ask_nudge } else { $said.missing, $said.ask_missing }
+    $button, ($ask -f $Decision.id)
+}
+
+function Get-RecordAsk($Record) {
+    # The button a record has in its own block, and its request.
+    if ($Record.type -ceq 'decision') { return Get-DecisionAsk $Record }
+    if (-not (Test-IsPo $Record.owner)) { return Get-OwedAsk $Record }
+    $start = Get-LatestStart $Record
+    if ($start -and $start -le $leadBy) { return Get-StartAsk $Record }
+    $words.owe.button, ($words.owe.ask -f $Record.id, (Format-Value $Record.title))
+}
+
 function Get-StartBlock {
     $said = $words.start
-    $lead = Add-WorkingDays $Today (Get-StartSoon).lead
     $number = { param($Value) ([decimal]$Value).ToString('0.##', $culture) }
     $lines = @(foreach ($commitment in $commitments | Where-Object { Test-IsPo $_.owner }) {
             $start = Get-LatestStart $commitment
-            if (-not $start -or $start -gt $lead) { continue }
+            if (-not $start -or $start -gt $leadBy) { continue }
             $dated = if ($start -lt $Today) { 'late' } elseif ($start -eq $Today) { 'today' } else { 'later' }
             $when = switch ($dated) {
                 'late' {
@@ -450,21 +592,22 @@ function Get-StartBlock {
                 default { "<span class=`"sr k`">$(Html $said.start_by) </span><b>$(Html (Format-Day $start))</b>" }
             }
             $started = "$($commitment.started_on)".Trim()
-            $button, $ask = if ($started) { $said.where, $said.ask_where } else { $said.need, $said.ask_need }
+            $button, $ask = Get-StartAsk $commitment
             @{
                 date = $start; id = $commitment.id; dated = $dated
                 html = @(
-                    "<li class=`"row start$(@{ late = ' is-late'; today = ' is-soon' }[$dated])`">"
+                    "<li class=`"row start$(@{ late = ' is-late'; today = ' is-soon' }[$dated])`" id=`"start-$(Html $commitment.id)`">"
                     "<span class=`"when`">$when</span>"
                     "<span class=`"what`"><span class=`"t`">$(Html $commitment.title)</span> <span class=`"ref`">$(Html $commitment.id)</span></span>"
                     "<span class=`"eff`"><span class=`"sr k`">$(Html $said.effort) </span><b>$(Html ($said.days -f (& $number (Get-AdjustedEffort $commitment).adjusted)))</b> <span class=`"adj`">$(Html (Format-Effort $commitment $labels.effort $culture))</span></span>"
                     "<span class=`"due`"><span class=`"sr k`">$(Html $said.due) </span>$(Html (Format-Day $commitment.due_date))</span>"
                     "<span class=`"status`"><span class=`"dot$(if ($started) { ' on' })`" aria-hidden=`"true`"></span>$(Html $(if ($started) { $said.started } else { $said.not_started }))</span>"
-                    "<span class=`"act`"><button class=`"ask`" type=`"button`" data-ask=`"$(Html ($ask -f $commitment.id, (Format-Value $commitment.title)))`">$(Icon copy)<span class=`"lbl`">$(Html $button)</span></button></span>"
+                    "<span class=`"act`">$(Format-Act $commitment.id $button $ask)</span>"
                     '</li>'
                 )
             }
         })
+    foreach ($line in $lines | Where-Object { -not $placed[$_.id] }) { $placed[$line.id] = @{ anchor = "start-$($line.id)"; block = $said.heading } }
     $counts = @(
         foreach ($kind in @(@('late', 'count_late', 'late'), @('today', 'count_today', 'soon'), @('later', 'count_more', ''))) {
             $count = @($lines | Where-Object { $_.dated -eq $kind[0] }).Count
@@ -523,12 +666,13 @@ function Get-OwedBlock {
     $owed = $words.owed
     $lines = @(foreach ($commitment in $commitments | Where-Object { (Test-IsPo $_.owed_to) -and -not (Test-IsPo $_.owner) }) {
             $from = if ("$($commitment.owner)".Trim()) { $owed.from -f (Format-Value $commitment.owner) }
-            $button, $ask = switch (Get-Dated $commitment.due_date) {
-                'late' { $owed.reminder, $owed.ask_reminder }
-                { 'today', 'week' -contains $_ } { $owed.nudge, $owed.ask_nudge }
-                default { $owed.show, $owed.ask_show }
-            }
-            New-Line $commitment.due_date $commitment.id $commitment.title $from $commitment.subject $button ($ask -f $commitment.id)
+            $sign = "$($items.progress.($commitment.id))".Trim()
+            if ($sign) { $from = (@($from, ($owed.progress -f $sign)) | Where-Object { $_ }) -join ', ' }
+            $button, $ask = Get-OwedAsk $commitment
+            # What morning prints: each reminder and nudge offered, for the agent to offer the PO.
+            if ($button -ceq $owed.reminder) { $script:Offers += "Reminder to offer: $(Format-Value $commitment.title) [$($commitment.id)], $from, due $($commitment.due_date)." }
+            elseif ($button -ceq $owed.nudge) { $script:Offers += "Nudge to offer: $(Format-Value $commitment.title) [$($commitment.id)], $from, due $($commitment.due_date)." }
+            New-Line $commitment.due_date $commitment.id $commitment.title $from $commitment.subject $button $ask
         })
     Format-Block 'owed' $owed.heading (Format-Count @() $lines) $(if ($lines) { Format-Lines $lines })
 }
@@ -536,12 +680,13 @@ function Get-OwedBlock {
 function Get-DecisionsBlock {
     $said = $words.decisions
     $fromYou = @(foreach ($decision in $decisions | Where-Object { Test-IsPo $_.needed_from }) {
-            New-Line $decision.needed_by $decision.id $decision.title '' $decision.subject $said.prepare ($said.ask_prepare -f $decision.id, (Format-Value $decision.title))
+            $button, $ask = Get-DecisionAsk $decision
+            New-Line $decision.needed_by $decision.id $decision.title '' $decision.subject $button $ask
         })
     $fromOthers = @(foreach ($decision in $decisions | Where-Object { -not (Test-IsPo $_.needed_from) }) {
             $from = if ("$($decision.needed_from)".Trim()) { $said.from -f (Format-Value $decision.needed_from) }
-            $button, $ask = if ('late', 'today', 'week' -contains (Get-Dated $decision.needed_by)) { $said.nudge, $said.ask_nudge } else { $said.missing, $said.ask_missing }
-            New-Line $decision.needed_by $decision.id $decision.title $from $decision.subject $button ($ask -f $decision.id)
+            $button, $ask = Get-DecisionAsk $decision
+            New-Line $decision.needed_by $decision.id $decision.title $from $decision.subject $button $ask
         })
     $counts = @(if ($fromYou -or $fromOthers) { Html ($said.count_from_you -f $fromYou.Count); Html ($said.count_from_others -f $fromOthers.Count) })
     $body = if ($fromYou -or $fromOthers) {
@@ -551,6 +696,58 @@ function Get-DecisionsBlock {
         }
     }
     Format-Block 'decisions' $said.heading (Format-Count $counts @($fromYou + $fromOthers)) $body
+}
+
+function Get-MessagesBlock {
+    # The messages within the watch lists that ask the PO something and have no answer from the PO,
+    # as the agent found them, the oldest first. Mail or chat not read by the last collect, off
+    # included, is said not read.
+    $said = $words.messages
+    $messages = @($items.messages | Where-Object { $null -ne $_ })
+    $lines = @(foreach ($message in $messages) {
+            $sent = if (Read-Timestamp $message.sent) { "$($message.sent)" }
+            @{
+                date = $sent; id = ''; dated = 'none'
+                html = New-Row '' $(if ($sent) { "<b>$(Html (Format-Moment $sent))</b>" }) $message.text ($said.from_in -f (Format-Value $message.from), (Format-Value $message.where)) (Html $message.source) $said.button ($said.ask -f (Format-Value $message.from), (Format-Value $message.where), (Format-Value $message.text))
+            }
+        })
+    $counts = @(foreach ($source in 'mail', 'chat') {
+            $count = @($messages | Where-Object { $_.source -ceq $source }).Count
+            if ($count) { Html ($said.count -f $count, $source) }
+        }) + @(Format-Unwritten 'messages')
+    Format-Block 'messages' $said.heading (Format-Count $counts @() @('mail', 'chat' | Where-Object { -not (Test-Read $_) })) $(if ($lines) { Format-Lines $lines })
+}
+
+function Get-BacklogBlock {
+    # The tickets of the watched projects that the agent found contradicting a recorded decision, a
+    # line each in red, then those not ready for the next refinement and the stale ones, folded. The
+    # tracker not read by the last collect, off included, is said not read.
+    $said = $words.backlog
+    $against = @($items.backlog.contradictions | Where-Object { $null -ne $_ })
+    $notReady = @($items.backlog.not_ready | Where-Object { $null -ne $_ })
+    $stale = @($items.backlog.stale | Where-Object { $null -ne $_ })
+    # The date of a line sorts it: the contradictions first, then the tickets not ready, then the
+    # stale ones.
+    $lines = @(
+        foreach ($ticket in $against) {
+            $decision = Find-Record "$($ticket.decision)".Trim()
+            @{
+                date = '0'; id = "$($ticket.ticket)"; dated = 'late'
+                html = New-Row ' is-late' "$(Icon alert)<b>$(Html $ticket.ticket)</b>" $ticket.title ($said.against -f $ticket.decision, (Format-Value $ticket.why)) (Html $decision.record.subject) $said.show ($said.ask_show -f $ticket.ticket, $ticket.decision)
+            }
+        }
+        foreach ($group in @(@('1', $notReady, $said.not_ready, $said.need, $said.ask_need), @('2', $stale, $said.stale, $said.close, $said.ask_close))) {
+            foreach ($ticket in $group[1]) {
+                @{ date = $group[0]; id = "$($ticket.ticket)"; dated = 'none'; html = New-Row '' "<b>$(Html $ticket.ticket)</b>" $ticket.title ($group[2] -f (Format-Value $ticket.why)) '' $group[3] ($group[4] -f $ticket.ticket) }
+            }
+        })
+    $counts = @(
+        if ($against) { "<span class=`"late`">$(Html ($said.count_against -f $against.Count))</span>" }
+        if ($notReady) { Html ($said.count_not_ready -f $notReady.Count) }
+        if ($stale) { Html ($said.count_stale -f $stale.Count) }
+        Format-Unwritten 'backlog'
+    )
+    Format-Block 'backlog' $said.heading (Format-Count $counts @() @('tracker' | Where-Object { -not (Test-Read $_) })) $(if ($lines) { Format-Lines $lines 0 })
 }
 
 function Get-SortBlock {
@@ -622,9 +819,10 @@ function Get-Header {
     '</header>'
 }
 
-$notes = Read-MeetingNotes
-# The white sheet holds the day: the blocks of today side by side, then the ruled blocks below.
-$blocks = @('<div class="sheet">') + @(Get-MeetingsBlock) + @('</div>') + @(Get-StartBlock) + @(Get-OweBlock) + @(Get-OwedBlock) + @(Get-DecisionsBlock) + @(Get-SortBlock)
+# The white sheet holds the day: the blocks of today side by side, then the ruled blocks below. The
+# blocks are written in order, so that an item is placed in the highest one first.
+$blocks = @('<div class="sheet">') + @(Get-FirstBlock) + @(Get-MeetingsBlock) + @('</div>') + @(Get-StartBlock) + @(Get-OweBlock) + @(Get-OwedBlock) + @(Get-DecisionsBlock) +
+    @(Get-MessagesBlock) + @(Get-BacklogBlock) + @(Get-SortBlock)
 $newLine = [Environment]::NewLine
 $page = [IO.File]::ReadAllText((Join-Path $Tools 'templates\morning.html'), $Utf8)
 # What a record says goes in last, so that no text of a record is read as a place to fill.
@@ -638,4 +836,6 @@ foreach ($heading in [regex]::Matches(($blocks -join $newLine), '<h2 id="h-[a-z]
     [Net.WebUtility]::HtmlDecode(($heading.Groups[1].Value -replace '<[^>]+>', '' -replace '\s+', ' ').Trim())
 }
 if ($script:WayOut) { $script:WayOut }
-if ($notes.problems) { @('Not verified: state\morning.json. The notes on the meetings are left off the page; correct them, then run morning again.') + @($notes.problems | ForEach-Object { "- $_" }) }
+foreach ($task in $StartToday) { "Start today: $(Format-Value $task.title) [$($task.id)]" }
+$Offers
+if ($notes.problems) { @('Not verified: state\morning.json. Your notes are left off the page; correct them, then run morning again.') + @($notes.problems | ForEach-Object { "- $_" }) }

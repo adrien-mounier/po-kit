@@ -1,0 +1,24 @@
+{
+  "routine": "morning",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "commitment", "interpreted": false, "fields": {
+          "title": "Deliver the test accounts of the onboarding pilot", "subject": "mobile-onboarding", "date_of_fact": "2026-02-20",
+          "owner": "the tech lead", "owed_to": "the PO", "due_date": "2026-03-02", "evidence_level": "fact",
+          "source": { "where": "conversation with the PO", "read_on": "2026-02-20" } } },
+      { "op": "create", "type": "commitment", "interpreted": false, "fields": {
+          "title": "Send the hosting options of the onboarding app", "subject": "mobile-onboarding", "date_of_fact": "{today}",
+          "owner": "the architect", "owed_to": "the PO", "due_date": "{workday+3}", "evidence_level": "fact",
+          "source": { "where": "conversation with the PO", "read_on": "{today}" } } }
+    ]
+  },
+  "prompt": "Morning.",
+  "expect": [
+    { "file": "views/morning.html", "line": "data-ask=\"Draft the reminder for C-{year}-002\"" },
+    { "file": "views/morning.html", "line": "data-ask=\"Draft a nudge for C-{year}-003\"" },
+    { "file": "../agent-output.txt", "line": "C-{year}-002" },
+    { "file": "../agent-output.txt", "line": "C-{year}-003" },
+    { "record": "C-{year}-002", "field": "status", "is": "open" },
+    { "record": "C-{year}-003", "field": "status", "is": "open" }
+  ]
+}

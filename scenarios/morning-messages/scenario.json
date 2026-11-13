@@ -1,0 +1,13 @@
+{
+  "routine": "morning",
+  "prompt": "Morning.",
+  "expect": [
+    { "file": "views/morning.html", "lines": [
+        "id=\"h-messages\">Messages awaiting your reply <span class=\"count\">1 in chat",
+        "pilot branches",
+        "id=\"h-backlog\""] },
+    { "file": "state/morning.json", "line": "doubt the pilot date", "absent": true },
+    { "file": "../agent-output.txt", "line": "doubt the pilot date", "absent": true },
+    { "file": "../agent-output.txt", "line": "1130 the tech lead", "absent": true }
+  ]
+}

@@ -27,7 +27,7 @@ if ($time -and -not $meetings) {
 }
 
 $records = @(Get-RecordFiles | ForEach-Object { Read-JsonFile $_.path })
-$notes = Read-MeetingNotes
+$notes = Read-MorningNotes
 "Calendar read at $($calendar.read_at)."
 foreach ($meeting in $meetings) {
     $brief = Get-MeetingBrief $meeting $records $notes.notes

@@ -89,6 +89,39 @@
     "show_more": "Afficher {0} de plus",
     "hide_more": "Masquer {0} de plus",
     "calendar_read": "Agenda lu à {0}",
+    "pointer": "Dans {0}",
+    "number": ", numéro {0}",
+    "not_written": "l'agent n'a rien écrit pour ce bloc",
+    "refused_block": "n'a pas pu être écrit",
+    "refused": "Les notes de l'agent ne sont pas affichées : {0}",
+    "first": {
+      "heading": "À faire d'abord",
+      "count": "{0} action(s)",
+      "must_today": "Pour {0}, {1} de travail, pas commencé : c'est aujourd'hui le dernier jour pour commencer.",
+      "must_late": "Pour {0}, {1} de travail, pas commencé : le dernier jour pour commencer était {2}."
+    },
+    "messages": {
+      "heading": "Messages qui attendent votre réponse",
+      "count": "{0} dans {1}",
+      "from_in": "de {0} dans {1}",
+      "button": "Rédiger la réponse",
+      "ask": "Rédige ma réponse à {0} dans {1} : {2}"
+    },
+    "backlog": {
+      "heading": "Alertes du backlog",
+      "count_against": "{0} en contradiction avec une décision",
+      "count_not_ready": "{0} pas prêt(s) pour le prochain affinage",
+      "count_stale": "{0} sans mouvement",
+      "against": "contre {0} : {1}",
+      "not_ready": "pas prêt : {0}",
+      "stale": "sans mouvement : {0}",
+      "show": "Voir le conflit",
+      "ask_show": "Montre-moi en quoi {0} contredit {1}",
+      "need": "Ce qu'il lui faut",
+      "ask_need": "Dis-moi ce qu'il faut à {0} pour le prochain affinage",
+      "close": "Fermer ou garder",
+      "ask_close": "Montre-moi l'historique de {0} et s'il faut le fermer"
+    },
     "meetings": {
       "heading": "Réunions du jour",
       "count": "{0} réunion(s), {1} au total. Ouvrez une ligne pour sa préparation.",
@@ -178,6 +211,7 @@
     "owed": {
       "heading": "Ce que l'on vous doit",
       "from": "de {0}",
+      "progress": "avancement : {0}",
       "reminder": "Rédiger la relance",
       "ask_reminder": "Rédige la relance pour {0}",
       "nudge": "Rappel",

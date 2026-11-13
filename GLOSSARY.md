@@ -190,6 +190,22 @@ _Avoid_: weekly report, weekly brief, status report
 For one meeting of the calendar snapshot: the subjects whose watch lists its title and attendees match (kept to a client bank's subjects when the meeting names that bank), their open commitments, the decisions awaited and what each still lacks.
 _Avoid_: meeting prep, briefing (which is the morning conversation with the PO), agenda
 
+**Do first**:
+The three actions the agent recommends the PO start the day with, at the top of the morning page, each with one line of why. A commitment of the PO whose latest start is today or past and that is not started is always among them.
+_Avoid_: top priorities, focus list, today's tasks
+
+**Backlog alert**:
+A ticket of a watched project that the morning page points out: one that contradicts a recorded decision, one not ready for the next refinement, or one that is stale.
+_Avoid_: ticket warning, backlog issue
+
+**Reminder**:
+A draft the agent offers to chase a commitment owed to the PO that is late. The PO sends it; the agent never does.
+_Avoid_: chaser, follow-up
+
+**Nudge**:
+A draft the agent offers for a commitment owed to the PO that is due within three working days with no sign of progress, before it slips. The PO sends it; the agent never does.
+_Avoid_: ping, reminder (which is for one already late)
+
 **Export**:
 The digest of the register for a period that the register tool prints: the material the weekly synthesis is written from.
 _Avoid_: dump, extract, report

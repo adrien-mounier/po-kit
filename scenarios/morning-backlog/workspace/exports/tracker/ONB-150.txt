@@ -1,0 +1,9 @@
+Key: ONB-150
+Project: ONB
+Title: Paper form fallback for the onboarding journey
+Status: Open
+Assignee: the tech lead
+Reporter: the tech lead
+Updated: {today}T06:30:00+01:00
+
+Build a printable paper form for the customers who cannot finish the mobile onboarding.

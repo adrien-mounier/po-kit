@@ -1,0 +1,19 @@
+{
+  "routine": "morning",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "decision", "interpreted": false, "fields": {
+          "title": "Drop the paper form from the mobile onboarding", "subject": "mobile-onboarding", "date_of_fact": "2026-02-26",
+          "status": "taken", "decided_by": "the retail steering committee", "evidence_level": "fact",
+          "source": { "where": "conversation with the PO", "read_on": "2026-02-26" } } }
+    ]
+  },
+  "prompt": "Morning.",
+  "expect": [
+    { "file": "views/morning.html", "lines": [
+        "id=\"h-backlog\">Backlog alerts <span class=\"count\"><span class=\"late\">1 contradict(s) a decision</span>",
+        "<b>ONB-150</b>",
+        "against D-{year}-001",
+        "id=\"h-sort\""] }
+  ]
+}
