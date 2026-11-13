@@ -1,0 +1,6 @@
+Title: Vendor demo
+Start: {workday+1}T14:00:00+01:00
+End: {workday+1}T18:00:00+01:00
+Organizer: the vendor
+Attendees: the vendor
+Your response: tentative

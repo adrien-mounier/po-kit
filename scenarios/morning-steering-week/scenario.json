@@ -1,0 +1,25 @@
+{
+  "routine": "morning",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "commitment", "interpreted": false, "fields": {
+          "title": "Prepare the retail steering committee pack", "subject": "mobile-onboarding", "date_of_fact": "{today}",
+          "owner": "the PO", "owed_to": "the retail steering committee", "due_date": "{workday+2}",
+          "estimated_effort": 3, "task_kind": "steering pack", "estimate_reason": "A full steering pack takes about three days.",
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "{today}" } } }
+    ]
+  },
+  "prompt": "Morning.",
+  "expect": [
+    { "file": "state/calendar.json", "line": "tentative" },
+    { "file": "views/morning.html", "line": "<use href=\"#i-alert\"/></svg> Does not fit</span>" },
+    { "file": "views/morning.html", "lines": [
+        "id=\"h-start\"",
+        "<span class=\"ref\">C-{year}-002</span>",
+        "<p class=\"week-cap\">",
+        "<li class=\"over\" data-day=\"{workday+1}\"",
+        "<div class=\"suggest\">",
+        "C-{year}-002</span> to ",
+        "id=\"h-owe\""] }
+  ]
+}

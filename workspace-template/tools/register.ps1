@@ -941,6 +941,33 @@ function Format-Effort($Commitment, $Words, [Globalization.CultureInfo]$Culture)
     else { $Words.no_kind -f (& $number $effort.estimate) }
 }
 
+function Add-WorkingDays([string]$Date, [int]$Days) {
+    # The date that many working days, Monday to Friday, after a date, or before it when negative.
+    $at = [DateTime]::ParseExact($Date, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+    $step = [Math]::Sign($Days)
+    for ($left = [Math]::Abs($Days); $left -gt 0) {
+        $at = $at.AddDays($step)
+        if ('Saturday', 'Sunday' -notcontains $at.DayOfWeek) { $left-- }
+    }
+    $at.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+}
+
+function Get-StartSoon {
+    # The margin and the lead of Start soon, in working days: the settings', or one and two.
+    # ponytail: settings written before start_soon read as the template's.
+    $set = $Settings.start_soon
+    @{ margin = $(if ($null -ne $set.margin) { [int]$set.margin } else { 1 }); lead = $(if ($null -ne $set.lead) { [int]$set.lead } else { 2 }) }
+}
+
+function Get-LatestStart($Commitment) {
+    # The latest start of a commitment of the PO: its due date minus its adjusted effort in working
+    # days, a part of a day counting as a day, minus the margin. Nothing without a due date or an
+    # estimate.
+    $effort = Get-AdjustedEffort $Commitment
+    if (-not $effort -or -not $Commitment.due_date) { return }
+    Add-WorkingDays $Commitment.due_date (-([int][Math]::Ceiling($effort.adjusted) + (Get-StartSoon).margin))
+}
+
 function Get-CheckDelays {
     # The delay of each staleness rule, in days: three from the settings, and a week for the
     # unclassified items. A thing is stale when it is older than its delay, counted in whole days.

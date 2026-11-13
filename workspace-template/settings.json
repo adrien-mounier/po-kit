@@ -14,6 +14,7 @@
   "working_hours": [
     { "from": "09:00", "to": "18:00" }
   ],
+  "start_soon": { "margin": 1, "lead": 2 },
   "gates": [],
   "objectives": [],
   "banks": [],

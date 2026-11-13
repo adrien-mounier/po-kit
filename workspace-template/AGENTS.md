@@ -20,7 +20,7 @@ Written with a forward slash, the command runs the same in every shell.
 
 - `preview` shows the pending proposal as a numbered table and writes nothing.
 - `apply` validates the pending proposal again, writes it to the register, settles its collect and regenerates the portfolio view, `views/portfolio.md`. `apply 1 3` keeps lines 1 and 3 of the preview and drops the others. `apply none` drops every line. `apply plain` records the plain facts only: the lines that wait for the PO stay pending, and it shows them.
-- `morning` writes the morning page, `views/morning.html`, from the register, the calendar snapshot and your notes on the meetings, replacing the last one, and prints the counts of each of its blocks. The PO opens it in a browser.
+- `morning` writes the morning page, `views/morning.html`, from the register, the calendar snapshot and your notes on the meetings, replacing the last one, and prints the counts of each of its blocks, then, when a day ahead does not fit, the one way out it proposes. The PO opens it in a browser.
 - `brief` prints the brief of a meeting of the calendar snapshot: `brief 14:00` for today's, `brief 2026-03-04 14:00` for another day's, `brief` alone for every meeting of today. It lists the subjects the meeting concerns, their open commitments, the decisions awaited and your notes on it. It writes nothing.
 - `check` verifies the whole register and what has gone stale, and writes the check report, `views/check-report.md`. It fails on an error, not on a warning. `apply` runs it after every write and prints its summary, `Check: 0 error(s), 2 warning(s).`: when it counts anything, read the check report and tell the PO what it lists.
 
@@ -41,6 +41,8 @@ Each command is one file under `tools/commands`; its first line says what it doe
 When the PO names a gate, an objective, a client bank or a kind of task that is not listed, the PO adds it there first.
 
 `working_hours`: the PO's working hours, as `[{ "from": "10:00", "to": "12:00" }, { "from": "14:00", "to": "18:00" }]`. The morning page counts the free time for work within them.
+
+`start_soon`: as `{ "margin": 1, "lead": 2 }`, in working days. The latest start of a commitment the PO owns is its due date minus its adjusted effort, in working days, minus the margin; the morning page lists it under "Start soon" once its latest start falls within the lead. Its workload view sets the work of the PO's open commitments against the free time of the next ten working days: the working hours less the accepted meetings and half the tentative ones, none on a day of absence, times the share of it really usable for tasks. That share starts at 70%; the register tool learns it from the real efforts of the PO's done tasks and the free time it keeps of each morning, in `state/free-time.json`, which is its own. A commitment the PO says is optional carries `"optional": true`: the page may then propose to drop or hand it over when a day does not fit.
 
 `validation_mode` says what a collect records without asking the PO: `all`, nothing; `interpreted`, the plain facts, while the interpreted lines wait for the PO.
 

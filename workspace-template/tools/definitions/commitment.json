@@ -14,6 +14,7 @@
     "estimate_reason": { "type": "text" },
     "started_on": { "type": "date" },
     "started_sign": { "type": "text" },
-    "real_effort": { "type": "days" }
+    "real_effort": { "type": "days" },
+    "optional": { "type": "boolean" }
   }
 }

@@ -29,7 +29,7 @@ Test 'morning writes views\morning.html: one self-contained file, UTF-8 without 
     Assert-Match $page '<script>' 'inline script'
     Assert-True ($page -notmatch '(?i)(src|href)="(https?:)?//|<link|@import|url\(') 'the page loads something from elsewhere'
     $order = @([regex]::Matches($page, '<section class="block" id="([a-z]+)"') | ForEach-Object { $_.Groups[1].Value }) -join ' '
-    Assert-Equal 'meetings owe owed decisions sort' $order 'blocks of the page, in order'
+    Assert-Equal 'meetings start owe owed decisions sort' $order 'blocks of the page, in order'
 }
 
 function Get-Count([string]$Block) {

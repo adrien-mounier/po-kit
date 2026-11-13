@@ -96,7 +96,7 @@ Test 'with the calendar off, the meetings block opens the page and says the cale
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     $page = Read-MorningPage $ws
     $order = @([regex]::Matches($page, '<section class="block" id="([a-z]+)"') | ForEach-Object { $_.Groups[1].Value }) -join ' '
-    Assert-Equal 'meetings owe owed decisions sort' $order 'blocks of the page, in order'
+    Assert-Equal 'meetings start owe owed decisions sort' $order 'blocks of the page, in order'
     Assert-Match $page '(?s)<div class="sheet">\s*<section class="block" id="meetings"[^>]*>.*?</section>\s*</div>' 'the meetings in the white sheet'
     Assert-Equal "Today's meetings not read: calendar" (Get-Text ((Get-PageBlock $page 'meetings') -replace '(?s)^.*?(<h2.*?</h2>).*$', '$1')) 'the meetings block'
     Assert-Match $page '<span class="src">Off: mail, tracker, chat, calendar</span>' 'the bar'

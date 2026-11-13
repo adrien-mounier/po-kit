@@ -48,6 +48,14 @@ _Avoid_: workload (except the workload view), time spent, charge
 One of the short list of kinds in the settings that a commitment of the PO names, such as steering pack. The register tool learns, per kind, the ratio of real to estimated effort, and adjusts each estimate by it.
 _Avoid_: category, task type, label
 
+**Latest start**:
+The day a commitment of the PO must be begun to be done in time: its due date minus its adjusted effort in working days, minus a margin. It enters "Start soon" on the morning page once it falls within the lead; both are settings, in working days.
+_Avoid_: deadline, start date, kick-off
+
+**Usable share**:
+The share of the free time the meetings leave that the PO really spends on their tasks: 70% to start with, then learned by the register tool from the real efforts of the PO's done tasks.
+_Avoid_: capacity, availability, focus factor
+
 **Decision**:
 A choice that has been taken, or that is awaited from a named person.
 _Avoid_: resolution, agreement

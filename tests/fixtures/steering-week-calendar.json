@@ -1,0 +1,13 @@
+{
+  "read_at": "{today}T07:05:00+01:00",
+  "from": "{today}",
+  "to": "{workday+9}",
+  "meetings": [
+    { "start": "{today}T10:00:00+01:00", "end": "{today}T12:00:00+01:00", "title": "Steering pack review", "attendees": ["the sponsor", "the tech lead"], "status": "accepted" },
+    { "start": "{today}T14:00:00+01:00", "end": "{today}T16:00:00+01:00", "title": "Onboarding design session", "attendees": ["the tech lead", "the architect"], "status": "accepted" },
+    { "start": "{workday+1}T14:00:00+01:00", "end": "{workday+1}T18:00:00+01:00", "title": "Vendor demo", "attendees": ["the vendor"], "status": "tentative" },
+    { "start": "{workday+2}T10:00:00+01:00", "end": "{workday+2}T12:00:00+01:00", "title": "Retail steering committee", "attendees": ["the retail steering committee"], "status": "accepted" },
+    { "start": "{workday+2}T14:00:00+01:00", "end": "{workday+2}T18:00:00+01:00", "title": "Retail steering committee, continued", "attendees": ["the retail steering committee"], "status": "accepted" }
+  ],
+  "absences": []
+}

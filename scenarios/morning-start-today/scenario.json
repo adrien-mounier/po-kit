@@ -1,0 +1,22 @@
+{
+  "routine": "morning",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "commitment", "interpreted": false, "fields": {
+          "title": "Prepare the onboarding steering pack", "subject": "mobile-onboarding", "date_of_fact": "{today}",
+          "owner": "the PO", "owed_to": "the retail steering committee", "due_date": "{workday+3}",
+          "estimated_effort": 2, "task_kind": "steering pack", "estimate_reason": "A steering pack takes about two days.",
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "{today}" } } }
+    ]
+  },
+  "prompt": "Morning.",
+  "expect": [
+    { "file": "views/morning.html", "lines": [
+        "id=\"h-start\">Start soon <span class=\"count\"><span class=\"soon\">1 to start today</span>",
+        "<li class=\"row start is-soon\">",
+        "<span class=\"sr k\">Start by </span><b>Today</b>",
+        "<span class=\"ref\">C-{year}-002</span>",
+        "<span class=\"dot\" aria-hidden=\"true\"></span>Not started",
+        "id=\"h-owe\""] }
+  ]
+}

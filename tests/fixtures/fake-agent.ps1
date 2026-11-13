@@ -11,7 +11,7 @@
 #   -Snapshot <file>  leaves this calendar snapshot, as the morning routine writes it from the calendar
 #   -MeetingNotes <file>
 #                     leaves these notes on the meetings; in both files {today} and {year} stand for
-#                     those of the day
+#                     those of the day, and {workday+N} for the Nth working day after it
 #   -Check            has the register tool run the check
 #   -Morning          has the register tool write the morning page
 #   -Weekly <file>    stores this text as the weekly synthesis of the day, with the stamp and the
@@ -36,6 +36,12 @@ if ($Proposal) {
 foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'state\morning.json')) | Where-Object { $_[0] }) {
     $day = Get-Date
     $text = [IO.File]::ReadAllText($given[0]).Replace('{today}', $day.ToString('yyyy-MM-dd')).Replace('{year}', $day.ToString('yyyy'))
+    $text = [regex]::Replace($text, '\{workday\+(\d+)\}', {
+            param($Found)
+            $at = (Get-Date).Date
+            for ($left = [int]$Found.Groups[1].Value; $left -gt 0) { $at = $at.AddDays(1); if ('Saturday', 'Sunday' -notcontains $at.DayOfWeek) { $left-- } }
+            $at.ToString('yyyy-MM-dd')
+        })
     [IO.File]::WriteAllText($given[1], $text)
 }
 if ($Check) { & powershell.exe -NoProfile -File tools\register.ps1 check }

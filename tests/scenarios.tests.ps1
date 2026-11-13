@@ -325,6 +325,30 @@ Test 'the scenario "morning with the calendar off" passes when the meetings bloc
     Assert-Equal 1 $run.ExitCode 'exit code when the calendar is read'
 }
 
+Test 'the scenario "morning start today" passes when the commitment due in three working days with two days of effort is under Start soon, to start today, and fails when no page is written' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning" morning-start-today
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file views/morning\.html has lines containing, in this order: .*1 to start today' 'the line to start today'
+
+    $run = Invoke-Scenarios -Agent $FakeAgent morning-start-today
+
+    Assert-Match $run.Output '  FAIL  file views/morning\.html has lines containing' 'no page'
+    Assert-Equal 1 $run.ExitCode 'exit code when no page is written'
+}
+
+Test 'the scenario "morning steering week" passes when the day before the steering committee does not fit and the page proposes a way out, and fails when the calendar is not read' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Snapshot `"$Fixtures\steering-week-calendar.json`" -Morning" morning-steering-week
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file views/morning\.html has lines containing, in this order: .*<div class="suggest">' 'the way out'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning" morning-steering-week
+
+    Assert-Match $run.Output '  FAIL  file views/morning\.html has a line containing "<use href="#i-alert"/></svg> Does not fit</span>"' 'no day that does not fit'
+    Assert-Equal 1 $run.ExitCode 'exit code when the calendar is not read'
+}
+
 Test 'the scenario "collect and drop a line" passes when the line kept is recorded alone and the note is filed, and fails when the line dropped is recorded too' {
     $note = 'pilot-preparation.md'
     $kept = New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }
@@ -866,10 +890,12 @@ Test 'without the command that starts the agent, the runner explains itself and 
     Assert-True ($run.Output -notmatch 'subject-create') "a scenario was run: $($run.Output)"
 }
 
-Test 'in the files a scenario lays over the workspace, {today}, {month} and {year} stand for those of the day of the run, as in scenario.json' {
+Test 'in the files a scenario lays over the workspace, {today}, {month} and {year} stand for those of the day of the run, and {workday+N} for the Nth working day after it, as in scenario.json' {
     $run = Invoke-Scenarios -Agent $FakeAgent (Join-Path $Fixtures 'scenarios\dated-workspace')
 
     Assert-Match $run.Output "  ok    file exports/calendar/stand-up\.txt has a line containing `"Start: ${Day}T09:30:00\+01:00`"" 'the date of the run in a file of the scenario'
+    $weekdays = @(1..7 | ForEach-Object { (Get-Date).Date.AddDays($_) } | Where-Object { 'Saturday', 'Sunday' -notcontains $_.DayOfWeek })
+    Assert-Match $run.Output "  ok    file exports/calendar/stand-up\.txt has a line containing `"Due: $($weekdays[2].ToString('yyyy-MM-dd'))`"" 'the third working day after the run in a file of the scenario'
 }
 
 Test 'the Example Bank settings carry every setting of the template, so the register tool reads them as it reads any workspace; so do the settings a scenario lays over them' {

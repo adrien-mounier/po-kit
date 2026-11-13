@@ -60,7 +60,8 @@
 # files a note under the month it is processed. Anywhere in scenario.json and in the files of the
 # scenario's workspace folder, {year}, {month} and {today} stand for those of the day of the run,
 # as 2026, 2026-03 and 2026-03-02: the record C-{year}-002, the file inbox/done/{month}/workshop.md,
-# a meeting of the calendar that starts at {today}T14:00:00+01:00.
+# a meeting of the calendar that starts at {today}T14:00:00+01:00. {workday+N} stands for the Nth
+# working day, Monday to Friday, after the day of the run: a due date of {workday+3}.
 #
 # For each scenario, in a temporary folder of its own, the runner:
 # 1. installs the kit: a workspace and a skills folder, as install.ps1 does on any machine;
@@ -103,11 +104,17 @@ function Read-Json([string]$Path) {
 }
 
 function Set-RunDate([string]$Text) {
-    # The text with {year}, {month} and {today} written as those of the day of the run.
+    # The text with {year}, {month} and {today} written as those of the day of the run, and
+    # {workday+N} as the Nth working day after it.
     foreach ($part in @{ '{year}' = 'yyyy'; '{month}' = 'yyyy-MM'; '{today}' = 'yyyy-MM-dd' }.GetEnumerator()) {
         $Text = $Text.Replace($part.Key, $RunDay.ToString($part.Value, [Globalization.CultureInfo]::InvariantCulture))
     }
-    $Text
+    [regex]::Replace($Text, '\{workday\+(\d+)\}', {
+            param($Found)
+            $at = $RunDay.Date
+            for ($left = [int]$Found.Groups[1].Value; $left -gt 0) { $at = $at.AddDays(1); if ('Saturday', 'Sunday' -notcontains $at.DayOfWeek) { $left-- } }
+            $at.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+        })
 }
 
 function Invoke-Script {
