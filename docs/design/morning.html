@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Morning brief, Mon 16 Nov</title>
+<style>
+:root {
+  --bar: #0e3b43;
+  --bar-ink: #eef5f4;
+  --bar-muted: #a9c6c5;
+  --bar-warn: #ffc7c9;
+  --bg: #f3f6f5;
+  --surface: #ffffff;
+  --ink: #142120;
+  --ink-2: #3b4a48;
+  --muted: #586664;
+  --rule: #dde4e2;
+  --edge: #6f7d7a;
+  --btn: #ffffff;
+  --btn-hover: #e6edeb;
+  --tag: #e5ebe9;
+  --brand: #0f5661;
+  --brand-hover: #0a444e;
+  --on-brand: #ffffff;
+  --late: #b3152b;
+  --soon: #7a4a00;
+  --focus: #1257c0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bar: #0a2e35;
+    --bar-ink: #e6f0ef;
+    --bar-muted: #9dbbba;
+    --bar-warn: #ffb3b6;
+    --bg: #0f1514;
+    --surface: #161e1d;
+    --ink: #e7eeec;
+    --ink-2: #c2cdcb;
+    --muted: #98a6a3;
+    --rule: #28322f;
+    --edge: #6f7d7a;
+    --btn: #1b2423;
+    --btn-hover: #27322f;
+    --tag: #232d2b;
+    --brand: #63d2c6;
+    --brand-hover: #86ded4;
+    --on-brand: #06211f;
+    --late: #ff9195;
+    --soon: #f2b84f;
+    --focus: #8fb8ff;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 0.9375rem/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  accent-color: var(--brand);
+}
+::selection { background: #0f5661; color: #ffffff; }
+h1, h2, h3, p, ol, ul, dl, dd { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+svg.i { width: 1rem; height: 1rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.15em; }
+a { color: inherit; text-underline-offset: 0.2em; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
+.wrap { max-width: 82rem; margin: 0 auto; padding: 0 2rem; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.late { color: var(--late); font-weight: 600; }
+.soon { color: var(--soon); font-weight: 600; }
+h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.125rem 0.75rem; font-size: 1.25rem; line-height: 1.25; font-weight: 600; }
+h2 .count { font-size: 0.875rem; font-weight: 400; color: var(--muted); }
+
+/* ---------- Top bar: the date and what was read ---------- */
+.bar { background: var(--bar); color: var(--bar-ink); }
+.bar .wrap { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 2rem; padding-top: 0.75rem; padding-bottom: 0.8125rem; }
+.bar :focus-visible { outline-color: #ffffff; }
+h1 { font: 600 1.375rem/1.2 "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; letter-spacing: -0.005em; }
+h1 .sub { font: 400 0.875rem/1.2 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: var(--bar-muted); letter-spacing: 0; margin-left: 0.625rem; }
+.sources { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.25rem; font-size: 0.875rem; color: var(--bar-muted); }
+.sources .src { display: inline-flex; align-items: center; gap: 0.375rem; }
+.sources .fail { color: var(--bar-warn); font-weight: 600; }
+
+/* ---------- Today: one white sheet ---------- */
+.sheet { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 1.5rem; margin-top: 1.125rem; padding: 0.875rem 1.25rem 0.75rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; }
+.sheet > section + section { border-left: 1px solid var(--rule); padding-left: 1.5rem; }
+.sheet h2 { margin-bottom: 0.5rem; }
+
+.pick { display: inline-grid; place-items: center; flex: none; background: var(--brand); color: var(--on-brand); font-weight: 700; line-height: 1; border-radius: 6px; }
+.actions li { display: grid; grid-template-columns: 1.75rem minmax(0, 1fr) auto; gap: 0 0.75rem; align-items: start; padding: 0.4375rem 0; border-top: 1px solid var(--rule); scroll-margin-top: 20rem; }
+.actions li:target { margin: 0 -0.5rem; padding-left: 0.5rem; padding-right: 0.5rem; border-radius: 6px; background: var(--tag); }
+.actions .pick { width: 1.75rem; height: 1.75rem; font-size: 0.9375rem; margin-top: 0.0625rem; }
+.actions .a-title { font-weight: 600; font-size: 1rem; line-height: 1.35; }
+.actions .a-why .bank { margin-left: 0.125rem; }
+.id { white-space: nowrap; }
+.actions .a-why { color: var(--ink-2); margin-top: 0.0625rem; }
+
+.tt > li { position: relative; min-height: 2.375rem; border-top: 1px solid var(--rule); }
+.tt summary { display: grid; grid-template-columns: 3.25rem 1.25rem minmax(0, 1fr); gap: 0 0.5rem; align-items: baseline; margin-right: 6.75rem; padding: 0.375rem 0; cursor: pointer; list-style: none; border-radius: 4px; }
+.tt summary::-webkit-details-marker { display: none; }
+.tt summary:hover .m-title { text-decoration: underline; text-decoration-color: var(--edge); text-underline-offset: 0.2em; }
+.tt .t { font-weight: 600; font-size: 1.0625rem; line-height: 1.3; }
+.tt .dur { font-weight: 400; font-size: 0.8125rem; color: var(--muted); }
+.chev { transition: transform 160ms ease-out; color: var(--muted); }
+.tt .opener { display: grid; place-items: center; align-self: start; width: 1.25rem; height: 1.25rem; margin-top: 0.125rem; border: 1px solid var(--edge); border-radius: 4px; }
+.tt .opener .chev { color: var(--ink-2); }
+.tt summary:hover .opener { background: var(--btn-hover); }
+/* More than four meetings: one line each; the key line stays only when it is red or one of the three picks. */
+.tt:has(> li:nth-child(5)) .m-key:not(:has(.late, .pick)) { display: none; }
+details[open] > summary .chev { transform: rotate(90deg); }
+.tt .m { display: grid; gap: 0.0625rem; min-width: 0; }
+.tt .m-title { font-weight: 600; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.5rem; }
+.tt .m-title .bank { font-weight: 400; }
+.tt .m-key { font-size: 0.875rem; color: var(--ink-2); }
+.m-key .pick, .up .pick { width: 1.125rem; height: 1.125rem; font-size: 0.75rem; border-radius: 4px; }
+.m-key .pick { margin-right: 0.375rem; vertical-align: 0.1em; }
+.tt li > .ask { position: absolute; right: 0; top: 0.1875rem; }
+.brief { display: grid; grid-template-columns: 8.25rem minmax(0, 1fr); gap: 0.25rem 0.75rem; padding: 0.25rem 0 0.75rem 5.5rem; font-size: 0.875rem; }
+.brief dt { color: var(--muted); }
+.brief dd li + li { margin-top: 0.125rem; }
+.brief .missing { font-weight: 600; }
+.free { padding: 0.5rem 0 0; border-top: 1px solid var(--rule); font-size: 0.875rem; color: var(--ink-2); }
+.free b { font-weight: 600; color: var(--ink); }
+
+/* ---------- Shared bits ---------- */
+.bank { display: inline-block; flex: none; font-size: 0.8125rem; font-weight: 400; line-height: 1.5; padding: 0 0.4375rem; border-radius: 4px; background: var(--tag); color: var(--ink-2); white-space: nowrap; }
+.ref { font-size: 0.8125rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.what .ref { flex: 0 100 auto; }
+.ask { font: inherit; font-size: 0.8125rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; padding: 0.25rem 0.625rem; min-height: 2rem; border: 1px solid var(--edge); border-radius: 6px; background: var(--btn); color: var(--ink); cursor: pointer; white-space: nowrap; transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out; }
+.ask:hover { background: var(--btn-hover); border-color: var(--ink-2); }
+.ask:active { transform: translateY(1px); }
+.ask.strong { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
+.ask.strong:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+.ask.copied, .ask.copied:hover { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.up { display: inline-flex; align-items: center; gap: 0.375rem; min-height: 2rem; font-size: 0.8125rem; font-weight: 600; color: var(--brand); text-decoration: underline; text-decoration-thickness: 1px; white-space: nowrap; }
+.up:hover { text-decoration-thickness: 2px; }
+
+/* ---------- The register: lower blocks ---------- */
+main.wrap { padding-bottom: 2rem; }
+.block { margin-top: 1.75rem; scroll-margin-top: 0.75rem; }
+.block h2 { margin-bottom: 0.5rem; }
+.grp { font-size: 0.8125rem; font-weight: 600; color: var(--ink-2); margin: 0.75rem 0 0.25rem; }
+.block h2 + .grp { margin-top: 0; }
+
+.rows { border-bottom: 1px solid var(--rule); }
+.row { display: grid; grid-template-columns: 10rem minmax(0, 1fr) 12.5rem 9.25rem; gap: 0 1rem; align-items: center; min-height: 2.5rem; padding: 0.25rem 0; border-top: 1px solid var(--rule); }
+.when { position: relative; display: flex; align-items: baseline; gap: 0.5rem; padding-left: 1.375rem; white-space: nowrap; }
+.when > svg.i { position: absolute; left: 0; top: 50%; margin-top: -0.5rem; }
+.when b { font-weight: 600; }
+.when .lag { font-size: 0.8125rem; font-weight: 600; }
+.row.is-late .when { color: var(--late); }
+.row.is-soon .when { color: var(--soon); }
+.what { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.625rem; min-width: 0; }
+.what .t { flex: 0 1 auto; font-weight: 600; }
+.what .who { flex: 0 1 auto; color: var(--muted); }
+.act { justify-self: end; }
+
+.cols { display: grid; gap: 0 1rem; font-size: 0.8125rem; color: var(--muted); padding-bottom: 0.25rem; }
+.cols > :first-child { padding-left: 1.375rem; }
+.row.start, .cols.start { grid-template-columns: 10rem minmax(0, 1fr) 19.5rem 4.5rem 7rem 9.25rem; }
+.eff { display: flex; align-items: baseline; gap: 0.625rem; min-width: 0; white-space: nowrap; }
+.eff b { font-weight: 600; }
+.adj { font-size: 0.8125rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
+.status { display: inline-flex; align-items: center; gap: 0.375rem; white-space: nowrap; color: var(--ink-2); }
+.dot { width: 0.5625rem; height: 0.5625rem; border-radius: 50%; border: 1.5px solid currentColor; }
+.dot.on { background: currentColor; }
+
+/* Workload: one square is half a day free of meetings */
+.load { margin-top: 1rem; }
+.load h3 { font-size: 0.875rem; font-weight: 600; }
+.load h3 .note { font-size: 0.8125rem; font-weight: 400; color: var(--muted); margin-left: 0.5rem; }
+.weeks { display: grid; grid-template-columns: 1fr 1fr; gap: 0 3rem; margin-top: 0.25rem; }
+.week-cap { font-size: 0.875rem; color: var(--ink-2); }
+.week-cap b { color: var(--ink); font-weight: 600; }
+.week-cap .late { white-space: nowrap; }
+.days { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 1.6fr); gap: 0 0.5rem; margin-top: 0.375rem; padding-top: 0.375rem; border-top: 1px solid var(--rule); }
+.days li { display: grid; gap: 0.25rem; align-content: start; font-size: 0.8125rem; color: var(--ink-2); }
+.days .is-today .d { font-weight: 700; color: var(--ink); }
+.days .over .d { color: var(--late); font-weight: 600; }
+.sq { display: flex; align-items: center; gap: 3px; min-height: 1rem; }
+.sq i, .legend i { display: inline-block; flex: none; width: 1rem; height: 1rem; border-radius: 3px; }
+.p { background: var(--ink-2); }
+.o { box-shadow: inset 0 0 0 1.5px var(--edge); }
+.x { background: repeating-linear-gradient(135deg, var(--late) 0 2px, transparent 2px 5px); box-shadow: inset 0 0 0 1.5px var(--late); }
+.sq .none { color: var(--muted); line-height: 1rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; margin-top: 0.5rem; font-size: 0.8125rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 0.375rem; }
+.suggest { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; margin-top: 0.75rem; padding: 0.5rem 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.suggest b { font-weight: 600; }
+.suggest .btns { display: flex; gap: 0.5rem; }
+
+.unread { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; padding: 0.25rem 0; min-height: 2.5rem; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.unread .warn { display: inline-flex; align-items: baseline; gap: 0.375rem; }
+.unread .warn svg { align-self: center; }
+
+.more > summary { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.5rem 0.5rem 0.5rem 0; cursor: pointer; list-style: none; font-size: 0.875rem; font-weight: 600; border-radius: 4px; }
+.more > summary::-webkit-details-marker, .fold > summary::-webkit-details-marker { display: none; }
+.more > summary:hover .lbl-t, .fold > summary:hover .tog { text-decoration: underline; text-underline-offset: 0.2em; }
+.fold > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1.25rem; cursor: pointer; list-style: none; padding-bottom: 0.5rem; border-bottom: 1px solid var(--rule); border-radius: 4px; }
+.fold > summary h2 { margin-bottom: 0; }
+.fold > summary .tog { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.875rem; font-weight: 600; white-space: nowrap; }
+.fold[open] > summary { border-bottom: 0; }
+details[open] > summary .closed-label, details:not([open]) > summary .open-label { display: none; }
+
+footer.wrap { padding-bottom: 2rem; font-size: 0.8125rem; color: var(--muted); }
+footer p { padding-top: 0.875rem; border-top: 1px solid var(--rule); }
+
+.toast { position: fixed; left: 50%; bottom: 1.25rem; transform: translate(-50%, 1rem); max-width: min(46rem, calc(100vw - 2rem)); padding: 0.625rem 1rem; border-radius: 8px; background: var(--ink); color: var(--bg); font-size: 0.875rem; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); opacity: 0; pointer-events: none; transition: opacity 180ms ease-out, transform 180ms cubic-bezier(.16, 1, .3, 1); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast q { font-weight: 600; }
+.toast.stay { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; pointer-events: auto; }
+.toast input { flex: 1 1 22rem; min-width: 0; font: inherit; padding: 0.25rem 0.5rem; border: 1px solid var(--edge); border-radius: 4px; background: var(--bg); color: var(--ink); }
+.toast button { font: inherit; font-weight: 600; padding: 0.25rem 0.625rem; border: 1px solid currentColor; border-radius: 6px; background: transparent; color: inherit; cursor: pointer; }
+.toast :focus-visible { outline-color: var(--bg); }
+
+@media (max-width: 1180px) {
+  .row { grid-template-columns: 10rem minmax(0, 1fr) 9.25rem; }
+  .row > .ref { display: none; }
+  .row.start, .cols.start { grid-template-columns: 10rem minmax(0, 1fr) 4.5rem 4.5rem 7rem 9.25rem; }
+  .cols.start .adj-h, .adj { display: none; }
+}
+@media (max-width: 1040px) {
+  .sheet { grid-template-columns: 1fr; }
+  .sheet > section + section { border-left: 0; padding-left: 0; padding-top: 1rem; }
+}
+@media (max-width: 820px) {
+  .wrap { padding: 0 1rem; }
+  .cols { display: none; }
+  .row, .row.start { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.125rem 1rem; padding: 0.5rem 0; }
+  .row .when { flex: 1 1 auto; }
+  .row .act { order: 1; margin-left: auto; }
+  .row .what { order: 2; flex: 1 1 100%; padding-left: 1.375rem; }
+  .row .eff, .row .due, .row .status { order: 3; }
+  .row .eff { padding-left: 1.375rem; flex-wrap: wrap; white-space: normal; }
+  .row .sr.k { position: static; width: auto; height: auto; clip: auto; margin-right: 0.25rem; color: var(--muted); font-weight: 400; }
+  .adj { display: inline; white-space: normal; }
+  .brief { grid-template-columns: 1fr; padding-left: 0; }
+  .brief dt { margin-top: 0.25rem; }
+  .weeks { grid-template-columns: 1fr; gap: 0.875rem; }
+}
+@media (max-width: 640px) {
+  .actions li { grid-template-columns: 1.75rem minmax(0, 1fr); }
+  .actions li > .ask { grid-column: 2; justify-self: start; margin-top: 0.5rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5"/><path d="M12 17.5v.01"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5.5"/><path d="M6 11l6-6 6 6"/></symbol>
+</svg>
+
+<header class="bar">
+  <div class="wrap">
+    <h1>Monday 16 November <span class="sub">Morning brief, written 07:12</span></h1>
+    <p class="sources">
+      <span class="src"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Read: mail, calendar, tracker</span>
+      <span class="src fail"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><span>Not read: Chat, the connector failed (<a href="#messages">what this hides</a>)</span></span>
+    </p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <div class="sheet">
+    <section id="first" aria-labelledby="h-first">
+      <h2 id="h-first">Do first <span class="count">3 actions the agent recommends</span></h2>
+      <ol class="actions">
+        <li id="first-1">
+          <span class="pick" aria-hidden="true">1</span>
+          <div>
+            <p class="a-title"><span class="sr">1. </span>Chase the head of payments for the KYC test dataset</p>
+            <p class="a-why"><span class="late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> 3 days late.</span> The KYC pilot is blocked without it; Friday&rsquo;s steering committee will ask. <span class="bank">North Bank</span></p>
+          </div>
+          <button class="ask strong" type="button" data-ask="Draft the reminder for C-2026-011"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Draft reminder</span></button>
+        </li>
+        <li id="first-2">
+          <span class="pick" aria-hidden="true">2</span>
+          <div>
+            <p class="a-title"><span class="sr">2. </span>Start the steering committee deck</p>
+            <p class="a-why">Due Thursday, 2 days of work, not started: today is the latest start. Free slot 12:00 to 14:00.</p>
+          </div>
+          <button class="ask strong" type="button" data-ask="Draft an outline of the steering committee deck for C-2026-014"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Outline it</span></button>
+        </li>
+        <li id="first-3">
+          <span class="pick" aria-hidden="true">3</span>
+          <div>
+            <p class="a-title"><span class="sr">3. </span>Prepare the 14:00 with Harbour Bank</p>
+            <p class="a-why">They will ask for the pilot scope, which the sponsor has not decided (<span class="id">D-2026-004</span>).</p>
+          </div>
+          <button class="ask strong" type="button" data-ask="Brief me for the 14:00 with Harbour Bank"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Brief me</span></button>
+        </li>
+      </ol>
+    </section>
+
+    <section id="meetings" aria-labelledby="h-meet">
+      <h2 id="h-meet">Today&rsquo;s meetings <span class="count">4 meetings, 2 h 30 booked. Open a line for its details.</span></h2>
+      <ol class="tt">
+        <li>
+          <details>
+            <summary>
+              <span class="t">09:30</span>
+              <span class="opener"><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></span>
+              <span class="m">
+                <span class="m-title">Stand-up: Mail triage assistant <span class="dur">15 min</span></span>
+                <span class="m-key"><span class="late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> Your go-live checklist is 2 days late.</span></span>
+              </span>
+            </summary>
+            <dl class="brief">
+              <dt>Subjects</dt><dd>mail-triage</dd>
+              <dt>Open commitments</dt><dd>You owe the go-live checklist to the head of operations, <strong>2 days late</strong> (<span class="id">C-2026-008</span>)</dd>
+              <dt>Decisions awaited</dt><dd>None</dd>
+              <dt>Worth raising</dt><dd>MTA-61 (language detection for German mails) has had no update for 34 days</dd>
+            </dl>
+          </details>
+          <button class="ask" type="button" data-ask="Brief me for the 09:30 stand-up on the Mail triage assistant"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Brief me</span></button>
+        </li>
+        <li>
+          <details>
+            <summary>
+              <span class="t">11:00</span>
+              <span class="opener"><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></span>
+              <span class="m">
+                <span class="m-title">Architecture review, KYC reader <span class="bank">North Bank</span> <span class="dur">1 h</span></span>
+                <span class="m-key">Test scope due today; hosting lacks its cost estimate.</span>
+              </span>
+            </summary>
+            <dl class="brief">
+              <dt>With</dt><dd>The architect, the tech lead</dd>
+              <dt>Subjects</dt><dd>kyc-reader</dd>
+              <dt>Open commitments</dt><dd><ul><li>You owe the test scope to the tech lead, due today (<span class="id">C-2026-013</span>)</li><li>The architect owes the hosting options, due Wed 18 (<span class="id">C-2026-009</span>)</li></ul></dd>
+              <dt>Decisions awaited</dt><dd>Hosting: on-premise or the group cloud (<span class="id">D-2026-005</span>)</dd>
+              <dt>Missing to decide</dt><dd class="missing">The architect&rsquo;s cost estimate; the security team&rsquo;s view on the group cloud</dd>
+            </dl>
+          </details>
+          <button class="ask" type="button" data-ask="Brief me for the 11:00 architecture review of the KYC document reader"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Brief me</span></button>
+        </li>
+        <li>
+          <details>
+            <summary>
+              <span class="t">14:00</span>
+              <span class="opener"><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></span>
+              <span class="m">
+                <span class="m-title">Credit memo pilot check-in <span class="bank">Harbour Bank</span> <span class="dur">45 min</span></span>
+                <span class="m-key"><span class="pick" aria-hidden="true">3</span><span class="sr">Do first, number 3: </span>They will ask for the pilot scope: still undecided.</span>
+              </span>
+            </summary>
+            <dl class="brief">
+              <dt>With</dt><dd>Harbour Bank&rsquo;s credit risk lead, the tech lead</dd>
+              <dt>Subjects</dt><dd>credit-memo</dd>
+              <dt>Open commitments</dt><dd><ul><li>You owe the pilot timeline, due Wed 18 (<span class="id">C-2026-012</span>)</li><li>Harbour Bank owes 20 anonymised sample memos, due Thu 19 (<span class="id">C-2026-010</span>)</li></ul></dd>
+              <dt>Decisions awaited</dt><dd>Pilot scope: corporate loans only, or SME too (<span class="id">D-2026-004</span>), from the sponsor</dd>
+              <dt>Missing to decide</dt><dd class="missing">The sponsor&rsquo;s position; the data residency risk on the sample memos is still open (<span class="id">R-2026-003</span>)</dd>
+            </dl>
+          </details>
+          <button class="ask" type="button" data-ask="Brief me for the 14:00 with Harbour Bank"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Brief me</span></button>
+        </li>
+        <li>
+          <details>
+            <summary>
+              <span class="t">16:30</span>
+              <span class="opener"><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg></span>
+              <span class="m">
+                <span class="m-title">1:1 with the sponsor <span class="dur">30 min</span></span>
+                <span class="m-key">Ask for the pilot scope decision; show your AI Act draft.</span>
+              </span>
+            </summary>
+            <dl class="brief">
+              <dt>Subjects</dt><dd>steering-q4, credit-memo, ai-act</dd>
+              <dt>Open commitments</dt><dd>You owe the steering committee deck, due Thu 19 (<span class="id">C-2026-014</span>)</dd>
+              <dt>Decisions awaited</dt><dd><ul><li>From the sponsor: pilot scope for credit memo drafting (<span class="id">D-2026-004</span>), needed by Friday</li><li>From you: AI Act risk classification of credit memo drafting (<span class="id">D-2026-007</span>), due Wed 18</li></ul></dd>
+              <dt>Missing to decide</dt><dd class="missing">Your draft classification proposal, to show the sponsor before Wednesday</dd>
+            </dl>
+          </details>
+          <button class="ask" type="button" data-ask="Brief me for the 16:30 with the sponsor"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Brief me</span></button>
+        </li>
+      </ol>
+      <p class="free"><b>Free for work:</b> 09:45&ndash;11:00 &middot; 12:00&ndash;14:00, the longest &middot; 14:45&ndash;16:30</p>
+    </section>
+  </div>
+
+  <section class="block" id="start" aria-labelledby="h-start">
+    <h2 id="h-start">Start soon <span class="count"><span class="soon">1 to start today</span>, 2 more within a week. <span class="late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> This week, 2 days of work do not fit.</span></span></h2>
+
+    <div class="cols start" aria-hidden="true"><span>Start by</span><span>Task</span><span>Effort<span class="adj-h">, adjusted from your past tasks</span></span><span>Due</span><span>Status</span><span></span></div>
+    <!-- Rule for the agent: list the earliest start-by lines first. With up to five meetings today, show four lines; with six or more, show three. Put the others in <details class="more"> under the list, opened by "Show N more to start later". A task that must start today is never folded. -->
+    <ul class="rows">
+      <li class="row start is-soon">
+        <span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="sr k">Start by </span><b>Today</b></span>
+        <span class="what"><span class="t">Steering committee deck</span> <span class="ref">C-2026-014</span></span>
+        <span class="eff"><span class="sr k">Effort </span><b>2 days</b> <span class="adj">adjusted &times;1.4 from past steering packs</span></span>
+        <span class="due"><span class="sr k">Due </span>Thu 19</span>
+        <span class="status"><span class="dot" aria-hidden="true"></span>Not started</span>
+        <span class="act"><a class="up" href="#first-2"><span class="pick" aria-hidden="true">2</span><span>In Do first<span class="sr">, number 2</span></span><svg class="i" aria-hidden="true"><use href="#i-up"/></svg></a></span>
+      </li>
+      <li class="row start">
+        <span class="when"><span class="sr k">Start by </span><b>Wed 18</b></span>
+        <span class="what"><span class="t">Scoring grid, Q1 portfolio</span> <span class="ref">C-2026-016</span></span>
+        <span class="eff"><span class="sr k">Effort </span><b>2 days left</b> <span class="adj">of 3, not adjusted: no past task like it</span></span>
+        <span class="due"><span class="sr k">Due </span>Tue 24</span>
+        <span class="status"><span class="dot on" aria-hidden="true"></span>Started</span>
+        <span class="act"><button class="ask" type="button" data-ask="Show where I am on the use-case scoring grid, C-2026-016"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Where am I</span></button></span>
+      </li>
+      <li class="row start">
+        <span class="when"><span class="sr k">Start by </span><b>Mon 23</b></span>
+        <span class="what"><span class="t">DPIA input, mail triage</span> <span class="ref">C-2026-017</span></span>
+        <span class="eff"><span class="sr k">Effort </span><b>2 days</b> <span class="adj">adjusted &times;1.2 from past compliance input</span></span>
+        <span class="due"><span class="sr k">Due </span>Thu 26</span>
+        <span class="status"><span class="dot" aria-hidden="true"></span>Not started</span>
+        <span class="act"><button class="ask" type="button" data-ask="Tell me what the DPIA input for the Mail triage assistant needs, C-2026-017"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">What it needs</span></button></span>
+      </li>
+    </ul>
+
+    <div class="load" role="group" aria-labelledby="h-load">
+      <h3 id="h-load">Workload, next 10 working days <span class="note">One square is half a day free of meetings.</span></h3>
+      <div class="weeks">
+        <div>
+          <p class="week-cap"><b>This week</b>, steering committee Fri 20: 4 days of work, 2 days free. <span class="late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> 2 days do not fit.</span></p>
+          <ol class="days">
+            <li class="is-today"><span class="d">Today</span><span class="sq" aria-hidden="true"><i class="p"></i></span><span class="sr">: half a day free, planned</span></li>
+            <li><span class="d">Tue 17</span><span class="sq" aria-hidden="true"><i class="p"></i></span><span class="sr">: half a day free, planned</span></li>
+            <li><span class="d">Wed 18</span><span class="sq" aria-hidden="true"><i class="p"></i></span><span class="sr">: half a day free, planned</span></li>
+            <li><span class="d">Thu 19</span><span class="sq"><span class="none">none</span></span><span class="sr"> free, meetings all day</span></li>
+            <li><span class="d">Fri 20</span><span class="sq" aria-hidden="true"><i class="p"></i></span><span class="sr">: half a day free, planned</span></li>
+            <li class="over"><span class="d">Does not fit</span><span class="sq" aria-hidden="true"><i class="x"></i><i class="x"></i><i class="x"></i><i class="x"></i></span><span class="sr">: 4 half-days of work</span></li>
+          </ol>
+        </div>
+        <div>
+          <p class="week-cap"><b>Next week:</b> 2 days of work, 4 days free. 2 days still open.</p>
+          <ol class="days">
+            <li><span class="d">Mon 23</span><span class="sq" aria-hidden="true"><i class="p"></i><i class="o"></i></span><span class="sr">: 1 day free, half planned</span></li>
+            <li><span class="d">Tue 24</span><span class="sq" aria-hidden="true"><i class="p"></i></span><span class="sr">: half a day free, planned</span></li>
+            <li><span class="d">Wed 25</span><span class="sq" aria-hidden="true"><i class="p"></i><i class="o"></i></span><span class="sr">: 1 day free, half planned</span></li>
+            <li><span class="d">Thu 26</span><span class="sq" aria-hidden="true"><i class="p"></i></span><span class="sr">: half a day free, planned</span></li>
+            <li><span class="d">Fri 27</span><span class="sq" aria-hidden="true"><i class="o"></i><i class="o"></i></span><span class="sr">: 1 day free, nothing planned</span></li>
+          </ol>
+        </div>
+      </div>
+      <p class="legend" aria-hidden="true"><span><i class="p"></i>Free, work planned in it</span><span><i class="o"></i>Free, still open</span><span><i class="x"></i>Work that does not fit</span></p>
+    </div>
+
+    <div class="suggest">
+      <p><b>Suggestion:</b> start the steering deck today, or ask to move the scoring grid (<span class="id">C-2026-016</span>) to Fri 27: next week still has 2 days open.</p>
+      <span class="btns">
+        <button class="ask" type="button" data-ask="Block time for the steering committee deck C-2026-014 in my free slots this week"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Block time</span></button>
+        <button class="ask" type="button" data-ask="Draft a request to move C-2026-016 to Fri 27"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Ask to move</span></button>
+      </span>
+    </div>
+  </section>
+
+  <section class="block" id="owe" aria-labelledby="h-owe">
+    <h2 id="h-owe">What you owe <span class="count"><span class="late">1 late</span>, <span class="soon">1 due today, 2 this week</span></span></h2>
+    <ul class="rows">
+      <li class="row is-late">
+        <span class="when"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><b>Thu 12</b> <span class="lag">2 days late</span></span>
+        <span class="what"><span class="t">Send the go-live checklist</span> <span class="who">to the head of operations</span></span>
+        <span class="ref">mail-triage &middot; C-2026-008</span>
+        <span class="act"><button class="ask" type="button" data-ask="Draft the email sending the go-live checklist for C-2026-008"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Draft it</span></button></span>
+      </li>
+      <li class="row is-soon">
+        <span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><b>Today</b></span>
+        <span class="what"><span class="t">Confirm the KYC reader test scope</span> <span class="bank">North Bank</span> <span class="who">to the tech lead</span></span>
+        <span class="ref">kyc-reader &middot; C-2026-013</span>
+        <span class="act"><button class="ask" type="button" data-ask="Draft the test scope confirmation for C-2026-013"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Draft it</span></button></span>
+      </li>
+      <li class="row is-soon">
+        <span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><b>Wed 18</b></span>
+        <span class="what"><span class="t">Send the pilot timeline</span> <span class="bank">Harbour Bank</span> <span class="who">to the credit risk lead</span></span>
+        <span class="ref">credit-memo &middot; C-2026-012</span>
+        <span class="act"><button class="ask" type="button" data-ask="Draft the pilot timeline for C-2026-012"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Draft it</span></button></span>
+      </li>
+      <li class="row is-soon">
+        <span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><b>Thu 19</b></span>
+        <span class="what"><span class="t">Steering committee deck</span> <span class="who">to the sponsor</span></span>
+        <span class="ref">steering-q4 &middot; C-2026-014</span>
+        <span class="act"><a class="up" href="#first-2"><span class="pick" aria-hidden="true">2</span><span>In Do first<span class="sr">, number 2</span></span><svg class="i" aria-hidden="true"><use href="#i-up"/></svg></a></span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="block" id="owed" aria-labelledby="h-owed">
+    <h2 id="h-owed">What others owe you <span class="count"><span class="late">1 late</span>, <span class="soon">2 this week</span></span></h2>
+    <ul class="rows">
+      <li class="row is-late">
+        <span class="when"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><b>Wed 11</b> <span class="lag">3 days late</span></span>
+        <span class="what"><span class="t">KYC test dataset (200 anonymised IDs)</span> <span class="bank">North Bank</span> <span class="who">from the head of payments</span></span>
+        <span class="ref">kyc-reader &middot; C-2026-011</span>
+        <span class="act"><a class="up" href="#first-1"><span class="pick" aria-hidden="true">1</span><span>In Do first<span class="sr">, number 1</span></span><svg class="i" aria-hidden="true"><use href="#i-up"/></svg></a></span>
+      </li>
+      <li class="row is-soon">
+        <span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><b>Wed 18</b></span>
+        <span class="what"><span class="t">Hosting options for the KYC reader</span> <span class="bank">North Bank</span> <span class="who">from the architect</span></span>
+        <span class="ref">kyc-reader &middot; C-2026-009</span>
+        <span class="act"><button class="ask" type="button" data-ask="Draft a nudge to the architect for C-2026-009, due Wed 18"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Nudge</span></button></span>
+      </li>
+      <li class="row is-soon">
+        <span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><b>Thu 19</b></span>
+        <span class="what"><span class="t">20 anonymised sample credit memos</span> <span class="bank">Harbour Bank</span> <span class="who">from the credit risk lead</span></span>
+        <span class="ref">credit-memo &middot; C-2026-010</span>
+        <span class="act"><button class="ask" type="button" data-ask="Draft a nudge to Harbour Bank's credit risk lead for C-2026-010, due Thu 19"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Nudge</span></button></span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="block" id="decisions" aria-labelledby="h-dec">
+    <h2 id="h-dec">Decisions <span class="count"><span class="soon">1 awaited from you</span>, 2 you are waiting for</span></h2>
+    <h3 class="grp">Awaited from you</h3>
+    <ul class="rows">
+      <li class="row is-soon">
+        <span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><b>Wed 18</b></span>
+        <span class="what"><span class="t">AI Act classification, credit memo drafting</span> <span class="bank">Harbour Bank</span> <span class="who">for the compliance officer</span></span>
+        <span class="ref">ai-act &middot; D-2026-007</span>
+        <span class="act"><button class="ask" type="button" data-ask="Draft my AI Act classification proposal for D-2026-007"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Draft proposal</span></button></span>
+      </li>
+    </ul>
+    <h3 class="grp">You are waiting for</h3>
+    <ul class="rows">
+      <li class="row is-soon">
+        <span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><b>Fri 20</b></span>
+        <span class="what"><span class="t">Pilot scope: corporate only, or SME too</span> <span class="bank">Harbour Bank</span> <span class="who">from the sponsor, asked 4 Nov</span></span>
+        <span class="ref">credit-memo &middot; D-2026-004</span>
+        <span class="act"><button class="ask" type="button" data-ask="Draft a nudge to the sponsor for D-2026-004 before Friday's steering committee"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Nudge</span></button></span>
+      </li>
+      <li class="row">
+        <span class="when"><b>Fri 27</b></span>
+        <span class="what"><span class="t">Hosting: on-premise or the group cloud</span> <span class="bank">North Bank</span> <span class="who">from the architect</span></span>
+        <span class="ref">kyc-reader &middot; D-2026-005</span>
+        <span class="act"><button class="ask" type="button" data-ask="Show what D-2026-005 is still waiting for"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">What&rsquo;s missing</span></button></span>
+      </li>
+    </ul>
+  </section>
+
+  <section class="block" id="messages" aria-labelledby="h-msg">
+    <h2 id="h-msg">Messages awaiting your reply <span class="count">none in mail, <span class="late">Chat not read</span></span></h2>
+    <p class="unread">
+      <span class="warn late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><span>Chat was not read this morning: the connector failed. Questions asked there are missing from this page.</span></span>
+      <button class="ask" type="button" data-ask="Retry the chat collect and list the chat messages awaiting my reply"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Retry chat</span></button>
+    </p>
+  </section>
+
+  <section class="block" id="backlog" aria-labelledby="h-back">
+    <h2 id="h-back">Backlog alerts <span class="count"><span class="late">1 contradicts a decision</span>, 2 not ready for Thursday&rsquo;s refinement, 1 stale</span></h2>
+    <ul class="rows">
+      <li class="row is-late">
+        <span class="when"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><b>KYC-142</b></span>
+        <span class="what"><span class="t">Keep full ID scans for model retraining</span> <span class="bank">North Bank</span> <span class="who">against D-2026-002: masked images only</span></span>
+        <span class="ref">kyc-reader</span>
+        <span class="act"><button class="ask" type="button" data-ask="Show the tickets that contradict D-2026-002"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Show conflict</span></button></span>
+      </li>
+    </ul>
+    <details class="more">
+      <summary><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg><span class="lbl-t"><span class="closed-label">Show 3 more: 2 not ready, 1 stale</span><span class="open-label">Hide 3 more</span></span></summary>
+      <ul class="rows">
+        <li class="row">
+          <span class="when"><b>MTA-88</b></span>
+          <span class="what"><span class="t">Route mails to shared mailboxes</span> <span class="who">not ready: no acceptance criteria</span></span>
+          <span class="ref">mail-triage</span>
+          <span class="act"><button class="ask" type="button" data-ask="Draft acceptance criteria for MTA-88"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Draft criteria</span></button></span>
+        </li>
+        <li class="row">
+          <span class="when"><b>CMD-31</b></span>
+          <span class="what"><span class="t">Credit memo template</span> <span class="bank">Harbour Bank</span> <span class="who">not ready: no estimate, no owner</span></span>
+          <span class="ref">credit-memo</span>
+          <span class="act"><button class="ask" type="button" data-ask="List what CMD-31 needs before Thursday's refinement"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">What it needs</span></button></span>
+        </li>
+        <li class="row">
+          <span class="when"><b>MTA-61</b></span>
+          <span class="what"><span class="t">Language detection for German mails</span> <span class="who">stale: no update for 34 days</span></span>
+          <span class="ref">mail-triage</span>
+          <span class="act"><button class="ask" type="button" data-ask="Show the history of MTA-61 and suggest whether to close it"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Close or keep</span></button></span>
+        </li>
+      </ul>
+    </details>
+  </section>
+
+  <section class="block" id="sort" aria-labelledby="h-sort">
+    <details class="fold">
+      <summary>
+        <h2 id="h-sort">To sort <span class="count">4: 1 proposal waiting for your yes, 2 unclassified, 1 stale subject</span></h2>
+        <span class="tog"><svg class="i chev" aria-hidden="true"><use href="#i-chev"/></svg><span class="closed-label">Show</span><span class="open-label">Hide</span></span>
+      </summary>
+      <ul class="rows">
+        <li class="row">
+          <span class="when"><b>Proposal</b></span>
+          <span class="what"><span class="t">New commitment: architect&rsquo;s hosting cost estimate, Fri 20</span> <span class="who">from Thursday&rsquo;s mail</span></span>
+          <span class="ref">kyc-reader</span>
+          <span class="act"><button class="ask" type="button" data-ask="Yes to the collect proposal: add the architect's hosting cost estimate as a commitment due Fri 20"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Say yes</span></button></span>
+        </li>
+        <li class="row">
+          <span class="when"><b>Mail</b></span>
+          <span class="what"><span class="t">Pricing question about the Mail triage pilot</span> <span class="bank">Alpine Bank</span> <span class="who">from the COO office</span></span>
+          <span class="ref">no subject yet</span>
+          <span class="act"><button class="ask" type="button" data-ask="Help me classify the Alpine Bank mail about Mail triage pilot pricing"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Classify</span></button></span>
+        </li>
+        <li class="row">
+          <span class="when"><b>OPS-907</b></span>
+          <span class="what"><span class="t">Shared mailbox quota increase</span> <span class="who">ticket, raised by IT operations</span></span>
+          <span class="ref">no subject yet</span>
+          <span class="act"><button class="ask" type="button" data-ask="Help me classify ticket OPS-907"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">Classify</span></button></span>
+        </li>
+        <li class="row">
+          <span class="when"><b>21 days</b></span>
+          <span class="what"><span class="t">alpine-onboarding</span> <span class="bank">Alpine Bank</span> <span class="who">stale subject: no update since 26 Oct</span></span>
+          <span class="ref">subject</span>
+          <span class="act"><button class="ask" type="button" data-ask="Show what is still open on alpine-onboarding"><svg class="i" aria-hidden="true"><use href="#i-copy"/></svg><span class="lbl">What&rsquo;s open</span></button></span>
+        </li>
+      </ul>
+    </details>
+  </section>
+
+</main>
+
+<footer class="wrap"><p>This page changes nothing. Each button copies a request; paste it into the agent&rsquo;s chat. Register at 07:11: 14 subjects, 23 open commitments, 6 open decisions, 5 risks. Next brief tomorrow around 07:00.</p></footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var toast = document.getElementById('toast');
+  var hideTimer;
+
+  // Each copy button says on hover, and to a screen reader, which request it copies.
+  document.querySelectorAll('[data-ask]').forEach(function (b) {
+    b.title = 'Copies the request: ' + b.dataset.ask;
+  });
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    return ok;
+  }
+
+  var back;
+
+  function hide() {
+    if (toast.classList.contains('stay')) { toast.innerHTML = ''; if (back) back.focus(); }
+    toast.classList.remove('show', 'stay');
+  }
+
+  function say(html, stay) {
+    toast.innerHTML = html;
+    toast.classList.add('show');
+    toast.classList.toggle('stay', !!stay);
+    clearTimeout(hideTimer);
+    if (!stay) hideTimer = setTimeout(hide, 3200);
+  }
+
+  // Both copy routes refused: hand the request over in a field, selected, until it is closed.
+  function refused(b, text) {
+    back = b;
+    say('<label for="req">Could not copy. Copy the request by hand:</label><input id="req" readonly value="' + esc(text) + '"><button type="button" id="req-close">Close</button>', true);
+    var f = document.getElementById('req');
+    f.focus();
+    f.select();
+    document.getElementById('req-close').addEventListener('click', hide);
+  }
+
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hide(); });
+
+  function esc(s) { return s.replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function done(b, ok) {
+    var text = b.dataset.ask;
+    if (!ok) { refused(b, text); return; }
+    var lbl = b.querySelector('.lbl');
+    var use = b.querySelector('use');
+    if (!b.dataset.label) b.dataset.label = lbl.textContent;
+    b.style.minWidth = b.offsetWidth + 'px'; // keep the line still while the label reads "Copied"
+    lbl.textContent = 'Copied';
+    use.setAttribute('href', '#i-check');
+    b.classList.add('copied');
+    say('Copied <q>' + esc(text) + '</q>. Paste it into the agent&rsquo;s chat.');
+    clearTimeout(b._t);
+    b._t = setTimeout(function () {
+      lbl.textContent = b.dataset.label;
+      use.setAttribute('href', '#i-copy');
+      b.classList.remove('copied');
+    }, 1600);
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-ask]');
+    if (!b) return;
+    var text = b.dataset.ask;
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () { done(b, true); }, function () { done(b, fallbackCopy(text)); });
+    } else {
+      done(b, fallbackCopy(text));
+    }
+  });
+})();
+</script>
+</body>
+</html>
