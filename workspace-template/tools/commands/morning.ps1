@@ -10,7 +10,8 @@
 #   first      Do first, in the white sheet of the day, left of the meetings: the three actions the
 #              agent recommends in state\morning.json, each with its line of why and its button,
 #              and first, in the page's words, a commitment of the PO to start today or late to
-#              start, not started, that the agent's actions leave out.
+#              start, not started, that the agent's actions leave out. Below them, on a line of its
+#              own, the steering pack of each committee near, as Get-SteeringCommittees finds them.
 #   meetings   Today's meetings, in the white sheet of the day: a timeline of the meetings of the
 #              calendar snapshot, each with its duration, the agent's sentence on what matters and
 #              its brief opening in place, then the free time for work within the PO's working
@@ -49,7 +50,7 @@
 #
 # It prints where the page is, then the heading of each block with its counts, one per line, then
 # the way out of a day that does not fit, each task to start today, each reminder and nudge to
-# offer the PO, and each open question with its age, for the briefing.
+# offer the PO, each steering pack to offer, and each open question with its age, for the briefing.
 
 # The stamp of the page names a committed register.
 Assert-RegisterCommitted
@@ -202,6 +203,8 @@ $nudgeBy = Add-WorkingDays $Today 3
 # offered.
 $StartToday = @()
 $Offers = @()
+# The steering committees of the calendar near enough to offer their pack.
+$Committees = @(Get-SteeringCommittees)
 
 function Format-Unwritten([string]$Key) {
     # What a block of the agent's says when the agent's file gives it nothing: a warning when the file
@@ -260,6 +263,13 @@ function Get-FirstBlock {
     $counts = @(if ($number) { Html ($said.count -f $number) }; Format-Unwritten 'first')
     $body = @(
         if ($lines) { '<ol class="actions">'; $lines; '</ol>' }
+        # The steering pack of each committee near, until its deck exists, on a line of its own.
+        foreach ($committee in $Committees) {
+            '<div class="suggest">'
+            "<p><b>$(Html $said.offer)</b> $(Html ($said.offer_line -f $committee.title, (Format-Day $committee.date)))</p>"
+            "<span class=`"btns`"><button class=`"ask`" type=`"button`" data-ask=`"$(Html ($said.ask_offer -f $committee.title, $committee.date))`">$(Icon copy)<span class=`"lbl`">$(Html $said.offer_button)</span></button></span>"
+            '</div>'
+        }
         if ($notes.problems) { "<p class=`"refused warn`">$(Icon warn) $(Html ($words.refused -f ($notes.problems -join ' ')))</p>" }
     )
     Format-Block 'first' $said.heading (Format-Count $counts @()) $body
@@ -876,6 +886,7 @@ foreach ($heading in [regex]::Matches(($blocks -join $newLine), '<h2 id="h-[a-z]
 if ($script:WayOut) { $script:WayOut }
 foreach ($task in $StartToday) { "Start today: $(Format-Value $task.title) [$($task.id)]" }
 $Offers
+foreach ($committee in $Committees) { "Steering pack to offer: $($committee.title) on $($committee.date)." }
 # Each open question for the briefing, the oldest first, with its age; once open five working days,
 # and until the agent has asked it, with the request to ask once whether to drop it.
 foreach ($question in @($asked.questions | Sort-Object { "$($_.added)" })) {

@@ -64,16 +64,14 @@ function Write-RankingView($Labels, [string]$Bank) {
         if ($Subject.work_changes) { $Labels.intake.work_changes.($Subject.work_changes) } else { '-' }
     }
     $escape = { param($Cells) , @($Cells | ForEach-Object { ($_ -replace '\s*\r?\n\s*', ' ').Replace('|', '\|') }) }
-    $subjects = Get-ActiveSubjects $Bank
-    $isScored = { $null -ne $_.value_score -and $null -ne $_.feasibility_score }
-    $scored = @($subjects | Where-Object $isScored | Sort-Object @{ Expression = { $_.value_score * $_.feasibility_score }; Descending = $true },
-        @{ Expression = { $_.value_score }; Descending = $true }, @{ Expression = { "$($_.title)" } })
+    $ranked = Get-RankedSubjects $Bank
+    $scored = $ranked.scored
     $rank = 0
     $rows = @(foreach ($subject in $scored) {
             $all = @(& $cells $subject)
             & $escape (@("$((++$rank))", $all[0], "$($subject.value_score * $subject.feasibility_score)") + $all[1..5])
         })
-    $others = @($subjects | Where-Object { -not (& $isScored) } | Sort-Object { "$($_.title)" } | ForEach-Object { & $escape @(& $cells $_) })
+    $others = @($ranked.others | ForEach-Object { & $escape @(& $cells $_) })
     $columns = $words.value, $words.feasibility, $words.risk, $words.ai_act, $words.work_changes
     $lines = @("# $($words.title)", '') + @(Get-Stamp $Labels $Bank) + @('', $words.note, '', "## $($words.ranked)", '')
     $lines += if ($rows) { Write-Table (@($words.rank, $Labels.portfolio.subject, $words.score) + $columns) $rows } else { $Labels.portfolio.no_subject }

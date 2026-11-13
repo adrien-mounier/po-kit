@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="{{language}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{{title}}</title>
+<style>
+/* The steering pack of the kit, in the colours and type of the morning page. One slide is one A4
+   landscape page: on screen at 1123 x 794 px, the page at 96 dpi, and printed one per page. An
+   organisation's template keeps the three places the register tool fills (the language, the
+   title and the slides) and restyles the rest. */
+:root {
+  --bar: #0e3b43;
+  --bar-ink: #eef5f4;
+  --bar-muted: #a9c6c5;
+  --bg: #f3f6f5;
+  --surface: #ffffff;
+  --ink: #142120;
+  --ink-2: #3b4a48;
+  --muted: #586664;
+  --rule: #dde4e2;
+  --edge: #6f7d7a;
+  --tag: #e5ebe9;
+  --brand: #0f5661;
+  --on-brand: #ffffff;
+  --late: #b3152b;
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root {
+    --bar: #0a2e35;
+    --bar-ink: #e6f0ef;
+    --bar-muted: #9dbbba;
+    --bg: #0f1514;
+    --surface: #161e1d;
+    --ink: #e7eeec;
+    --ink-2: #c2cdcb;
+    --muted: #98a6a3;
+    --rule: #28322f;
+    --edge: #6f7d7a;
+    --tag: #232d2b;
+    --brand: #63d2c6;
+    --on-brand: #06211f;
+    --late: #ff9195;
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+h1, h2, h3, p, ol, ul { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+svg.i { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.125em; }
+/* Red means overdue only here; anything else to heed is in the colour of the text. */
+.late { color: var(--late); font-weight: 600; }
+.id { color: var(--muted); font-size: 0.8125em; font-weight: 400; white-space: nowrap; }
+
+.deck { display: grid; justify-items: center; gap: 24px; padding: 24px 16px; }
+.slide {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 1123px);
+  aspect-ratio: 297 / 210;
+  padding: 48px 56px 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+}
+.slide { break-after: page; break-inside: avoid; page-break-after: always; page-break-inside: avoid; }
+.slide:last-child { break-after: auto; page-break-after: auto; }
+
+.s-head { padding-bottom: 14px; border-bottom: 2px solid var(--brand); }
+.s-head h2 { font: 600 30px/1.2 "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; letter-spacing: -0.01em; }
+.key { margin-top: 16px; font-size: 19px; line-height: 1.4; color: var(--ink-2); max-width: 60em; }
+.s-body { flex: 1 1 auto; min-height: 0; margin-top: 22px; }
+.note { margin-top: 10px; font-size: 13px; color: var(--muted); }
+.s-foot { display: flex; justify-content: space-between; gap: 24px; margin: 0 -56px; padding: 12px 56px 14px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); }
+
+/* ---------- Title ---------- */
+.slide.cover { padding: 64px 72px 0; background: var(--bar); color: var(--bar-ink); border-color: var(--bar); }
+.cover .kicker { font-size: 15px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--bar-muted); }
+.cover h1 { margin-top: 18px; font: 600 48px/1.12 "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; letter-spacing: -0.015em; max-width: 18em; }
+.cover .when { margin-top: 14px; font-size: 22px; color: var(--bar-ink); }
+.cover .headline { margin-top: 44px; padding-left: 18px; border-left: 3px solid var(--bar-muted); font-size: 22px; line-height: 1.4; max-width: 34em; }
+.cover .id { color: var(--bar-muted); }
+.cover .stamp { margin-top: auto; padding-bottom: 20px; font-size: 12px; line-height: 1.5; color: var(--bar-muted); }
+.cover .stamp h3 { font-size: 12px; font-weight: 600; color: var(--bar-ink); }
+.cover .s-foot { margin: 0 -72px; padding: 12px 72px 14px; border-top-color: rgba(255, 255, 255, .18); color: var(--bar-muted); }
+
+/* ---------- Tables ---------- */
+.tbl { width: 100%; border-collapse: collapse; font-size: 15px; }
+.tbl th { padding: 0 12px 8px; text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--edge); white-space: nowrap; }
+.tbl td { padding: 9px 12px; border-bottom: 1px solid var(--rule); vertical-align: baseline; }
+.tbl th:first-child, .tbl td:first-child { padding-left: 0; }
+.tbl th:last-child, .tbl td:last-child { padding-right: 0; }
+.tbl .n { text-align: center; }
+.tbl .t { font-weight: 600; }
+.tbl .sub { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+.tbl.fixed { table-layout: fixed; }
+.tbl .sub.one { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tbl .nw { white-space: nowrap; }
+.rank { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 6px; background: var(--brand); color: var(--on-brand); font-weight: 700; font-size: 14px; }
+.score { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 17px; }
+.score .gauge { width: 64px; height: 6px; border-radius: 3px; background: var(--tag); overflow: hidden; }
+.score .gauge i { display: block; height: 100%; background: var(--brand); }
+.bank { display: inline-block; margin-left: 6px; font-size: 12px; font-weight: 400; padding: 0 7px; border-radius: 4px; background: var(--tag); color: var(--ink-2); white-space: nowrap; }
+.mark { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border: 1.5px solid var(--ink); border-radius: 4px; font-weight: 700; font-size: 13px; white-space: nowrap; }
+
+/* ---------- Value against target ---------- */
+.track { position: relative; display: inline-block; vertical-align: middle; width: 100%; max-width: 150px; height: 8px; border-radius: 4px; background: var(--tag); }
+.track i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: var(--brand); }
+.done { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--brand); }
+
+/* ---------- Two columns of items ---------- */
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
+.cols h3 { font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); padding-bottom: 8px; border-bottom: 1px solid var(--edge); }
+.cols h3 + h3, .items + h3 { margin-top: 22px; }
+.items li { padding: 9px 0; border-bottom: 1px solid var(--rule); }
+.items .t { font-weight: 600; }
+.items .meta { display: block; margin-top: 1px; font-size: 13px; color: var(--muted); }
+.items .meta .late { font-size: 13px; }
+.tag { display: inline-block; margin-right: 8px; padding: 0 7px; border-radius: 4px; font-size: 12px; font-weight: 700; vertical-align: 1px; background: var(--tag); color: var(--ink-2); }
+.tag.strong { background: var(--ink); color: var(--surface); }
+.none { padding: 9px 0; color: var(--muted); border-bottom: 1px solid var(--rule); }
+
+/* ---------- Next steps ---------- */
+.steps li { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 0 14px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--rule); font-size: 18px; }
+.steps .rank { width: 30px; height: 30px; font-size: 15px; }
+
+@media (max-width: 900px) {
+  .slide { aspect-ratio: auto; padding: 28px 20px 0; }
+  .slide.cover { padding: 36px 24px 0; }
+  .s-foot { margin: 16px -20px 0; padding: 10px 20px 12px; }
+  .cover .s-foot { margin: 16px -24px 0; padding: 10px 24px 12px; }
+  .cover h1 { font-size: 34px; }
+  .cols { grid-template-columns: 1fr; }
+  .s-body { overflow-x: auto; }
+  .track { width: 80px; }
+}
+
+@page { size: A4 landscape; margin: 0; }
+@media print {
+  body { background: var(--surface); }
+  .deck { display: block; padding: 0; }
+  .slide { width: 297mm; height: 210mm; aspect-ratio: auto; border: 0; border-radius: 0; box-shadow: none; }
+}
+</style>
+</head>
+<body>
+<main class="deck">
+{{slides}}
+</main>
+</body>
+</html>

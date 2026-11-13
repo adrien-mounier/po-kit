@@ -1,0 +1,56 @@
+{
+  "routine": "steering",
+  "collected": {
+    "operations": [
+      { "op": "update", "id": "mobile-onboarding", "interpreted": false,
+        "source": { "where": "conversation with the PO", "read_on": "{today}" },
+        "fields": { "value_score": 4, "value_reason": "It halves the time a customer needs to open an account.",
+          "feasibility_score": 4, "feasibility_reason": "The architecture review is done and the team is in place.",
+          "risk_score": 2, "risk_reason": "A person checks every file before the account opens.",
+          "ai_act_high_risk": false, "ai_act_reason": "It reads identity documents; it decides nothing about the customer.",
+          "work_changes": "yes", "work_changes_reason": "Branch staff stop keying paper forms." } },
+      { "op": "update", "id": "payments-api-contribution", "interpreted": false,
+        "source": { "where": "conversation with the PO", "read_on": "{today}" },
+        "fields": { "value_score": 3, "value_reason": "It opens instant payments to two client banks.",
+          "feasibility_score": 2, "feasibility_reason": "The scope is not agreed yet." } },
+      { "op": "create", "type": "benefit", "interpreted": false,
+        "fields": { "title": "Halve the time to open an account", "subject": "mobile-onboarding",
+          "metric": "Time a customer takes to open an account", "unit": "minutes", "baseline": 40, "target": 20,
+          "owner": "the head of retail operations", "current_value": 31, "measured_on": "{today}",
+          "evidence_level": "fact", "source": { "where": "inbox/pilot review.md", "read_on": "{today}" } } },
+      { "op": "create", "type": "decision", "interpreted": false,
+        "fields": { "title": "Fund the second wave of pilot branches", "subject": "mobile-onboarding", "date_of_fact": "{today}",
+          "status": "pending", "needed_from": "the retail steering committee", "needed_by": "{workday+5}",
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "{today}" } } },
+      { "op": "create", "type": "decision", "interpreted": false,
+        "fields": { "title": "Present the target journey at the following committee instead", "subject": "mobile-onboarding", "date_of_fact": "{today}",
+          "status": "taken", "decided_by": "the sponsor", "supersedes": "C-{year}-001",
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "{today}" } } },
+      { "op": "create", "type": "commitment", "interpreted": false,
+        "fields": { "title": "Deliver the test accounts", "subject": "mobile-onboarding", "date_of_fact": "{workday-5}",
+          "owner": "the tech lead", "owed_to": "the PO", "due_date": "{workday-2}",
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "{today}" } } },
+      { "op": "create", "type": "risk", "interpreted": false,
+        "fields": { "title": "The pilot branches are not staffed", "subject": "mobile-onboarding", "date_of_fact": "{today}",
+          "severity": "urgent", "evidence_level": "reported", "source": { "where": "conversation with the PO", "read_on": "{today}" } } }
+    ]
+  },
+  "prompt": "Steering pack.",
+  "expect": [
+    { "file": "views/steering/{workday+5}.html" },
+    { "verified": "views/steering/{workday+5}.html" },
+    { "file": "views/steering/{workday+5}.html", "lines": [
+        "id=\"slide-portfolio\"",
+        "Mobile onboarding <span class=\"id\">[mobile-onboarding]</span>",
+        "Payments API contribution <span class=\"id\">[payments-api-contribution]</span>",
+        "id=\"slide-value\"",
+        "Halve the time to open an account <span class=\"id\">[B-{year}-001]</span>",
+        "id=\"slide-decisions\"",
+        "Fund the second wave of pilot branches <span class=\"id\">[D-{year}-001]</span>"] },
+    { "file": "views/steering/{workday+5}.html", "line": "C-{year}-001", "absent": true },
+    { "file": "views/steering/{workday+5}.html", "line": "<p class=\"headline\">" },
+    { "file": "views/steering/{workday+5}.html", "line": "<ol class=\"steps\">" },
+    { "file": "state/steering.json" },
+    { "printed": "steering", "line": "No steering committee of the calendar snapshot of today" }
+  ]
+}

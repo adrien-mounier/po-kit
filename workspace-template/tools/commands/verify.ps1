@@ -24,14 +24,19 @@ if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
     Stop-Run "verify takes the path of a stored view, from the workspace or absolute$(if ($given) { ", and there is no file at '$given'" }): verify views\weekly\2026-03-10.md"
 }
 $text = [IO.File]::ReadAllText($path)
+# A deck, views\steering\<date>.html, is read as its reader sees it: its text without its tags,
+# each line trimmed, and its stamp lines without the quote mark of Markdown.
+$html = $path -match '\.html$'
+if ($html) { $text = [Net.WebUtility]::HtmlDecode(($text -replace '<[^>]*>', '')) }
 
 # The stamp is the lines Get-Stamp gives, one under the other, in the labels of one language.
-$lines = ($text -split '\r?\n' | ForEach-Object { $_.TrimEnd() }) -join "`n"
+$lines = ($text -split '\r?\n' | ForEach-Object { if ($html) { $_.Trim() } else { $_.TrimEnd() } }) -join "`n"
+$quote = if ($html) { '(?:> )?' } else { '> ' }
 $stamped = $false
 foreach ($file in Get-ChildItem (Join-Path $Tools 'labels\*.json')) {
     $stamp = (Read-JsonFile $file.FullName).stamp
     $generated, $state, $collect, $notCovered, $noCollect = $stamp.generated, $stamp.register_state, $stamp.last_collect, $stamp.not_covered, $stamp.no_collect |
-        ForEach-Object { '> ' + [regex]::Escape($_).Replace('\{0}', '.+') }
+        ForEach-Object { $quote + [regex]::Escape($_).Replace('\{0}', '.+') }
     if ($lines -cmatch "(?m)^$generated\n$state\n(?:$noCollect|$collect\n$notCovered)$") { $stamped = $true }
 }
 

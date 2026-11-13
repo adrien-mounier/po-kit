@@ -1,0 +1,10 @@
+{
+  "read_at": "{today}T07:05:00+01:00",
+  "from": "{workday-1}",
+  "to": "{workday+10}",
+  "meetings": [
+    { "start": "{today}T14:00:00+01:00", "end": "{today}T15:00:00+01:00", "title": "Onboarding design session", "attendees": ["the tech lead", "the architect"], "status": "accepted" },
+    { "start": "{workday+5}T10:00:00+01:00", "end": "{workday+5}T12:00:00+01:00", "title": "Retail steering committee", "attendees": ["the sponsor", "the retail steering committee"], "status": "accepted" }
+  ],
+  "absences": []
+}

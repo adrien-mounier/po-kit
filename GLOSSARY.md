@@ -222,6 +222,10 @@ _Avoid_: dashboard, daily report, morning view
 The view written each week for the sponsor.
 _Avoid_: weekly report, weekly brief, status report
 
+**Steering pack**:
+The view the register tool writes for a steering committee of the calendar snapshot, from the register and the agent's commentary: one HTML deck of six slides in a fixed order, one landscape page each, verified like the weekly synthesis. The morning page offers it from five working days before the committee until it exists. The PO presents it and shares it as a PDF; it counts for nothing until the PO uses it. (French: dossier du comité.)
+_Avoid_: board pack, presentation, slides
+
 **Meeting brief**:
 For one meeting of the calendar snapshot: the subjects whose watch lists its title and attendees match (kept to a client bank's subjects when the meeting names that bank), their open commitments, the decisions awaited and what each still lacks.
 _Avoid_: meeting prep, briefing (which is the morning conversation with the PO), agenda

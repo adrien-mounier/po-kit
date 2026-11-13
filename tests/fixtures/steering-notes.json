@@ -1,0 +1,6 @@
+{ "headline": "Onboarding is on track; the committee is asked to fund the second wave [D-{year}-001].",
+  "portfolio": "Mobile onboarding leads the portfolio [mobile-onboarding].",
+  "value": "Onboarding time is down from 40 to 31 minutes [B-{year}-001].",
+  "decisions": "One decision is asked of the committee [D-{year}-001].",
+  "risks": "The test accounts are late [C-{year}-002].",
+  "next_steps": [ "The tech lead delivers the test accounts [C-{year}-002]." ] }

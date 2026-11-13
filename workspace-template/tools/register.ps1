@@ -751,6 +751,19 @@ function Get-ActiveSubjects([string]$Bank) {
             Where-Object { $_.status -ceq 'active' -and (-not $Bank -or -not $_.banks -or $_.banks -ccontains $Bank) })
 }
 
+function Get-RankedSubjects([string]$Bank) {
+    # The active subjects as the ranked portfolio orders them: those with both a value and a
+    # feasibility score by value times feasibility, highest first, ties by value, then title
+    # (scored); the others by title (others).
+    $subjects = Get-ActiveSubjects $Bank
+    $isScored = { $null -ne $_.value_score -and $null -ne $_.feasibility_score }
+    @{
+        scored = @($subjects | Where-Object $isScored | Sort-Object @{ Expression = { $_.value_score * $_.feasibility_score }; Descending = $true },
+            @{ Expression = { $_.value_score }; Descending = $true }, @{ Expression = { "$($_.title)" } })
+        others = @($subjects | Where-Object { -not (& $isScored) } | Sort-Object { "$($_.title)" })
+    }
+}
+
 function Get-PortfolioHorizons($Labels, [string]$Bank) {
     # The portfolio view below its title and its stamp, as lines: every active subject under its
     # horizon. export prints these lines too, for the weekly synthesis that opens with them. Given a
@@ -843,6 +856,27 @@ function Read-CalendarSnapshot {
 function Get-DayMeetings($Snapshot, [string]$Date) {
     # The meetings of a day in the snapshot, by their start.
     @($Snapshot.meetings | Where-Object { (Read-Timestamp $_.start) -and (Read-Timestamp $_.end) -and $_.start.Substring(0, 10) -eq $Date } | Sort-Object start, title)
+}
+
+function Test-SteeringTitle([string]$Title) {
+    # Whether a meeting's title shows a steering committee: it holds one of the words of
+    # steering_words in settings.json, whatever the case, or "steering committee" without them.
+    $listed = @($Settings.steering_words | Where-Object { "$_".Trim() })
+    if (-not $listed) { $listed = @('steering committee') }
+    @($listed | Where-Object { $Title.IndexOf("$_".Trim(), [StringComparison]::OrdinalIgnoreCase) -ge 0 }).Count -gt 0
+}
+
+function Get-SteeringCommittees {
+    # The steering committees whose pack to offer: in the calendar snapshot read today, the
+    # meetings from today to five working days on whose title shows a steering committee, one per
+    # day, the earliest first, until its deck, views\steering\<date>.html, exists. Each with its
+    # date and its title.
+    $snapshot = Read-CalendarSnapshot
+    if (-not $snapshot -or -not "$($snapshot.read_at)".StartsWith($Today)) { return }
+    $last = Add-WorkingDays $Today 5
+    @($snapshot.meetings | Where-Object { (Read-Timestamp $_.start) -and (Test-SteeringTitle "$($_.title)") } | Sort-Object start, title |
+            Group-Object { $_.start.Substring(0, 10) } | Where-Object { $_.Name -ge $Today -and $_.Name -le $last -and -not (Test-Path -LiteralPath (Join-Path $Workspace "views\steering\$($_.Name).html")) } |
+            ForEach-Object { @{ date = $_.Name; title = "$($_.Group[0].title)" } })
 }
 
 function Get-Texts($Value) {

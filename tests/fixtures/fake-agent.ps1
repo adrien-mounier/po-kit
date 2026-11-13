@@ -18,6 +18,9 @@
 #   -Morning          has the register tool write the morning page
 #   -Intake <subject> has the register tool write the intake card of this subject
 #   -Ranking          has the register tool write the ranked portfolio
+#   -SteeringNotes <file>
+#                     leaves this commentary of the steering pack, dated as the notes on the meetings
+#   -Steering         has the register tool write the steering pack of the first committee it names
 #   -Weekly <file>    stores this text as the weekly synthesis of the day, with the stamp and the
 #                     portfolio view that export prints in place of {stamp} and {portfolio}
 #   -ByHand           writes a record itself, which no routine may do
@@ -27,7 +30,7 @@
 #   -Stream           prints all it prints as a transcript does, one line of JSON per step, as
 #                     Claude Code does with --output-format stream-json --verbose
 param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [string]$Snapshot, [string]$MeetingNotes, [string]$Questions, [switch]$ByHand,
-    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [switch]$Ranking)
+    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [switch]$Ranking, [string]$SteeringNotes, [switch]$Steering)
 
 $prompt = [Console]::In.ReadToEnd()
 $steps = {
@@ -40,7 +43,7 @@ if ($Proposal) {
     Copy-Item -LiteralPath $Proposal -Destination 'state\proposal.json'
     if (-not $Pending) { & powershell.exe -NoProfile -File tools\register.ps1 apply $(if ($Plain) { 'plain' }) }
 }
-foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'state\morning.json'), @($Questions, 'state\questions.json')) | Where-Object { $_[0] }) {
+foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'state\morning.json'), @($Questions, 'state\questions.json'), @($SteeringNotes, 'state\steering.json')) | Where-Object { $_[0] }) {
     $day = Get-Date
     $text = [IO.File]::ReadAllText($given[0]).Replace('{today}', $day.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)).Replace('{year}', $day.ToString('yyyy', [Globalization.CultureInfo]::InvariantCulture))
     $text = [regex]::Replace($text, '\{workday([+-])(\d+)\}', {
@@ -56,6 +59,10 @@ if ($Check) { & powershell.exe -NoProfile -File tools\register.ps1 check }
 if ($Morning) { & powershell.exe -NoProfile -File tools\register.ps1 morning }
 if ($Intake) { & powershell.exe -NoProfile -File tools\register.ps1 view intake $Intake }
 if ($Ranking) { & powershell.exe -NoProfile -File tools\register.ps1 view ranking }
+if ($Steering) {
+    $named = @(& powershell.exe -NoProfile -File tools\register.ps1 steering | Where-Object { $_ -match 'steering (\d{4}-\d\d-\d\d)$' } | ForEach-Object { $Matches[1] })
+    if ($named) { & powershell.exe -NoProfile -File tools\register.ps1 steering $named[0] }
+}
 if ($Weekly) {
     # The register tool prints UTF-8; read it as such.
     try { [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false } catch { }

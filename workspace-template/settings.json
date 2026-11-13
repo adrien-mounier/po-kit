@@ -20,6 +20,7 @@
   "objectives": [],
   "banks": [],
   "task_kinds": ["steering pack", "intake review", "ticket refinement", "client meeting preparation"],
+  "steering_words": ["steering committee"],
   "sponsor": {
     "name": "",
     "email": ""

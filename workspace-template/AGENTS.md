@@ -23,12 +23,13 @@ Written with a forward slash, the command runs the same in every shell.
 
 - `preview` shows the pending proposal as a numbered table and writes nothing.
 - `apply` validates the pending proposal again, writes it to the register, settles its collect and regenerates the portfolio view, `views/portfolio.md`. `apply 1 3` keeps lines 1 and 3 of the preview and drops the others. `apply none` drops every line. `apply plain` records the plain facts only: the lines that wait for the PO stay pending, and it shows them.
-- `morning` writes the morning page, `views/morning.html`, from the register, the calendar snapshot and your notes for it, replacing the last one, and prints the counts of each of its blocks; then, when a day ahead does not fit, the one way out it proposes; then each task to start today, and each reminder and nudge to offer the PO. The PO opens it in a browser.
+- `morning` writes the morning page, `views/morning.html`, from the register, the calendar snapshot and your notes for it, replacing the last one, and prints the counts of each of its blocks; then, when a day ahead does not fit, the one way out it proposes; then each task to start today, each reminder and nudge to offer the PO, and each steering pack to offer. The PO opens it in a browser.
 - `brief` prints the brief of a meeting of the calendar snapshot: `brief 14:00` for today's, `brief 2026-03-04 14:00` for another day's, `brief` alone for every meeting of today, `brief 2026-03-03` for every meeting of that day. It lists the subjects the meeting concerns, their open commitments, the decisions awaited and your notes on it. It writes nothing.
 - `check` verifies the whole register and what has gone stale, and writes the check report, `views/check-report.md`. It fails on an error, not on a warning. `apply` runs it after every write and prints its summary, `Check: 0 error(s), 2 warning(s).`: when it counts anything, read the check report and tell the PO what it lists.
 
 - `view intake <subject>` writes the intake card of a subject, `views/intake/<subject>.md`, replacing the last one: see "Requests for AI use cases" below. `view intake <subject> fr` writes it in another language.
 - `view ranking` writes the ranked portfolio, `views/ranking.md`, replacing the last one: see "Scores and the ranked portfolio" below. It takes a language and a client bank as `view` does: `view ranking fr bank Harbour Bank`.
+- `steering 2026-03-09` writes the steering pack of the committee of that date, `views/steering/2026-03-09.html`, replacing the last one; `steering` alone names the committees whose pack to offer and writes nothing: see "The steering pack" below.
 
 A refused proposal lists its reasons and writes nothing: correct the proposal and preview again.
 
@@ -52,6 +53,18 @@ A subject may carry three scores, each a whole number from 1 to 5 with one sente
 
 `view ranking` ranks the active subjects by value times feasibility, highest first, ties by value, then title; those without both scores follow, under "Not scored". Risk, the AI Act mark and whether the work changes stand in their own columns, never in the score, and a subject marked high-risk is shown so, in a word and an icon, wherever it stands. `export` gives each subject's scores and mark with their reasons.
 
+## The steering pack
+
+From five working days before a meeting of the calendar snapshot whose title shows a steering committee, the morning page offers its steering pack, until the deck of that day exists. The words that show one are `steering_words` in the settings, as `["steering committee"]`, found in the title whatever the case.
+
+The deck is a view the register tool writes, `views/steering/<date>.html`: six slides in a fixed order, one A4 landscape page each (the title and the stamp; the portfolio ranked; the value delivered against target; the decisions taken since the last committee and those awaited, from the committee first; the risks and the commitments late; the next steps), in the sponsor's language. It holds no script and calls no network; the PO opens it in a browser and prints it to PDF. The steering routine says how it is drafted: the commentary is yours, in `state/steering.json`, written as UTF-8 without a byte order mark, replaced each time:
+
+    { "headline": "...", "portfolio": "...", "value": "...", "decisions": "...", "risks": "...", "next_steps": [ "...", "..." ] }
+
+Cite a record as a view does, `[identifier]`. The register tool checks every record it cites, as `verify` does: when one is missing or superseded, it writes no deck. `verify` checks the deck as it checks the weekly synthesis. The deck is a draft: it counts for nothing until the PO uses it, and sharing it is the PO's.
+
+It is written from a template: the kit's is `tools/templates/steering.html`. **A template of the organisation goes in `templates/steering.html` in this workspace**, never under `tools/`: it then replaces the kit's for this workspace only. It holds each of `{{language}}`, `{{title}}` and `{{slides}}`; the register tool refuses one that leaves any out.
+
 ## The settings
 
 `settings.json` is the PO's, edited by hand. Four of its lists bound what a record may say:
@@ -67,6 +80,8 @@ When the PO names a gate, an objective, a client bank or a kind of task that is 
 `working_hours`: the PO's working hours, as `[{ "from": "10:00", "to": "12:00" }, { "from": "14:00", "to": "18:00" }]`. The morning page counts the free time for work within them.
 
 `start_soon`: as `{ "margin": 1, "lead": 2 }`, in working days. The latest start of a commitment the PO owns is its due date minus its adjusted effort, in working days, minus the margin; the morning page lists it under "Start soon" once its latest start falls within the lead. Its workload view sets the work of the PO's open commitments against the free time of the next ten working days: the working hours less the accepted meetings and half the tentative ones, none on a day of absence, times the share of it really usable for tasks. That share starts at 70%; the register tool learns it from the real efforts of the PO's done tasks and the free time it keeps of each morning, in `state/free-time.json`, which is its own. A commitment the PO says is optional carries `"optional": true`: the page may then propose to drop or hand it over when a day does not fit.
+
+`steering_words`: as `["steering committee"]`, the words that show a steering committee in a meeting's title: see "The steering pack" above.
 
 `briefing_minutes`: as `30`, the length the morning briefing aims at. When it holds more questions than fit, the most important are asked and the rest wait for the next one.
 
