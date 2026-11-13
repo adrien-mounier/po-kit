@@ -1,0 +1,10 @@
+{
+  "routine": "subject",
+  "prompt": "Change the next step of Mobile onboarding to: Run the pilot in two branches. I accept the change in advance: apply it.",
+  "expect": [
+    { "record": "mobile-onboarding", "field": "next_step", "is": "Run the pilot in two branches" },
+    { "file": "../agent-output.txt", "line": "selfie" },
+    { "file": "../agent-output.txt", "line": "card tokens", "absent": true },
+    { "file": "state/questions.json", "line": "selfie" }
+  ]
+}

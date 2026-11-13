@@ -111,6 +111,8 @@ When no kind of `task_kinds` fits, leave `task_kind` out, and tell the PO the ki
 
 **What fits no subject.** A passage that matters to the PO's work and is about no subject of the register becomes no record. It goes to `unclassified`, with the note as its source, and you tell the PO.
 
+**A question you cannot settle.** When a note leaves unclear something a record needs (who of two people owns it, a date "to be confirmed", which subject a passage is about), record what the note does say and keep the question. Once the proposal is applied or waits for the PO, add it to your open questions, as `AGENTS.md` says: about the record once it is recorded, its subject otherwise, with the answer you recommend. A real effort you keep a question for goes there too. The briefing asks them when the PO does not answer first.
+
 Done when every statement of every note is an operation, an unclassified item, or left out because it fits no row.
 
 ## 5. Write the proposal
@@ -175,4 +177,4 @@ Done when the proposal holds one operation per change found in step 4, and every
 
 **Ask the real effort you could not infer.** Each question on a real effort that you kept in step 4 goes in the same answer, one line each, as step 4 writes it. When the PO answers, propose the update it gives and preview it as any proposal.
 
-Done when every line is recorded, dropped, or shown to the PO as waiting for them, and you have told the PO each record written with its identifier, the notes filed, what went to unclassified, what the check found, each objective you recommend and each real effort you ask.
+Done when every line is recorded, dropped, or shown to the PO as waiting for them, you have told the PO each record written with its identifier, the notes filed, what went to unclassified, what the check found, each objective you recommend and each real effort you ask, and each question you could not settle is in your open questions.

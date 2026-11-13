@@ -791,7 +791,8 @@ function Test-Cited([string[]]$Ids) {
 
 # --- Calendar -----------------------------------------------------------------------------------
 # The calendar is read, never written: nothing here creates, changes or cancels an event. It is no
-# source of the collect. The morning routine reads its next ten working days into the calendar
+# source of the collect. The morning routine reads the working day before today, today and the
+# next ten working days into the calendar
 # snapshot, state\calendar.json, in the format the workspace rules (AGENTS.md) give:
 #   { "read_at": "2026-03-02T07:05:00+01:00", "from": "2026-03-02", "to": "2026-03-13",
 #     "meetings": [ { "start": "2026-03-02T14:00:00+01:00", "end": "2026-03-02T14:45:00+01:00",
@@ -850,6 +851,44 @@ function Read-MorningNotes {
         })
     if ($problems) { return @{ notes = @(); problems = $problems } }
     @{ items = $file; notes = $notes; problems = @() }
+}
+
+# The agent's open questions, state\questions.json, in the format the workspace rules give: what a
+# routine could not settle, each with the record or subject it concerns (about), the question, the
+# agent's recommended answer and the date it was added; drop_asked once the agent has asked whether
+# to drop it. The file also holds the date of the last briefing and the meetings whose outcome the
+# agent has asked, which are the agent's alone.
+#   { "last_briefing": "2026-03-02", "meetings_asked": [ { "start": "...", "title": "..." } ],
+#     "questions": [ { "about": "C-2026-004", "question": "...", "recommended": "...", "added": "2026-03-02" } ] }
+
+function Read-OpenQuestions {
+    # The open questions (questions, nothing without the file) and what is wrong with the file
+    # (problems): each record it cites or is about missing or superseded, as verify checks a view, and
+    # a question without its text, its recommended answer or a date added. The file is refused whole
+    # when anything is wrong: questions is then empty.
+    $path = Join-Path $Workspace 'state\questions.json'
+    if (-not (Test-Path -LiteralPath $path)) { return @{ questions = @(); problems = @() } }
+    $file = try { Read-JsonFile $path } catch { return @{ questions = @(); problems = @('state\questions.json cannot be read: it must hold JSON, saved as UTF-8.') } }
+    $questions = @($file.questions | Where-Object { $null -ne $_ })
+    $about = @($questions | ForEach-Object { "$($_.about)".Trim() } | Where-Object { $_ })
+    $problems = @(Test-Cited @($about + @(Get-Cited ((Get-Texts $questions) -join "`n")) | Select-Object -Unique)) + @(
+        $number = 0
+        foreach ($question in $questions) {
+            $number++
+            $lacks = @('question', 'recommended' | Where-Object { -not "$($question.$_)".Trim() }) + @(if (-not (Test-IsoDate "$($question.added)")) { 'added' })
+            if ($lacks) { "Question $number lacks: $($lacks -join ', ')." }
+        })
+    if ($problems) { return @{ questions = @(); problems = $problems } }
+    @{ questions = $questions; problems = @() }
+}
+
+function Get-WorkingDaysSince([string]$Date) {
+    # The working days, Monday to Friday, from a date to today: 0 on the day itself.
+    $count = 0
+    for ($at = [DateTime]::ParseExact($Date, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture).AddDays(1); $at -le [DateTime]$Today; $at = $at.AddDays(1)) {
+        if ('Saturday', 'Sunday' -notcontains $at.DayOfWeek) { $count++ }
+    }
+    $count
 }
 
 function Get-MeetingBrief($Meeting, $Records, $Notes) {

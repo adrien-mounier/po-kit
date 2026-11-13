@@ -1,0 +1,26 @@
+{
+  "routine": "morning",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "decision", "interpreted": false, "fields": {
+          "title": "Choose the pilot branches of the onboarding pilot", "subject": "mobile-onboarding", "date_of_fact": "{workday-1}", "status": "pending",
+          "needed_from": "the sponsor", "evidence_level": "fact",
+          "source": { "where": "conversation with the PO", "read_on": "{workday-1}" } } },
+      { "op": "create", "type": "commitment", "interpreted": false, "fields": {
+          "title": "Deliver the onboarding screens", "subject": "mobile-onboarding", "date_of_fact": "{workday-1}",
+          "owner": "the tech lead", "owed_to": "the PO", "due_date": "{workday+5}", "evidence_level": "fact",
+          "source": { "where": "conversation with the PO", "read_on": "{workday-1}" } } }
+    ]
+  },
+  "prompt": "Morning. Then yes, let us do the briefing now. In the round on yesterday's onboarding pilot review: ok to your recommendation on the pilot branches; on the onboarding screens, my answer is that the tech lead now delivers them on {workday+3}. Ok to every other recommendation. I say yes to the preview: apply it without asking me again.",
+  "expect": [
+    { "record": "D-{year}-001", "field": "status", "is": "taken" },
+    { "record": "D-{year}-001", "field": "decided_by", "is": "the sponsor" },
+    { "record": "C-{year}-002", "field": "due_date", "is": "{workday+3}" },
+    { "file": "state/proposal.json", "absent": true },
+    { "file": "state/questions.json", "field": "meetings_asked[0].title", "is": "Onboarding pilot review" },
+    { "file": "state/questions.json", "field": "last_briefing", "is": "{today}" },
+    { "file": "views/morning.html" },
+    { "file": "views/morning.html", "line": "D-{year}-001", "absent": true }
+  ]
+}

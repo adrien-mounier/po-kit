@@ -145,12 +145,20 @@ What the workspace remembers of the collects: for each source, how far it was re
 _Avoid_: sync state, cursor file, collect log
 
 **Calendar snapshot**:
-What the morning routine read of the PO's calendar, today and the next ten working days: each meeting with its start, end, title, attendees and status, and the all-day absences. The calendar is only ever read, never written.
+What the morning routine read of the PO's calendar, the working day before today, today and the next ten working days: each meeting with its start, end, title, attendees and status, and the all-day absences. The calendar is only ever read, never written.
 _Avoid_: agenda, schedule, calendar sync
 
 **Proposal**:
 The list of register changes a routine has prepared and that awaits validation. Nothing reaches the register except through an applied proposal.
 _Avoid_: draft, patch, changeset
+
+**Open question**:
+A question a routine could not settle, kept in the workspace state with the record or subject it concerns, the agent's recommended answer and the day it was added, until the PO answers it. The agent asks it when its moment comes: when the PO talks about its subject, or at the briefing.
+_Avoid_: todo, pending question, query
+
+**Briefing**:
+The conversation the agent offers once the morning page is written: it walks the page block by block, one round of numbered questions per block, each with a recommended answer, and turns the answers into one proposal.
+_Avoid_: stand-up, review, meeting brief (which is about one meeting)
 
 **Plain fact**:
 An operation of a proposal that is quoted from a source, as opposed to an interpreted one: a decision, a status change, a deadline inferred.

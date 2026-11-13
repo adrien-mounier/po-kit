@@ -230,7 +230,7 @@ Test 'notes that cite a record missing or superseded are left off the page, whic
     Assert-Match $run.Output '(?m)^Not verified: state\\morning\.json\..*\n- C-2026-099 is not in the register\.\n- D-2026-007 is not in the register\.$' 'what morning prints'
 }
 
-Test 'brief prints the brief of a meeting of the snapshot for the chat: of today by its time, of another day by its date and time' {
+Test 'brief prints the brief of a meeting of the snapshot for the chat: of today by its time, of another day by its date and time, and every meeting of a day by its date' {
     $ws = New-TestWorkspaceWithMeetings
     Write-Json (Join-Path $ws 'state\morning.json') @{ meetings = @(@{
                 start = '2026-03-02T14:00:00+01:00'; title = 'Credit memo pilot check-in'
@@ -258,6 +258,10 @@ Test 'brief prints the brief of a meeting of the snapshot for the chat: of today
     Assert-Equal 0 $run.ExitCode "exit code for another day, with output: $($run.Output)"
     Assert-Match $run.Output '(?m)^2026-03-03 10:00-11:00 KYC review, accepted\. Client banks: North Bank\.$' 'the meeting of another day'
     Assert-Match $run.Output '(?m)^- Share the test dataset \[C-2026-002\]: the data lead owes the PO, due 2026-02-27$' 'its commitment'
+
+    $run = Invoke-Register $ws brief 2026-03-03 -Now $Morning
+    Assert-Equal 0 $run.ExitCode "exit code for another day without a time, with output: $($run.Output)"
+    Assert-Match $run.Output '(?m)^2026-03-03 10:00-11:00 KYC review, accepted\.' 'with a date and no time, every meeting of that day'
 
     $run = Invoke-Register $ws brief -Now $Morning
     Assert-Equal '09:30 11:00 14:00' (@([regex]::Matches($run.Output, '(?m)^2026-03-02 ([0-9:]+)-') | ForEach-Object { $_.Groups[1].Value }) -join ' ') 'without a time, every meeting of today'

@@ -4,6 +4,7 @@
 #   brief                    every meeting of today
 #   brief 14:00              the meeting of today that starts at 14:00
 #   brief 2026-03-04 14:00   the meeting of that day that starts at 14:00
+#   brief 2026-03-03         every meeting of that day, as yesterday's for the briefing
 #
 # A brief is the one the morning page shows (Get-MeetingBrief): the subjects the meeting concerns,
 # their open commitments, the decisions awaited and, from the agent's notes in state\morning.json,
@@ -11,10 +12,11 @@
 # are left out, and brief says why. A record is cited as a view cites it: Title [identifier].
 
 $given = @($Arguments | Where-Object { $_ })
-$date = if ($given.Count -eq 2) { $given[0] } else { $Today }
-$time = if ($given) { $given[-1] }
+$dateOnly = $given.Count -eq 1 -and $given[0] -match '^\d{4}-'
+$date = if ($given.Count -eq 2 -or $dateOnly) { $given[0] } else { $Today }
+$time = if ($given -and -not $dateOnly) { $given[-1] }
 if ($given.Count -gt 2 -or -not (Test-IsoDate $date) -or ($time -and $time -cnotmatch '^\d\d:\d\d$')) {
-    Stop-Run 'brief takes the time a meeting starts, and its date when it is not today: brief 14:00, or brief 2026-03-04 14:00.'
+    Stop-Run 'brief takes the time a meeting starts, and its date when it is not today: brief 14:00, or brief 2026-03-04 14:00; or a date alone for every meeting of that day: brief 2026-03-04.'
 }
 $calendar = Read-CalendarSnapshot
 if (-not $calendar) { Stop-Run 'The calendar is off or was never read: there is no calendar snapshot, state\calendar.json. The morning routine writes it.' }

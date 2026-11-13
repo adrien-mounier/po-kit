@@ -11,7 +11,9 @@
 #   -Snapshot <file>  leaves this calendar snapshot, as the morning routine writes it from the calendar
 #   -MeetingNotes <file>
 #                     leaves these notes on the meetings; in both files {today} and {year} stand for
-#                     those of the day, and {workday+N} for the Nth working day after it
+#                     those of the day, and {workday+N} for the Nth working day after it, {workday-N}
+#                     before it
+#   -Questions <file> leaves these open questions, dated the same way
 #   -Check            has the register tool run the check
 #   -Morning          has the register tool write the morning page
 #   -Weekly <file>    stores this text as the weekly synthesis of the day, with the stamp and the
@@ -20,7 +22,7 @@
 #   -Report <file>    writes down the folder it was started in, then the prompt it received
 #   -Say <text>       prints this text, as an agent prints its answer
 #   -ExitCode <n>     ends with this exit code
-param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [string]$Snapshot, [string]$MeetingNotes, [switch]$ByHand,
+param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [string]$Snapshot, [string]$MeetingNotes, [string]$Questions, [switch]$ByHand,
     [string]$Report, [string]$Say, [int]$ExitCode)
 
 $prompt = [Console]::In.ReadToEnd()
@@ -33,13 +35,14 @@ if ($Proposal) {
     Copy-Item -LiteralPath $Proposal -Destination 'state\proposal.json'
     if (-not $Pending) { & powershell.exe -NoProfile -File tools\register.ps1 apply $(if ($Plain) { 'plain' }) }
 }
-foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'state\morning.json')) | Where-Object { $_[0] }) {
+foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'state\morning.json'), @($Questions, 'state\questions.json')) | Where-Object { $_[0] }) {
     $day = Get-Date
     $text = [IO.File]::ReadAllText($given[0]).Replace('{today}', $day.ToString('yyyy-MM-dd')).Replace('{year}', $day.ToString('yyyy'))
-    $text = [regex]::Replace($text, '\{workday\+(\d+)\}', {
+    $text = [regex]::Replace($text, '\{workday([+-])(\d+)\}', {
             param($Found)
             $at = (Get-Date).Date
-            for ($left = [int]$Found.Groups[1].Value; $left -gt 0) { $at = $at.AddDays(1); if ('Saturday', 'Sunday' -notcontains $at.DayOfWeek) { $left-- } }
+            $step = if ($Found.Groups[1].Value -eq '-') { -1 } else { 1 }
+            for ($left = [int]$Found.Groups[2].Value; $left -gt 0) { $at = $at.AddDays($step); if ('Saturday', 'Sunday' -notcontains $at.DayOfWeek) { $left-- } }
             $at.ToString('yyyy-MM-dd')
         })
     [IO.File]::WriteAllText($given[1], $text)

@@ -64,6 +64,32 @@ Test 'every routine is a folder that an agent loads as a skill: its SKILL.md ope
     }
 }
 
+Test 'the default settings give the briefing a target length of 30 minutes, and the workspace rules say so' {
+    Assert-Equal 30 (Read-Json (Join-Path $Template 'settings.json')).briefing_minutes 'length of the briefing'
+    Assert-Match (Get-Content -LiteralPath (Join-Path $Template 'AGENTS.md') -Raw -Encoding UTF8) '`briefing_minutes`: ' 'the setting in the workspace rules'
+}
+
+Test 'the workspace rules keep the open questions list in the state, as a fallback that every routine asks at the right moment, not a queue' {
+    $rules = Get-Content -LiteralPath (Join-Path $Template 'AGENTS.md') -Raw -Encoding UTF8
+
+    Assert-Match $rules 'state/questions\.json' 'where the list is'
+    Assert-Match $rules '"questions": \[ \{ "about": "[^"]+", "question": "[^"]+", "recommended": "[^"]+", "added": "\d{4}-\d\d-\d\d" \}' 'what a question holds'
+    Assert-Match $rules 'An answered question leaves the list' 'an answered question'
+    Assert-Match $rules 'a fallback, not a queue' 'the list is a fallback'
+    Assert-Match $rules 'two questions at most' 'a meeting that has ended'
+}
+
+Test 'the morning routine offers the briefing and writes its style itself: the words listed once, rounds of numbered questions each with a recommended answer, one proposal' {
+    $routine = Get-Content -LiteralPath (Join-Path $KitRoot 'routines\morning\SKILL.md') -Raw -Encoding UTF8
+
+    Assert-Match $routine '`briefing_minutes`' 'the target length'
+    Assert-Match $routine 'ok or next, more, skip, later, stop' 'the words, in one line'
+    Assert-Match $routine ([regex]::Escape([char]0x2753 + ' Q1 - ')) 'a numbered question'
+    Assert-Match $routine ([regex]::Escape([char]0x27A1 + [char]0xFE0F + ' ')) 'its recommended answer'
+    Assert-Match $routine '`2: \.\.\.`' 'one answer by its number'
+    Assert-True ($routine -notmatch '(?i)grill') 'the style refers to a skill of another machine'
+}
+
 Test 'the workspace rules say how the settings list the gates, the objectives and the client banks' {
     $rules = Get-Content -LiteralPath (Join-Path $Template 'AGENTS.md') -Raw -Encoding UTF8
 

@@ -9,6 +9,7 @@ This folder is the workspace of a Product Owner (PO): one register of the PO's s
 3. **Every outward action is the PO's.** You send nothing and modify nothing in any source: mail, the tracker, chat and the calendar are read-only. You never create, change or cancel a calendar event, nor send an invitation. A mail draft is the only thing you write outside this workspace.
 4. **Notes about a person's performance or career stay out of this workspace.**
 5. **What a person stated is `reported`; what you read into their motives is `hypothesis`.** Set the evidence level of the record accordingly.
+6. **A question you cannot settle goes to your open questions, and you ask it at the right moment.** Whatever routine you follow, see "Your open questions" below.
 
 ## The register tool
 
@@ -21,7 +22,7 @@ Written with a forward slash, the command runs the same in every shell.
 - `preview` shows the pending proposal as a numbered table and writes nothing.
 - `apply` validates the pending proposal again, writes it to the register, settles its collect and regenerates the portfolio view, `views/portfolio.md`. `apply 1 3` keeps lines 1 and 3 of the preview and drops the others. `apply none` drops every line. `apply plain` records the plain facts only: the lines that wait for the PO stay pending, and it shows them.
 - `morning` writes the morning page, `views/morning.html`, from the register, the calendar snapshot and your notes for it, replacing the last one, and prints the counts of each of its blocks; then, when a day ahead does not fit, the one way out it proposes; then each task to start today, and each reminder and nudge to offer the PO. The PO opens it in a browser.
-- `brief` prints the brief of a meeting of the calendar snapshot: `brief 14:00` for today's, `brief 2026-03-04 14:00` for another day's, `brief` alone for every meeting of today. It lists the subjects the meeting concerns, their open commitments, the decisions awaited and your notes on it. It writes nothing.
+- `brief` prints the brief of a meeting of the calendar snapshot: `brief 14:00` for today's, `brief 2026-03-04 14:00` for another day's, `brief` alone for every meeting of today, `brief 2026-03-03` for every meeting of that day. It lists the subjects the meeting concerns, their open commitments, the decisions awaited and your notes on it. It writes nothing.
 - `check` verifies the whole register and what has gone stale, and writes the check report, `views/check-report.md`. It fails on an error, not on a warning. `apply` runs it after every write and prints its summary, `Check: 0 error(s), 2 warning(s).`: when it counts anything, read the check report and tell the PO what it lists.
 
 A refused proposal lists its reasons and writes nothing: correct the proposal and preview again.
@@ -43,6 +44,8 @@ When the PO names a gate, an objective, a client bank or a kind of task that is 
 `working_hours`: the PO's working hours, as `[{ "from": "10:00", "to": "12:00" }, { "from": "14:00", "to": "18:00" }]`. The morning page counts the free time for work within them.
 
 `start_soon`: as `{ "margin": 1, "lead": 2 }`, in working days. The latest start of a commitment the PO owns is its due date minus its adjusted effort, in working days, minus the margin; the morning page lists it under "Start soon" once its latest start falls within the lead. Its workload view sets the work of the PO's open commitments against the free time of the next ten working days: the working hours less the accepted meetings and half the tentative ones, none on a day of absence, times the share of it really usable for tasks. That share starts at 70%; the register tool learns it from the real efforts of the PO's done tasks and the free time it keeps of each morning, in `state/free-time.json`, which is its own. A commitment the PO says is optional carries `"optional": true`: the page may then propose to drop or hand it over when a day does not fit.
+
+`briefing_minutes`: as `30`, the length the morning briefing aims at. When it holds more questions than fit, the most important are asked and the rest wait for the next one.
 
 `validation_mode` says what a collect records without asking the PO: `all`, nothing; `interpreted`, the plain facts, while the interpreted lines wait for the PO.
 
@@ -69,8 +72,8 @@ The calendar is no source of the collect: the morning routine reads it, never wr
 
     {
       "read_at": "2026-03-02T07:05:00+01:00",
-      "from": "2026-03-02",
-      "to": "2026-03-13",
+      "from": "2026-02-27",
+      "to": "2026-03-16",
       "meetings": [
         { "start": "2026-03-02T14:00:00+01:00", "end": "2026-03-02T14:45:00+01:00", "title": "Credit memo pilot check-in",
           "attendees": ["the credit risk lead of Harbour Bank", "the tech lead"], "status": "accepted" }
@@ -79,7 +82,7 @@ The calendar is no source of the collect: the morning routine reads it, never wr
     }
 
 - `read_at`: when the calendar was read, with its UTC offset. A snapshot read on an earlier day counts as not read.
-- `from` and `to`: the days read, today and the next ten working days, Monday to Friday.
+- `from` and `to`: the days read, Monday to Friday: the working day before today, for the outcome of yesterday's meetings, then today and the next ten working days.
 - `meetings`: every event of those days with a start and an end time, the PO's declined ones left out. `start` and `end` carry their UTC offset; `attendees` names each person as the calendar shows them; `status` is `accepted` or `tentative`.
 - `absences`: one entry per day that an all-day event marks as the PO's absence (leave, a public holiday, a day off), with its date and its title.
 
@@ -111,3 +114,24 @@ The parts of the morning page that need judgement are yours, in `state/morning.j
 - `backlog`: the tickets of the watched projects that contradict a recorded decision, with that decision; those not ready for the next refinement; and the stale ones, each with why.
 
 Cite a record as a view does, `[identifier]`. The register tool checks every record the file cites, and every `record`, `decision` and key of `lacks` and `progress`, as `verify` does: when one is missing or superseded, it leaves the whole file off the page, which says so.
+
+## Your open questions
+
+What you need from the PO and could not settle is in `state/questions.json`, your open questions, written as UTF-8 without a byte order mark. You keep it whatever routine you follow, and you rewrite it whole each time:
+
+    { "last_briefing": "2026-03-02",
+      "meetings_asked": [ { "start": "2026-03-02T14:00:00+01:00", "title": "Credit memo pilot check-in" } ],
+      "questions": [ { "about": "C-2026-004", "question": "Who writes the security file?", "recommended": "The architect: record them as its owner.", "added": "2026-03-02" } ] }
+
+- `questions`: each question you could not settle and the PO has not answered: `about`, the identifier of the record or subject it concerns (left out when it concerns none, as an unclassified item); `question`, one sentence; `recommended`, the answer you recommend, in words the PO can accept with "ok"; `added`, the day you added it. Add `"drop_asked": true` once you have asked whether to drop it.
+- `last_briefing`: the day of the last morning briefing.
+- `meetings_asked`: the meetings of the calendar snapshot whose outcome you have asked, by their `start` and `title`, so that you ask it once. Keep those of the last five working days.
+
+Any routine adds a question it cannot settle, with the record or subject it concerns and its recommended answer, before it ends: a line the notes leave unclear, a real effort it cannot infer, an answer the PO did not give. An answered question leaves the list: you take it out once its answer is applied, or once the PO says it no longer matters. The register tool checks the list as it checks your notes: a question about a record missing or superseded, or one without its question, its recommended answer or its date added, leaves the whole list off the morning page, which says so. The morning page counts the open questions under "To sort", each with its age, and `morning` prints them for the briefing.
+
+The list is a fallback, not a queue: a question is asked when its moment comes, not kept for the briefing.
+
+- **When the PO talks with you about a subject**, whatever they ask, ask at once that subject's open questions: those about the subject or about one of its records. Each with its recommended answer, numbered as in the briefing.
+- **When the PO starts you after a meeting of today's calendar snapshot has ended**, a meeting that concerns a subject (`brief` names one) and is not in `meetings_asked`, do first what the PO asked, then ask what the meeting changed: two questions at most, each with its recommended answer, from what `brief` lists for it. Add the meeting to `meetings_asked`.
+
+An answer to a question outside the briefing is a proposal, previewed and applied as any other. A question the PO leaves unanswered stays in the list, or goes into it.

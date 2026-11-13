@@ -1,0 +1,2 @@
+{ "last_briefing": "{today}",
+  "questions": [ { "about": "mobile-onboarding", "question": "Who writes the security file of the onboarding pilot?", "recommended": "The architect.", "added": "{today}" } ] }

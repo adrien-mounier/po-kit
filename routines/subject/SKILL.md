@@ -19,7 +19,9 @@ For each subject the PO names, one of three:
 
 To modify or close, find the record. Each file under `register/subjects/` is one subject, and its name without `.json` is the identifier. When what the PO said fits no subject, or more than one, ask which one.
 
-Done when each change names a new title or the identifier of one existing subject.
+**Its open questions.** For a subject the register holds, read your open questions in `state/questions.json`: those about the subject or one of its records are asked in your next answer, numbered, each with its recommended answer, as `AGENTS.md` says. An answer the PO gives to one joins the proposal; one left unanswered stays in the list.
+
+Done when each change names a new title or the identifier of one existing subject, and its open questions are asked.
 
 ## 2. Get every answer from the PO
 

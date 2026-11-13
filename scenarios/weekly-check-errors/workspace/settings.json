@@ -13,6 +13,7 @@
   "per_source_cap": 50,
   "working_hours": [{ "from": "09:00", "to": "18:00" }],
   "start_soon": { "margin": 1, "lead": 2 },
+  "briefing_minutes": 30,
   "gates": ["architecture review"],
   "objectives": [
     { "number": 1, "title": "Halve the time a retail customer needs to open an account" },

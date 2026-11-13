@@ -27,8 +27,9 @@
 #   messages   Messages awaiting your reply: those the agent found in mail and chat
 #   backlog    Backlog alerts: the tickets the agent found contradicting a decision, in red, then
 #              those not ready for the next refinement and the stale ones, folded
-#   sort       To sort: the pending proposal, the unclassified items and the stale subjects, as one
-#              count line that opens in place
+#   sort       To sort: the pending proposal, the unclassified items, the stale subjects and the
+#              agent's open questions of state\questions.json, each with its age in working days,
+#              as one count line that opens in place
 # The agent's file is verified as verify checks a view: one that cites a record missing or
 # superseded is left off whole, and the blocks it feeds say they could not be written. An item has
 # its button once, in its highest block; a lower block shows its line with a pointer to it.
@@ -45,8 +46,8 @@
 # may be missing from the register.
 #
 # It prints where the page is, then the heading of each block with its counts, one per line, then
-# the way out of a day that does not fit, each task to start today, and each reminder and nudge to
-# offer the PO.
+# the way out of a day that does not fit, each task to start today, each reminder and nudge to
+# offer the PO, and each open question with its age, for the briefing.
 
 # The stamp of the page names a committed register.
 Assert-RegisterCommitted
@@ -189,6 +190,8 @@ if ($calendar -and -not "$($calendar.read_at)".StartsWith($Today)) { $calendar =
 # The agent's file, state\morning.json: nothing when there is none or it is refused.
 $notes = Read-MorningNotes
 $items = $notes.items
+# The agent's open questions, state\questions.json: none when there is none or it is refused.
+$asked = Read-OpenQuestions
 # A commitment of the PO enters Start soon when its latest start falls within the lead; one owed
 # to the PO is nudged when it is due within three working days.
 $leadBy = Add-WorkingDays $Today (Get-StartSoon).lead
@@ -774,8 +777,16 @@ function Get-SortBlock {
     foreach ($subject in $stale) {
         $rows += New-Row '' "<b>$(Html ($said.stale_days -f (Get-DaysSince $subject.updated)))</b>" $subject.title ($said.stale -f (Format-Day $subject.updated)) (Html $subject.id) $said.open ($said.ask_open -f $subject.id)
     }
-    $total = $(if (Test-Path -LiteralPath $ProposalPath) { 1 } else { 0 }) + $items.Count + $stale.Count
-    $count = if ($total) { "${total}: " + (Format-Count $counts @()) } else { Format-Count @() @() }
+    # The agent's open questions, the oldest first, each with its age in working days.
+    $questions = @($asked.questions | Sort-Object { "$($_.added)" })
+    if ($questions) { $counts += Html ($said.count_questions -f $questions.Count) }
+    if ($asked.problems) { $counts += "<span class=`"late`">$(Icon alert) $(Html $said.questions_refused)</span>" }
+    foreach ($question in $questions) {
+        $age = Get-WorkingDaysSince $question.added
+        $rows += New-Row '' "<b>$(Html $(if ($age) { $said.question_days -f $age } else { $said.question_new }))</b>" $question.question ($said.recommended -f (Format-Value $question.recommended)) (Html $question.about) $said.answer ($said.ask_answer -f (Format-Value $question.question))
+    }
+    $total = $(if (Test-Path -LiteralPath $ProposalPath) { 1 } else { 0 }) + $items.Count + $stale.Count + $questions.Count
+    $count = if ($total) { "${total}: " + (Format-Count $counts @()) } else { Format-Count $counts @() }
     if (-not $rows) { return Format-Block 'sort' $said.heading $count @() }
     # One count line that opens in place.
     "<section class=`"block`" id=`"sort`" aria-labelledby=`"h-sort`">"
@@ -838,4 +849,13 @@ foreach ($heading in [regex]::Matches(($blocks -join $newLine), '<h2 id="h-[a-z]
 if ($script:WayOut) { $script:WayOut }
 foreach ($task in $StartToday) { "Start today: $(Format-Value $task.title) [$($task.id)]" }
 $Offers
+# Each open question for the briefing, the oldest first, with its age; once open five working days,
+# and until the agent has asked it, with the request to ask once whether to drop it.
+foreach ($question in @($asked.questions | Sort-Object { "$($_.added)" })) {
+    $age = Get-WorkingDaysSince $question.added
+    $on = if ("$($question.about)".Trim()) { " on [$("$($question.about)".Trim())]" }
+    $drop = if ($age -ge 5 -and $question.drop_asked -ne $true) { ' Ask once whether to drop it.' }
+    "Open question$on, $(if ($age) { "open $age working day(s)" } else { 'new today' }): $(Format-Value $question.question) Recommended: $(Format-Value $question.recommended)$drop"
+}
+if ($asked.problems) { @('Not verified: state\questions.json. Your open questions are left off the page; correct them, then run morning again.') + @($asked.problems | ForEach-Object { "- $_" }) }
 if ($notes.problems) { @('Not verified: state\morning.json. Your notes are left off the page; correct them, then run morning again.') + @($notes.problems | ForEach-Object { "- $_" }) }

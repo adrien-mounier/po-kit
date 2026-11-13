@@ -1,0 +1,8 @@
+Title: Onboarding pilot review
+Start: {workday-1}T10:00:00+01:00
+End: {workday-1}T11:00:00+01:00
+Organizer: the PO
+Attendees: the sponsor; the tech lead
+Your response: accepted
+
+The sponsor is to choose the pilot branches of the onboarding pilot: the tech lead proposes Harbour Street and Market Square. The tech lead confirms when the onboarding screens are delivered.

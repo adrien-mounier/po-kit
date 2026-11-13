@@ -1,0 +1,10 @@
+{
+  "routine": "morning",
+  "prompt": "Morning. Then yes, let us do the briefing now. To your question on who writes the security file: later. Ok to every other recommendation. I say yes to the preview: apply it without asking me again.",
+  "expect": [
+    { "file": "../agent-output.txt", "line": "security file" },
+    { "file": "state/questions.json", "line": "security file" },
+    { "printed": "morning -Today {workday+1}", "line": "security file" },
+    { "printed": "morning -Today {workday+1}", "line": ", open 1 working day(s): " }
+  ]
+}

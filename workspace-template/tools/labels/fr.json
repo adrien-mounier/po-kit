@@ -251,7 +251,14 @@
       "stale_days": "{0} jours",
       "stale": "sujet sans mise à jour depuis le {0}",
       "open": "Ce qui reste ouvert",
-      "ask_open": "Montre ce qui reste ouvert sur {0}"
+      "ask_open": "Montre ce qui reste ouvert sur {0}",
+      "count_questions": "{0} question(s) ouverte(s)",
+      "questions_refused": "les questions ouvertes n'ont pas pu être lues",
+      "question_new": "Nouvelle",
+      "question_days": "{0} jour(s) ouvré(s)",
+      "recommended": "réponse recommandée : {0}",
+      "answer": "Répondre",
+      "ask_answer": "Pose-moi ta question ouverte : {0}"
     },
     "footer": "Cette page ne modifie rien. Chaque bouton copie une demande ; collez-la dans la conversation avec l'agent.",
     "script": {

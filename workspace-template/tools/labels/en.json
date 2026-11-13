@@ -251,7 +251,14 @@
       "stale_days": "{0} days",
       "stale": "stale subject: no update since {0}",
       "open": "What's open",
-      "ask_open": "Show what is still open on {0}"
+      "ask_open": "Show what is still open on {0}",
+      "count_questions": "{0} open question(s)",
+      "questions_refused": "open questions could not be read",
+      "question_new": "New",
+      "question_days": "{0} working day(s)",
+      "recommended": "recommended: {0}",
+      "answer": "Answer",
+      "ask_answer": "Ask me your open question: {0}"
     },
     "footer": "This page changes nothing. Each button copies a request; paste it into the agent's chat.",
     "script": {

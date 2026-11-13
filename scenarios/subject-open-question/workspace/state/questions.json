@@ -1,0 +1,3 @@
+{ "questions": [
+    { "about": "mobile-onboarding", "question": "Is the selfie check still in the scope of the onboarding pilot?", "recommended": "Yes: keep it in scope.", "added": "{workday-2}" },
+    { "about": "payments-api-contribution", "question": "Does the payments API need card tokens?", "recommended": "No: card tokens stay out.", "added": "{workday-2}" } ] }

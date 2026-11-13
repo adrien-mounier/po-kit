@@ -386,6 +386,56 @@ Test 'the scenario "morning backlog" passes when the ticket still open for the p
     Assert-Match $run.Output '  FAIL  file views/morning\.html has lines containing' 'no contradiction'
     Assert-Equal 1 $run.ExitCode 'exit code when no contradiction is found'
 }
+
+Test 'the scenario "morning briefing" passes when the outcome of yesterday''s meeting is asked, its recommended answer and the PO''s corrected one are both applied and the page is written again, and fails when the briefing records nothing' {
+    $due = @(1..9 | ForEach-Object { (Get-Date).Date.AddDays($_) } | Where-Object { 'Saturday', 'Sunday' -notcontains $_.DayOfWeek })[2].ToString('yyyy-MM-dd')
+    New-Item -ItemType Directory -Path $TestRoot -Force | Out-Null
+    $answers = Join-Path $TestRoot 'briefing.proposal.json'
+    $source = @{ where = 'the PO, at the morning briefing'; read_on = $Day }
+    Write-Json $answers @{ operations = @(
+            @{ op = 'update'; id = "D-$Year-001"; interpreted = $false; source = $source; fields = @{ status = 'taken'; decided_by = 'the sponsor' } },
+            @{ op = 'update'; id = "C-$Year-002"; interpreted = $false; source = $source; fields = @{ due_date = $due } }
+        )
+    }
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Questions `"$Fixtures\briefing-questions.json`" -Proposal `"$answers`" -Morning" morning-briefing
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    record D-$Year-001: status is `"taken`"" 'the recommended answer'
+    Assert-Match $run.Output "  ok    record C-$Year-002: due_date is `"$due`"" 'the corrected answer'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning" morning-briefing
+
+    Assert-Match $run.Output "  FAIL  record D-$Year-001: status is `"taken`"" 'nothing recorded'
+    Assert-Match $run.Output "  FAIL  file views/morning\.html has no line containing `"D-$Year-001`"" 'the page still awaits the decision'
+    Assert-Equal 1 $run.ExitCode 'exit code when the briefing records nothing'
+}
+
+Test 'the scenario "morning briefing later" passes when the question of the collect is asked and, put off, is still listed the next day with its age, and fails when it leaves the list' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Questions `"$Fixtures\later-questions.json`" -Morning -Say `"Who writes the security file?`"" morning-briefing-later
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    what the register tool prints for morning -Today \S+ has a line containing ", open 1 working day\(s\): "' 'the age the next day'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning -Say `"Who writes the security file?`"" morning-briefing-later
+
+    Assert-Match $run.Output '  FAIL  file state/questions\.json has a line containing "security file"' 'the question left the list'
+    Assert-Equal 1 $run.ExitCode 'exit code when the question left the list'
+}
+
+Test 'the scenario "subject open question" passes when the agent asks the open question of the subject the PO talks about, and fails when it asks that of another subject' {
+    New-Item -ItemType Directory -Path $TestRoot -Force | Out-Null
+    $change = Join-Path $TestRoot 'next-step.proposal.json'
+    Write-Json $change @{ operations = @(@{ op = 'update'; id = 'mobile-onboarding'; interpreted = $false; source = @{ where = 'conversation with the PO'; read_on = $Day }; fields = @{ next_step = 'Run the pilot in two branches' } }) }
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Proposal `"$change`" -Say `"Is the selfie check still in the scope of the onboarding pilot? Recommended: yes.`"" subject-open-question
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Proposal `"$change`" -Say `"Is the selfie check in scope? And does the payments API need card tokens?`"" subject-open-question
+
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "card tokens"' 'the question of another subject'
+    Assert-Equal 1 $run.ExitCode 'exit code when the agent asks the question of another subject'
+}
 Test 'the scenario "collect and drop a line" passes when the line kept is recorded alone and the note is filed, and fails when the line dropped is recorded too' {
     $note = 'pilot-preparation.md'
     $kept = New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }
@@ -927,12 +977,14 @@ Test 'without the command that starts the agent, the runner explains itself and 
     Assert-True ($run.Output -notmatch 'subject-create') "a scenario was run: $($run.Output)"
 }
 
-Test 'in the files a scenario lays over the workspace, {today}, {month} and {year} stand for those of the day of the run, and {workday+N} for the Nth working day after it, as in scenario.json' {
+Test 'in the files a scenario lays over the workspace, {today}, {month} and {year} stand for those of the day of the run, {workday+N} for the Nth working day after it and {workday-N} before it, as in scenario.json' {
     $run = Invoke-Scenarios -Agent $FakeAgent (Join-Path $Fixtures 'scenarios\dated-workspace')
 
     Assert-Match $run.Output "  ok    file exports/calendar/stand-up\.txt has a line containing `"Start: ${Day}T09:30:00\+01:00`"" 'the date of the run in a file of the scenario'
     $weekdays = @(1..7 | ForEach-Object { (Get-Date).Date.AddDays($_) } | Where-Object { 'Saturday', 'Sunday' -notcontains $_.DayOfWeek })
     Assert-Match $run.Output "  ok    file exports/calendar/stand-up\.txt has a line containing `"Due: $($weekdays[2].ToString('yyyy-MM-dd'))`"" 'the third working day after the run in a file of the scenario'
+    $before = @(1..7 | ForEach-Object { (Get-Date).Date.AddDays(-$_) } | Where-Object { 'Saturday', 'Sunday' -notcontains $_.DayOfWeek })[0]
+    Assert-Match $run.Output "  ok    file exports/calendar/stand-up\.txt has a line containing `"Before: $($before.ToString('yyyy-MM-dd'))`"" 'the working day before the run in a file of the scenario'
 }
 
 Test 'the Example Bank settings carry every setting of the template, so the register tool reads them as it reads any workspace; so do the settings a scenario lays over them' {
