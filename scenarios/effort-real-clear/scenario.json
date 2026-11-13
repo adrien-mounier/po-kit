@@ -16,6 +16,6 @@
     { "file": "state/proposal.json", "field": "operations[0].fields.status", "is": "done" },
     { "file": "state/proposal.json", "field": "operations[0].fields.real_effort", "is": 3 },
     { "file": "views/morning.html" },
-    { "file": "../agent-output.txt", "line": "how many days", "absent": true }
+    { "file": "../agent-output.txt", "line": "My guess", "absent": true }
   ]
 }

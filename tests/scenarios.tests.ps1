@@ -279,7 +279,7 @@ Test 'the scenario "a clear real effort" passes when the done update carries the
 
     $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($done) -Do '-Plain -Morning -Say "Real effort of C-2026-002: how many days did it take you? My guess: 2 d."') effort-real-clear
 
-    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "how many days"' 'the question asked all the same'
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "My guess"' 'the question asked all the same'
     Assert-Equal 1 $run.ExitCode 'exit code when the agent asks'
 }
 
@@ -290,11 +290,11 @@ Test 'the scenario "an unclear real effort" passes when the done update leaves t
     $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($done) -Do "-Plain -Morning -Say `"Real effort of C-$Year-002, Prepare the March steering pack: how many days did it take you? My guess: 2 d.`"") effort-real-unclear
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    Assert-Match $run.Output "  ok    file \.\./agent-output\.txt has a line containing `"Real effort of C-$Year-002`"" 'the question'
+    Assert-Match $run.Output "  ok    file \.\./agent-output\.txt has a line containing `"My guess`"" 'the question'
 
     $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($done) -Do '-Plain -Morning') effort-real-unclear
 
-    Assert-Match $run.Output "  FAIL  file \.\./agent-output\.txt has a line containing `"Real effort of C-$Year-002`"" 'no question'
+    Assert-Match $run.Output "  FAIL  file \.\./agent-output\.txt has a line containing `"My guess`"" 'no question'
     Assert-Equal 1 $run.ExitCode 'exit code when the agent asks nothing'
 }
 

@@ -16,6 +16,6 @@
     { "file": "state/proposal.json", "field": "operations[0].fields.status", "is": "done" },
     { "file": "state/proposal.json", "field": "operations[0].fields.real_effort", "is": null },
     { "file": "views/morning.html" },
-    { "file": "../agent-output.txt", "line": "Real effort of C-{year}-002" }
+    { "file": "../agent-output.txt", "line": "My guess" }
   ]
 }
