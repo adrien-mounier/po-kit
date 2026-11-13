@@ -58,7 +58,7 @@ A source read has one entry in `sources_read`, even when it held nothing new:
 
     { "source": "mail", "cutoff": "2026-02-27T16:45:00+01:00", "items": 50, "cap_reached": true }
 
-- `items` is the number of mails, tickets or chat messages read.
+- `items` is the number of mails, tickets or chat messages kept in step 3 and treated as notes. A match you opened only to find it dated before the cutoff is not counted: when nothing is newer than the cutoff, `items` is 0.
 - `cutoff` is how far the source is read: the time of this collect. When the cap was reached, it is the date of the last item read, written as `collected_at` is, and the entry states `"cap_reached": true`.
 
 A source not covered has no entry there: `sources_not_covered` names it.
