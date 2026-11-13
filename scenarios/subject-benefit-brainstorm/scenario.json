@@ -1,0 +1,15 @@
+{
+  "routine": "subject",
+  "prompt": "Let us brainstorm the benefits of the subject Mobile onboarding: propose me your metrics. Of them, I pick only the time a customer takes to open an account, in minutes: today it is 40 minutes, which is the baseline, the target is 20 minutes, and the head of retail operations measures it. Record that one benefit and no other. I accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "record": "B-{year}-001", "field": "subject", "is": "mobile-onboarding" },
+    { "record": "B-{year}-001", "field": "unit", "is": "minutes" },
+    { "record": "B-{year}-001", "field": "baseline", "is": 40 },
+    { "record": "B-{year}-001", "field": "target", "is": 20 },
+    { "record": "B-{year}-001", "field": "owner", "is": "the head of retail operations" },
+    { "record": "B-{year}-001", "field": "status", "is": "open" },
+    { "records": "benefits", "count": 1 },
+    { "file": "views/portfolio.md", "line": "Mobile onboarding [mobile-onboarding], 1 benefit(s)" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

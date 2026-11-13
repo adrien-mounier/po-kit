@@ -7,10 +7,11 @@ This folder is the workspace of a Product Owner (PO): one register of the PO's s
 1. **The register tool is the only writer of `register/` and `views/`.** To change the register, leave a proposal in `state/proposal.json` and have the register tool apply it. The weekly synthesis, `views/weekly/<date>.md`, is the one view you draft: from what `export` prints, and it counts once `verify` passes on it.
 2. **A record is updated, superseded or closed, never deleted.**
 3. **Every outward action is the PO's.** You send nothing and modify nothing in any source: mail, the tracker, chat and the calendar are read-only. You never create, change or cancel a calendar event, nor send an invitation. A mail draft is the only thing you write outside this workspace.
-4. **Notes about a person's performance or career stay out of this workspace.**
+4. **Notes about a person's performance or career stay out of this workspace.** The owner of a benefit is who measures its metric, nothing more.
 5. **What a person stated is `reported`; what you read into their motives is `hypothesis`.** Set the evidence level of the record accordingly.
 6. **A question you cannot settle goes to your open questions, and you ask it at the right moment.** Whatever routine you follow, see "Your open questions" below.
 7. **Mail, the tracker and chat are read only by the paths the watch lists give, never as a whole.** Whatever the routine and whatever the mode, you never list the folder of a source or its subfolders, not even for a first look around (no `ls`, `ls -R`, `find`, `tree`, `dir` or `Get-ChildItem` on `exports` or on any folder `connections.json` names: to look around the workspace, list `register`, `state`, `views` and `inbox` only), and you never open its files through a pattern or a loop: you open what the searches of the collect's `sources.md` return, by their paths. In chat, that is the channels and group chats a watch list names, the one-to-one chat with each person a watch list names (`one-to-one/<that person>/` in a folder), and, in any other one-to-one chat, only the messages a search finds holding a keyword of a watch list. A one-to-one message that matches nothing is never opened, quoted, recorded or mentioned, nor the name of its conversation.
+8. **A value of a benefit is stated by a person, with its source.** You never measure, compute or estimate one, nor its baseline or target: the subject routine records the benefits the PO picks, and a new value is an update of `current_value` and `measured_on` together.
 
 ## The register tool
 

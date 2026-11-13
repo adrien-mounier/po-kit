@@ -136,7 +136,7 @@ function Format-Timestamp([DateTimeOffset]$Moment) {
 # tools\definitions holds one data file per record type, plus common.json for the fields every
 # record carries. A field is defined by:
 #   type          text, date, timestamp, boolean, integer, list or object; any for a value of any kind;
-#                 days for an effort: a number of days above zero, as 1.5
+#                 days for an effort: a number of days above zero, as 1.5; number for any number
 #   required      true when a record must hold it: a proposal gives it, unless the register tool sets it
 #   allowed       the values accepted
 #   allowed_from  the list in settings.json that holds the values accepted: its name, or
@@ -155,7 +155,7 @@ function Format-Timestamp([DateTimeOffset]$Moment) {
 
 $KindsOfValue = @{
     text = 'text'; date = 'an ISO date (yyyy-mm-dd)'; boolean = 'true or false'; integer = 'a whole number'
-    list = 'a list'; object = 'a group of fields'; days = 'a number of days above zero (as 1.5)'
+    list = 'a list'; object = 'a group of fields'; days = 'a number of days above zero (as 1.5)'; number = 'a number (as 40 or 4.5)'
     timestamp = 'a date and time with its UTC offset (as 2026-03-02T08:30:00+01:00)'
 }
 
@@ -193,6 +193,7 @@ function Test-Value($Definition, $Value, [string]$Name, [switch]$Partial, [switc
         'integer' { $Value -is [int] -or $Value -is [long] }
         # A number in JSON reads as a whole number, a decimal or, written with an exponent, a double.
         'days' { ($Value -is [int] -or $Value -is [long] -or $Value -is [decimal] -or $Value -is [double]) -and $Value -gt 0 }
+        'number' { $Value -is [int] -or $Value -is [long] -or $Value -is [decimal] -or $Value -is [double] }
         'list' { $Value -is [array] }
         'object' { $Value -is [System.Management.Automation.PSCustomObject] }
         'any' { $true }
@@ -431,6 +432,10 @@ function Test-Update($Operation, [hashtable]$Superseded, [int]$Line, $Operations
             }
             Test-StatusProposed $found.type $fields
             if ($fields.PSObject.Properties['supersedes']) { "field 'supersedes' is given when a record is created: an update cannot change it" }
+            # A new value of a benefit is dated: the date it held before is that of another value.
+            if ($found.type -eq 'benefit' -and $fields.PSObject.Properties['current_value'] -and -not $fields.PSObject.Properties['measured_on']) {
+                "a new 'current_value' is given with its 'measured_on', the date it was measured"
+            }
         }
     )
     $problems
@@ -745,8 +750,14 @@ function Get-PortfolioHorizons($Labels, [string]$Bank) {
     # client bank, only the subjects that name it or name no bank.
     $portfolio = $Labels.portfolio
     # In the order of their identifiers.
-    $subjects = @(Get-RecordFiles | Where-Object { $_.type -eq 'subject' } | ForEach-Object { Read-JsonFile $_.path } |
+    $files = @(Get-RecordFiles)
+    $subjects = @($files | Where-Object { $_.type -eq 'subject' } | ForEach-Object { Read-JsonFile $_.path } |
             Where-Object { $_.status -ceq 'active' -and (-not $Bank -or -not $_.banks -or $_.banks -ccontains $Bank) })
+    # The benefits in play of each subject, open or achieved, follow its title when it has any.
+    $benefits = @{}
+    foreach ($benefit in $files | Where-Object { $_.type -eq 'benefit' } | ForEach-Object { Read-JsonFile $_.path }) {
+        if ('open', 'achieved' -ccontains $benefit.status) { $benefits[$benefit.subject]++ }
+    }
     $lines = @()
     foreach ($horizon in 'now', 'next', 'later') {
         $lines += '', "## $($portfolio.horizons.$horizon)", ''
@@ -754,7 +765,7 @@ function Get-PortfolioHorizons($Labels, [string]$Bank) {
                 $clearance = Format-Clearance $subject $portfolio.clearances.($subject.clearance) $portfolio.cleared_by $portfolio.cleared_on
                 # A date that is not confirmed is not shown, so that the view never promises it.
                 # The banks of a subject follow its title; a subject that names none concerns everyone.
-                $cells = "$($subject.title) [$($subject.id)]$(if ($subject.banks) { " ($(Format-Value $subject.banks))" })", $portfolio.kinds.($subject.kind), $clearance,
+                $cells = "$($subject.title) [$($subject.id)]$(if ($subject.banks) { " ($(Format-Value $subject.banks))" })$(if ($benefits[$subject.id]) { ', ' + ($portfolio.benefits -f $benefits[$subject.id]) })", $portfolio.kinds.($subject.kind), $clearance,
                     $(if ($subject.next_date_confirmed) { "$($subject.next_date)" } else { '' }), "$($subject.next_step)"
                 , @($cells | ForEach-Object { ($_ -replace '\s*\r?\n\s*', ' ').Replace('|', '\|') })
             })
@@ -939,9 +950,9 @@ function Get-MeetingBrief($Meeting, $Records, $Notes) {
 
 $CheckRules = @{
     error   = 'unreadable_record', 'unknown_field_or_value', 'missing_required_field', 'identifier_differs_from_file_name', 'reference_to_missing_record',
-        'cleared_without_name_and_date', 'missing_gate_not_out_of_frame', 'taken_decision_without_author', 'effort_of_another_person'
+        'cleared_without_name_and_date', 'missing_gate_not_out_of_frame', 'taken_decision_without_author', 'effort_of_another_person', 'value_without_date'
     warning = 'commitment_without_owner', 'commitment_without_due_date', 'commitment_overdue', 'decision_past_its_date', 'subject_stale',
-        'inbox_note_old', 'source_stale', 'unclassified_old'
+        'inbox_note_old', 'source_stale', 'unclassified_old', 'benefit_stale'
 }
 
 function Test-RecordRules([string]$Type, $Record) {
@@ -960,6 +971,10 @@ function Test-RecordRules([string]$Type, $Record) {
     }
     if ($Type -eq 'decision' -and $Record.status -ceq 'taken' -and -not "$($Record.decided_by)".Trim()) {
         @{ rule = 'taken_decision_without_author'; reason = "taken decision without its author: a taken decision gives 'decided_by'" }
+    }
+    # A value a person measured says when: a benefit's history then dates every value.
+    if ($Type -eq 'benefit' -and $null -ne $Record.current_value -and -not $Record.measured_on) {
+        @{ rule = 'value_without_date'; reason = "measured value without its date: a benefit that gives 'current_value' gives 'measured_on'" }
     }
     # No record measures another person: effort and start are the PO's own.
     if ($Type -eq 'commitment' -and -not (Test-IsPo $Record.owner) -and @('estimated_effort', 'real_effort', 'started_on' | Where-Object { "$($Record.$_)".Trim() })) {
@@ -1043,7 +1058,7 @@ function Get-CheckDelays {
     # The delay of each staleness rule, in days: three from the settings, and a week for the
     # unclassified items. A thing is stale when it is older than its delay, counted in whole days.
     $set = $Settings.delays_in_days
-    @{ subject_stale = $set.subject; inbox_note_old = $set.inbox_note; source_stale = $set.source; unclassified_old = 7 }
+    @{ subject_stale = $set.subject; inbox_note_old = $set.inbox_note; source_stale = $set.source; unclassified_old = 7; benefit_stale = $set.subject }
 }
 
 function Get-DaysSince([string]$Date) {
@@ -1057,6 +1072,8 @@ function Get-RecordFiles {
     # type, its path, its name from the workspace (file) and its identifier (id).
     foreach ($definition in Get-ChildItem (Join-Path $Tools 'definitions\*.json') -Exclude common.json) {
         $folder = Join-Path $Workspace (Read-JsonFile $definition.FullName).folder
+        # A workspace made before the kit shipped a type has no folder for it until its first record.
+        if (-not (Test-Path -LiteralPath $folder)) { continue }
         $paths = [string[]]@(Get-ChildItem -LiteralPath $folder -Recurse -File -Filter *.json | ForEach-Object { $_.FullName })
         $ids = [string[]]@($paths | ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })
         [Array]::Sort($ids, $paths, [StringComparer]::Ordinal)
@@ -1129,6 +1146,13 @@ function Get-CheckFindings($Labels) {
             $from = (Format-Value $record.needed_from).Trim()
             $said = @(if ($from) { $details.needed_from -f $from }) + ($details.needed_by -f $record.needed_by) -join ', '
             @{ rule = 'decision_past_its_date'; about = $about; detail = $said }
+        }
+        # An open benefit waits for a value a person measured: its last one, or one since it was recorded.
+        if ($file.type -eq 'benefit' -and $record.status -ceq 'open') {
+            $last = if ($record.measured_on) { $record.measured_on } else { $record.date_recorded }
+            if ((Get-DaysSince $last) -gt $delays.benefit_stale) {
+                @{ rule = 'benefit_stale'; about = $about; detail = $(if ($record.measured_on) { $details.measured } else { $details.never_measured }) -f $last }
+            }
         }
         if ($record.subject -and $record.date_updated -gt $touched[$record.subject]) { $touched[$record.subject] = $record.date_updated }
         if ($file.type -eq 'subject' -and $record.status -ceq 'active' -and $record.horizon -ceq 'now') {

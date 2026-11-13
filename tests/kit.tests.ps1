@@ -4,7 +4,7 @@ $Template = Join-Path $KitRoot 'workspace-template'
 
 Test 'the workspace template has the full layout, and a new workspace starts empty' {
     $ws = New-TestWorkspace
-    $folders = 'inbox\done', 'register\subjects', 'register\commitments', 'register\decisions', 'register\risks',
+    $folders = 'inbox\done', 'register\subjects', 'register\commitments', 'register\decisions', 'register\risks', 'register\benefits',
         'views\weekly', 'state', 'tools'
     $tracked = git -C $ws ls-files
     foreach ($folder in $folders) {

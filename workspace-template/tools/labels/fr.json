@@ -24,6 +24,7 @@
       "missing_gate_not_out_of_frame": "Sujet sous Maintenant avec un jalon obligatoire manquant et un feu vert autre que hors cadre",
       "taken_decision_without_author": "Décision prise sans son auteur",
       "effort_of_another_person": "Effort ou démarrage noté sur un engagement dont le PO n'est pas responsable",
+      "value_without_date": "Valeur mesurée sans sa date",
       "commitment_without_owner": "Engagement ouvert sans responsable",
       "commitment_without_due_date": "Engagement ouvert sans échéance",
       "commitment_overdue": "Engagement en retard",
@@ -31,7 +32,8 @@
       "subject_stale": "Sujet sous Maintenant sans mise à jour depuis plus de {0} jour(s)",
       "inbox_note_old": "Note déposée depuis plus de {0} jour(s)",
       "source_stale": "Source non lue depuis plus de {0} jour(s)",
-      "unclassified_old": "Éléments non classés depuis plus de {0} jour(s)"
+      "unclassified_old": "Éléments non classés depuis plus de {0} jour(s)",
+      "benefit_stale": "Bénéfice ouvert sans valeur mesurée depuis plus de {0} jour(s)"
     },
     "details": {
       "owner": "responsable : {0}",
@@ -41,7 +43,9 @@
       "updated": "dernière mise à jour : {0}",
       "dated": "datée du {0}",
       "read": "dernière lecture : {0}",
-      "never_read": "jamais lue"
+      "never_read": "jamais lue",
+      "measured": "dernière mesure : {0}",
+      "never_measured": "jamais mesuré, noté le {0}"
     }
   },
   "portfolio": {
@@ -56,7 +60,8 @@
     "kinds": { "product": "Produit", "contribution": "Contribution", "service": "Service" },
     "clearances": { "cleared": "Accordé", "pending": "En attente", "out of frame": "**Hors cadre**", "none": "Aucun" },
     "cleared_by": "par {0}",
-    "cleared_on": "le {0}"
+    "cleared_on": "le {0}",
+    "benefits": "{0} bénéfice(s)"
   },
   "effort": {
     "adjusted": "estim. {0} j, ajustée x{1} d'après les tâches passées « {2} » : {3} j",

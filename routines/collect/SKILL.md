@@ -1,6 +1,6 @@
 ---
 name: collect
-description: Turn the notes of the PO's inbox, any text the PO pastes, and the mail, tracker tickets and chat messages within the watch lists into a proposal of commitments, decisions, risks and subject updates, shown to the PO before anything is recorded. Use when the PO says "collect", has dropped notes in the inbox, or pastes notes to record.
+description: Turn the notes of the PO's inbox, any text the PO pastes, and the mail, tracker tickets and chat messages within the watch lists into a proposal of commitments, decisions, risks, subject updates and measured values of benefits, shown to the PO before anything is recorded. Use when the PO says "collect", has dropped notes in the inbox, or pastes notes to record.
 ---
 
 # Collect
@@ -36,7 +36,7 @@ Done when you have read every note of the inbox, and every source of `connection
 
 ## 3. Read what the register holds
 
-Run the register tool's `export` with today's date, as `export 2026-03-02`. It lists the active subjects, the open commitments, the pending decisions and the open risks: one line per record, its identifier in brackets.
+Run the register tool's `export` with today's date, as `export 2026-03-02`. It lists the active subjects, the open commitments, the pending decisions, the open risks and the benefits: one line per record, its identifier in brackets.
 
 The record of a subject is `register/subjects/<identifier>.json`. Read the record of each subject a note is about: it gives the next step and the gates that the note may change. A watch list tells which subject a note is about when the note does not name it.
 
@@ -55,6 +55,7 @@ Take each note from top to bottom: the operations follow the order in which the 
 | A change of a subject itself: its horizon, its clearance, a gate, its next step | update the subject |
 | A change of a commitment, a decision or a risk of the register: done, dropped, closed, a new due date | update that record |
 | A sign that the PO has started a commitment the PO owns: a ticket of it moved to in progress, a mail or a document the PO wrote about it | update that commitment: see "A start" below |
+| A value a person measured for the metric of a benefit of the register | update that benefit: see "A measured value" below |
 
 A person or a date that the note does not give is left out: an action without a due date is a commitment all the same, and the check will list it. What fits no row is not recorded.
 
@@ -108,6 +109,14 @@ In doubt, `true`.
 When no kind of `task_kinds` fits, leave `task_kind` out, and tell the PO the kind you would add: the PO adds it to the settings. Never propose an effort for what another person owes: the register tool refuses it.
 
 **A start.** A commitment of the PO that is open and not started, without `started` in the export, is started when a source within the watch lists shows it: a ticket of it moved to in progress, a mail or a document the PO wrote about it. Update it, `"interpreted": true`: `started_on` the date of the sign, `started_sign` the sign in a few words, as `ticket ONB-12 moved to in progress`. What the PO says overrides every sign: when the PO says they started, `started_on` is the day they say and `started_sign` is `the PO said so`; when the PO says they have not started, both are given as an empty text. A start the PO stated is never changed by a sign.
+
+**A measured value.** The export lists the benefits under `Benefits`, each with its metric, its unit and its latest value. When a note gives a value of one of these metrics, update that benefit with `current_value`, the number in the benefit's unit, and `measured_on`, the date it was measured, always together: the register tool refuses a value without its date. The update carries the note as its source, and the history keeps every value. It is a plain fact, `"interpreted": false`, when the note gives the value and its date in so many words; when you take the date of the meeting or of the note for it, or convert the unit, it is `true`. A value is what a person states: never compute or estimate one. A figure for a metric that no benefit holds becomes no benefit: tell the PO, who picks the benefits with the subject routine.
+
+```json
+{ "op": "update", "id": "B-2026-001", "interpreted": false,
+  "source": { "where": "inbox/pilot review.md", "read_on": "2026-03-10" },
+  "fields": { "current_value": 31, "measured_on": "2026-03-09" } }
+```
 
 **An optional task.** When the PO says that a commitment of theirs is optional, that it could be dropped or handed over, update it with `"optional": true`, plain fact, the PO as its source. Only the PO marks a task optional: never infer it.
 

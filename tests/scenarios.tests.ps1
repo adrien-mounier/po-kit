@@ -119,6 +119,59 @@ Test 'the scenario "collect an action" passes when the note becomes a commitment
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
 }
 
+function New-BenefitAgent([object[]]$Benefits) {
+    # The command of a fake agent that records these benefits of mobile-onboarding, each given as
+    # the fields that change from the one the PO picks in the brainstorm.
+    New-Item -ItemType Directory -Path $TestRoot -Force | Out-Null
+    $path = Join-Path $TestRoot ([Guid]::NewGuid().ToString('N').Substring(0, 8) + '.proposal.json')
+    Write-Json $path @{ operations = @($Benefits | ForEach-Object {
+                $fields = @{ title = 'Halve the time to open an account'; subject = 'mobile-onboarding'; metric = 'Time a customer takes to open an account'
+                    unit = 'minutes'; baseline = 40; target = 20; owner = 'the head of retail operations'; evidence_level = 'fact'
+                    source = @{ where = 'conversation with the PO'; read_on = $Day } }
+                foreach ($name in $_.Keys) { $fields[$name] = $_[$name] }
+                @{ op = 'create'; type = 'benefit'; interpreted = $false; fields = $fields }
+            })
+    }
+    "$FakeAgent -Proposal `"$path`""
+}
+
+Test 'the scenario "brainstorm the benefits" passes when the metric the PO picks is recorded on the subject with the baseline, the target and who measures it, as the portfolio view counts it, and fails when another metric is recorded too' {
+    $run = Invoke-Scenarios -Agent (New-BenefitAgent @(@{})) subject-benefit-brainstorm
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    foreach ($fact in 'subject is "mobile-onboarding"', 'unit is "minutes"', 'baseline is 40', 'target is 20', 'owner is "the head of retail operations"') {
+        Assert-Match $run.Output "  ok    record B-$Year-001: $fact" 'expected fact reported as passed'
+    }
+    Assert-Match $run.Output '  ok    file views/portfolio\.md has a line containing "Mobile onboarding \[mobile-onboarding\], 1 benefit\(s\)"' 'the portfolio view counts the benefit'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $run = Invoke-Scenarios -Agent (New-BenefitAgent @(@{}, @{ title = 'Fewer files sent back'; metric = 'Onboarding files sent back'; unit = 'files per week'; baseline = 30; target = 5 })) subject-benefit-brainstorm
+
+    Assert-Match $run.Output '  FAIL  register/benefits holds 1 record\(s\)' 'the metric the PO did not pick'
+    Assert-Equal 1 $run.ExitCode 'exit code when a metric the PO did not pick is recorded'
+}
+
+Test 'the scenario "collect a measured value" passes when the value the note gives becomes an update of the benefit with its date and the note as its source, and fails when it becomes a new benefit' {
+    $note = 'pilot review.md'
+    $update = New-UpdateOperation "B-$Year-001" @{ current_value = 31; measured_on = '2026-03-06' }
+    $update.source = @{ where = "inbox/$note"; read_on = $Day }
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($update)) collect-benefit-value
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    foreach ($fact in 'current_value is 31', 'measured_on is "2026-03-06"', 'history\[-1\]\.source\.where is "inbox/pilot review\.md"') {
+        Assert-Match $run.Output "  ok    record B-$Year-001: $fact" 'expected fact reported as passed'
+    }
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $created = @{ op = 'create'; type = 'benefit'; interpreted = $false; fields = @{ title = 'Time to open an account'; subject = 'mobile-onboarding'; metric = 'Time to open an account'
+            unit = 'minutes'; current_value = 31; measured_on = '2026-03-06'; evidence_level = 'reported'; source = @{ where = "inbox/$note"; read_on = $Day } }
+    }
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($created)) collect-benefit-value
+
+    Assert-Match $run.Output "  FAIL  record B-$Year-001: current_value is 31" 'the benefit left without its new value'
+    Assert-Equal 1 $run.ExitCode 'exit code when the value becomes a new benefit'
+}
+
 Test 'the scenario "collect a decision" passes when the decision supersedes the commitment to present, and the portfolio view stops announcing the presentation' {
     $note = 'call-with-the-sponsor.md'
     $agent = New-CollectAgent $note @(
