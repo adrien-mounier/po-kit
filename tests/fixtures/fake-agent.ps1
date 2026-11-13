@@ -37,13 +37,13 @@ if ($Proposal) {
 }
 foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'state\morning.json'), @($Questions, 'state\questions.json')) | Where-Object { $_[0] }) {
     $day = Get-Date
-    $text = [IO.File]::ReadAllText($given[0]).Replace('{today}', $day.ToString('yyyy-MM-dd')).Replace('{year}', $day.ToString('yyyy'))
+    $text = [IO.File]::ReadAllText($given[0]).Replace('{today}', $day.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)).Replace('{year}', $day.ToString('yyyy', [Globalization.CultureInfo]::InvariantCulture))
     $text = [regex]::Replace($text, '\{workday([+-])(\d+)\}', {
             param($Found)
             $at = (Get-Date).Date
             $step = if ($Found.Groups[1].Value -eq '-') { -1 } else { 1 }
             for ($left = [int]$Found.Groups[2].Value; $left -gt 0) { $at = $at.AddDays($step); if ('Saturday', 'Sunday' -notcontains $at.DayOfWeek) { $left-- } }
-            $at.ToString('yyyy-MM-dd')
+            $at.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
         })
     [IO.File]::WriteAllText($given[1], $text)
 }

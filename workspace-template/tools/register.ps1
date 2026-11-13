@@ -885,9 +885,7 @@ function Read-OpenQuestions {
 function Get-WorkingDaysSince([string]$Date) {
     # The working days, Monday to Friday, from a date to today: 0 on the day itself.
     $count = 0
-    for ($at = [DateTime]::ParseExact($Date, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture).AddDays(1); $at -le [DateTime]$Today; $at = $at.AddDays(1)) {
-        if ('Saturday', 'Sunday' -notcontains $at.DayOfWeek) { $count++ }
-    }
+    while ((Add-WorkingDays $Date ($count + 1)) -le $Today) { $count++ }
     $count
 }
 

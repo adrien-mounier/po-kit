@@ -391,9 +391,9 @@ function Get-UsableShare {
                 Where-Object { $_.status -ceq 'done' -and (Test-IsPo $_.owner) -and $_.started_on -and $_.real_effort -gt 0 })) {
         $done = @($commitment.history | Where-Object { $_.field -eq 'status' -and $_.new -ceq 'done' } | ForEach-Object { $_.date }) | Select-Object -Last 1
         if (-not $done) { continue }
-        $span = @(for ($at = [DateTime]::ParseExact($commitment.started_on, 'yyyy-MM-dd', $invariant); $at.ToString('yyyy-MM-dd', $invariant) -le $done; $at = $at.AddDays(1)) {
-                if ('Saturday', 'Sunday' -notcontains $at.DayOfWeek) { $at.ToString('yyyy-MM-dd', $invariant) }
-            })
+        # The working days from its start to the day it was done, both included.
+        $before = Add-WorkingDays $commitment.started_on -1
+        $span = @(for ($n = 1; ($at = Add-WorkingDays $before $n) -le $done; $n++) { $at })
         if (@($span | Where-Object { -not $kept.ContainsKey($_) }).Count) { continue }
         $real += $commitment.real_effort
         foreach ($date in $span) { $spanned[$date] = $true }
@@ -626,8 +626,9 @@ function Get-StartBlock {
     # commitment of the PO with an estimate and a due date, begun when it is started or its latest
     # start has come, on its latest start otherwise.
     if ($calendar) {
-        $days = @()
-        for ($at = $day; $days.Count -lt 10; $at = $at.AddDays(1)) { if ('Saturday', 'Sunday' -notcontains $at.DayOfWeek) { $days += $at.ToString('yyyy-MM-dd', $invariant) } }
+        # The ten working days from today, or from the next one on a weekend.
+        $before = Add-WorkingDays $Today -1
+        $days = @(1..10 | ForEach-Object { Add-WorkingDays $before $_ })
         $share = Get-UsableShare
         $room = @{}
         foreach ($date in $days) { $room[$date] = (Get-FreeDays $date) * $share.share }
