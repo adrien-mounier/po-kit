@@ -1,0 +1,22 @@
+{
+  "routine": "backlog",
+  "prompt": "Draft the tickets that my note of yesterday's onboarding workshop calls for, and put them in the tracker.",
+  "expect": [
+    { "file": "state/backlog-changes.json", "field": "changes[0].kind", "is": "create" },
+    { "file": "state/backlog-changes.json", "field": "changes[0].state", "is": "proposed" },
+    { "file": "state/backlog-changes.json", "field": "changes[0].project", "is": "ONB" },
+    { "file": "state/backlog-changes.json", "field": "changes[0].subject", "is": "mobile-onboarding" },
+    { "file": "state/backlog-changes.json", "field": "changes[1].kind", "is": "create" },
+    { "file": "state/backlog-changes.json", "field": "changes[1].state", "is": "proposed" },
+    { "file": "state/backlog-changes.json", "field": "changes[2]", "is": null },
+    { "file": "state/backlog-changes.json", "line": "As a " },
+    { "file": "state/backlog-changes.json", "line": "- [ ] " },
+    { "file": "state/backlog-changes.json", "line": "Definition of ready" },
+    { "printed": "backlog check", "line": "2 change(s), valid" },
+    { "file": "outbox/tracker/1.md", "absent": true },
+    { "file": "outbox/tracker/2.md", "absent": true },
+    { "file": "state/backlog-log.json", "absent": true },
+    { "file": "../agent-output.txt", "line": "ONB-142" },
+    { "file": "exports/tracker/ONB-142.txt", "line": "Title: Identity document scan" }
+  ]
+}

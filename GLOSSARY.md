@@ -172,6 +172,10 @@ _Avoid_: draft, patch, changeset
 The changes to the tracker the agent prepares, kept in the workspace state apart from the proposal: each creates a ticket or edits one of its texts (title, description, acceptance criteria), with the exact text before and after, its reason and its source. Each is applied only after the PO said yes, reviewed the exact change and approved it, one at a time; a change that would delete, close, reopen or move a ticket, or touch another field, is refused.
 _Avoid_: ticket update, tracker sync, changeset
 
+**Ticket draft**:
+A change of the change proposal that creates a ticket, written from the ticket template from a note that describes work for the team: a title, a user story with a definition of ready, and acceptance criteria as a checklist. A need a ticket already covers is not drafted; a need the note leaves unclear is an open question. The template of the organisation, in the workspace, replaces the kit's there only.
+_Avoid_: story, generated ticket, backlog item
+
 **Applied-change log**:
 The register tool's list, in the workspace state, of every change to the tracker applied: the date, the change, the ticket, the field, the text before and after, who approved it and how it was applied. It is committed with the next apply.
 _Avoid_: audit trail, history (which is a record's), journal

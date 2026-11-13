@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: Propose changes to tickets of the tracker - create a ticket, or reword the title, the description or the acceptance criteria of one - and apply each one only after the PO said yes and approved the exact text, one change at a time, logging each. Use when the PO asks to reword a ticket, to create a ticket they describe, to split a ticket too large, or how to order the top of the backlog, approves or refuses a change you proposed, or says a change they pasted is done.
+description: Propose changes to tickets of the tracker - create a ticket, or reword the title, the description or the acceptance criteria of one - and apply each one only after the PO said yes and approved the exact text, one change at a time, logging each. Use when the PO asks to reword a ticket, to create a ticket they describe, to draft the tickets a meeting note calls for, to split a ticket too large, or how to order the top of the backlog, approves or refuses a change you proposed, or says a change they pasted is done.
 ---
 
 # Backlog
@@ -34,6 +34,20 @@ The PO asks to reword a ticket's text, or to create a ticket they describe.
 5. **Propose it**: one line per change, numbered by its `id`: the ticket, the field, what changes and why. Ask whether the PO wants it.
 
 Done when each change asked for is proposed, and each request outside the limits is refused.
+
+## Draft tickets from a note
+
+The PO asks you to draft the tickets a note calls for: a workshop, a call, a note the collect said describes work for the team. Each draft is a change of kind `create`, proposed as any change: nothing of it reaches the tracker or the register until the PO approved it, through steps 3 to 5.
+
+1. **Read the note whole**: the file of `inbox/` or `inbox/done/` the PO names, or the text the PO pasted.
+2. **One draft per need the note states**: a piece of work it asks the team to do. A decision, a commitment or a risk is no ticket: the collect records those.
+3. **Its subject.** When the note says which subject a need serves, give its identifier in `subject`, and in `project` the first project of `watch_list.tracker_projects` in its record. A need whose project nothing settles gets no draft: keep an open question, with the project you recommend.
+4. **A ticket that already covers it.** Search the tracker for the tickets of that project, as the collect's `sources.md` says for a tracker project, and open those the search returns. A need one of them already covers is not drafted again: tell the PO which ticket covers it, by its key and its title.
+5. **Write each draft from the template.** Run the register tool's `backlog template`: it gives the ticket template of this workspace, each text under its name in `after`. Fill each place in braces from the note, in its words, and keep every other line of the template as it is, the definition of ready unticked: the team ticks it. One line of acceptance criteria per criterion the note states. **A criterion, a role or a benefit the note leaves unclear is never invented**: leave it out, and keep an open question about the subject, with the answer you recommend.
+6. Write each draft in `state/backlog-changes.json` as step 2 says: `state` `proposed`, a new `id`, the `reason` (the need of the note it carries, in one sentence) and its `source`, the note: `{ "where": "inbox/<file name>", "read_on": "<today>" }`, or `the PO, in conversation` for a pasted text.
+7. Run `backlog check` until it passes, then propose the drafts as step 2 says, with each need a ticket already covers and each open question.
+
+Done when each need of the note is a draft proposed, covered by a ticket you named, or an open question.
 
 ## 3. Show the exact change the PO said yes to
 
@@ -82,7 +96,7 @@ Done when the PO knows what changed in the tracker, what waits for them, and wha
 When the PO names a ticket to split, or a ticket you read is too large for one sprint: its estimate is above `split_estimate_above` in `settings.json` (8 when it is not set), or its description holds several needs, each of which a user could get without the others.
 
 1. **Read the ticket** as step 2 says: its text as it is now is the text `before`, word for word.
-2. **Cut it into two to four smaller tickets**, each one need a user gets on its own, small enough for one sprint. Each is a `create` change in the original's project. Its texts come from the ticket template when the workspace has one; otherwise a `title`, a `description` written as a user story ("As a ..., I want ..., so that ...") and `acceptance criteria`, one per line ("Given ..., when ..., then ..."). You set no estimate: estimating stays the team's.
+2. **Cut it into two to four smaller tickets**, each one need a user gets on its own, small enough for one sprint. Each is a `create` change in the original's project. Its texts are written from the ticket template, as for a draft: run the register tool's `backlog template` and fill it. You set no estimate: estimating stays the team's.
 3. **Add one `edit` change** of the original's `description`: what remains of it once the smaller tickets exist, naming each by its title. The original is never closed, deleted or moved, whoever asks: that stays the PO's.
 4. Write each change as step 2 says, `proposed`: its `reason` says why the ticket is too large (its estimate, or the needs it holds), and its `source` is the ticket as you read it (`{ "where": "exports/tracker/ONB-160.txt", "read_on": "<today>" }` in a folder, `tracker: ONB-160` through a connector). Run the register tool's `backlog check`, and correct the proposal until it passes.
 5. **Propose them**, one line per change as step 2 says, and ask which the PO wants. Each one then goes through steps 3 to 5, one at a time: nothing is applied before the PO approved its exact text.

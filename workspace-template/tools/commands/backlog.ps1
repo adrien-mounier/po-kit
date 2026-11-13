@@ -5,6 +5,7 @@
 #   backlog show <id>      one change as the exact text before and after, for the PO to review
 #   backlog apply <id>     applies one approved change, once (see Invoke-Apply below)
 #   backlog order          writes the order the agent proposes for the top of the backlog as a view
+#   backlog template [fr]  the ticket template a ticket draft is written from (see below)
 #
 # The one exception to "the agent modifies nothing in a source": a change creates a ticket or
 # edits one of its texts (title, description, acceptance criteria), nothing else. A change that
@@ -14,6 +15,7 @@
 #                    "source": { "where": "...", "read_on": "2026-03-02" }, "state": "proposed" } ] }
 # A create names the tracker project of the new ticket in "project", and gives its texts in "after":
 #   "after": { "title": "...", "description": "...", "acceptance criteria": "..." }
+# A change may name in "subject" the subject of the register it serves.
 # The agent moves a change from proposed to accepted (the PO said yes) and to approved (the PO
 # approved the exact change it showed), or to refused. Only this command sets applied.
 
@@ -25,6 +27,7 @@ $ChangeDefinition = @'
     "kind": { "type": "text", "required": true, "allowed": ["create", "edit"] },
     "ticket": { "type": "text" },
     "project": { "type": "text" },
+    "subject": { "type": "text" },
     "field": { "type": "text", "allowed": ["title", "description", "acceptance criteria"] },
     "before": { "type": "text" },
     "after": { "type": "any", "required": true },
@@ -40,6 +43,7 @@ function Test-Change($Change) {
     $given = { param($Name) $null -ne $Change.PSObject.Properties[$Name] -and $null -ne $Change.$Name }
     # The identifier names the change's file in the outbox.
     if ($Change.id -is [string] -and $Change.id -cnotmatch '^[A-Za-z0-9-]+$') { "the identifier '$($Change.id)' holds other characters than letters, digits and dashes" }
+    if ($Change.subject -is [string] -and (Find-Record $Change.subject).type -ne 'subject') { "the subject '$($Change.subject)' is no subject of the register" }
     if ($Change.kind -ceq 'edit') {
         if (-not ((& $given 'ticket') -and (& $given 'field') -and (& $given 'before'))) { "an edit names its 'ticket', its 'field' and its text 'before'" }
         if (& $given 'project') { "an edit names no 'project': its ticket has one" }
@@ -131,7 +135,38 @@ if ($action -ceq 'order') {
     return
 }
 
-if ('check', 'show', 'apply' -cnotcontains $action) { Stop-Run 'backlog takes check, show <id>, apply <id> or order.' }
+if ('check', 'show', 'apply', 'template' -cnotcontains $action) { Stop-Run 'backlog takes check, show <id>, apply <id>, order or template.' }
+
+if ($action -ceq 'template') {
+    # The ticket template, for a ticket draft: templates\ticket-<language>.md in the workspace when the
+    # organisation has its own, otherwise the kit's, in the default language unless one is given. Each
+    # "## <name>" heads one text of a ticket, named as the labels of that language name it; it is
+    # printed under the name the text has in "after" of a create change.
+    $language = if ($words.Count -gt 1) { $words[1] } else { $Settings.languages.default }
+    $names = (Get-Labels $language).backlog.fields
+    $name, $whose = "templates/ticket-$language.md", "the organisation's"
+    if (-not (Test-Path -LiteralPath (Join-Path $Workspace $name))) { $name, $whose = "tools/$name", "the kit's" }
+    $sections = [ordered]@{}
+    $heading = $null
+    foreach ($line in [IO.File]::ReadAllText((Join-Path $Workspace $name), $Utf8).Replace("`r`n", "`n").Split("`n")) {
+        if ($line -match '^## (.+?)\s*$') { $heading = $Matches[1]; $sections[$heading] = @() }
+        elseif ($null -ne $heading) { $sections[$heading] += $line }
+    }
+    $headings = @($TicketTexts | ForEach-Object { $names.$_ })
+    $lacking = @($headings | Where-Object { -not $sections.Contains($_) } | ForEach-Object { "## $_" })
+    $other = @($sections.Keys | Where-Object { $headings -notcontains $_ } | ForEach-Object { "## $_" })
+    if ($lacking -or $other) {
+        Stop-Run (@(
+                if ($lacking) { "The template $name lacks the section(s) $($lacking -join ', ')." }
+                if ($other) { "The template $name holds the section(s) $($other -join ', '), which are no text of a ticket." }
+            ) + "Nothing was done. A ticket template holds one section per text of a ticket, headed $(@($headings | ForEach-Object { "## $_" }) -join ', '), and no other.")
+    }
+    "Ticket template: $name, $whose."
+    'Each text below goes in "after" of a create change, under its name, with its places in braces filled.'
+    foreach ($text in $TicketTexts) { '', "`"$text`":", ($sections[$names.$text] -join "`n").Trim() }
+    return
+}
+
 $changes = @(Get-BacklogChanges)
 
 if ($action -ceq 'check') {
@@ -151,6 +186,7 @@ function Format-BacklogChange($Change) {
         "$($labels.change -f $Change.id): $what"
         $labels.reason -f $Change.reason
         $labels.source -f $Change.source.where, $Change.source.read_on
+        if ($Change.subject) { $labels.subject -f $Change.subject }
         if ($Change.kind -ceq 'edit') { '', $labels.before, $Change.before, '', $labels.after, $Change.after }
         else { foreach ($text in $TicketTexts | Where-Object { "$($Change.after.$_)".Trim() }) { '', "$($labels.fields.$text):", $Change.after.$text } }
     ) -join "`n"

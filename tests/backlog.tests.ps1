@@ -74,6 +74,103 @@ Test 'backlog show gives one change as the exact text before and after, lines ke
     Assert-Match $run.Output "The change proposal holds no change '3'" 'output for a change not proposed'
 }
 
+# --- Ticket drafts: a create change written from the ticket template ---------------------------
+
+Test 'backlog template gives the kit''s ticket template as the texts of a create change: a title, a user story with a definition of ready, and acceptance criteria as a checklist; it writes nothing and needs no change proposal' {
+    $ws = New-BacklogWorkspace
+    $before = Get-WorkspaceSnapshot $ws
+
+    $run = Invoke-Register $ws backlog template
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '(?m)^Ticket template: tools/templates/ticket-en\.md, the kit''s\.' 'which template'
+    Assert-Match $run.Output "(?m)^`"title`":`n^\{title\}$" 'the title'
+    Assert-Match $run.Output "(?ms)^`"description`":`n^As a \{role\}, I want \{need\}, so that \{benefit\}\..+^Definition of ready:`n^- \[ \] " 'the user story and the definition of ready'
+    Assert-Match $run.Output "(?m)^`"acceptance criteria`":`n^- \[ \] \{criterion\}$" 'the acceptance criteria'
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+
+    $run = Invoke-Register $ws backlog template fr
+
+    Assert-Equal 0 $run.ExitCode "exit code in French, with output: $($run.Output)"
+    Assert-Match $run.Output '(?m)^Ticket template: tools/templates/ticket-fr\.md, the kit''s\.' 'the French template'
+    Assert-Match $run.Output "(?m)^`"description`":`n^En tant que \{role\}, je veux \{need\}, afin de \{benefit\}\." 'the French user story'
+    Assert-Match $run.Output "(?m)^`"acceptance criteria`":`n^- \[ \] \{criterion\}$" 'the French acceptance criteria, under the name of the text'
+}
+
+Test 'a ticket template of the organisation in the workspace replaces the kit''s for that workspace; one whose sections are not the texts of a ticket is refused and writes nothing' {
+    $ws = New-BacklogWorkspace
+    New-Item -ItemType Directory -Path (Join-Path $ws 'templates') | Out-Null
+    [IO.File]::WriteAllText((Join-Path $ws 'templates\ticket-en.md'), "## Title`n`n[ONB] {title}`n`n## Description`n`nStory: as {role}, I need {need} for {benefit}.`n`n## Acceptance criteria`n`nGiven {context}, when {action}, then {outcome}.`n", $Utf8)
+
+    $run = Invoke-Register $ws backlog template
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '(?m)^Ticket template: templates/ticket-en\.md, the organisation''s\.' 'which template'
+    Assert-Match $run.Output "(?m)^`"title`":`n^\[ONB\] \{title\}$" 'the title of the organisation'
+    Assert-Match $run.Output "(?m)^`"acceptance criteria`":`n^Given \{context\}, when \{action\}, then \{outcome\}\.$" 'its acceptance criteria'
+    Assert-True ($run.Output -notmatch 'Definition of ready') "the kit's template is shown too"
+
+    foreach ($case in @(
+            @{ text = "## Title`n`n{title}`n`n## Description`n`n{need}`n"; reason = 'lacks the section(s) ## Acceptance criteria' }
+            @{ text = "## Title`n`n{title}`n`n## Description`n`n{need}`n`n## Acceptance criteria`n`n- [ ] {criterion}`n`n## Sprint`n`n{sprint}`n"; reason = "holds the section(s) ## Sprint, which are no text of a ticket" })) {
+        [IO.File]::WriteAllText((Join-Path $ws 'templates\ticket-en.md'), $case.text, $Utf8)
+        $before = Get-WorkspaceSnapshot $ws
+
+        $run = Invoke-Register $ws backlog template
+
+        Assert-Equal 1 $run.ExitCode "exit code when it $($case.reason), with output: $($run.Output)"
+        Assert-Match $run.Output ('The template templates/ticket-en\.md ' + [regex]::Escape($case.reason)) 'why'
+        Assert-Match $run.Output 'one section per text of a ticket, headed ## Title, ## Description, ## Acceptance criteria' 'how to correct it'
+        Assert-Equal $before (Get-WorkspaceSnapshot $ws) "files of the workspace when it $($case.reason)"
+    }
+}
+
+Test 'the kit ships a ticket template in every language it has labels for, each written as UTF-8 without a byte order mark' {
+    foreach ($language in Get-ChildItem (Join-Path $KitRoot 'workspace-template\tools\labels\*.json')) {
+        $path = Join-Path $KitRoot "workspace-template\tools\templates\ticket-$($language.BaseName).md"
+        Assert-True (Test-Path -LiteralPath $path) "no ticket template in '$($language.BaseName)'"
+        Assert-True ([IO.File]::ReadAllBytes($path)[0] -ne 0xEF) "the template in '$($language.BaseName)' opens with a byte order mark"
+    }
+}
+
+Test 'a ticket draft names the subject of the register it serves, shown with the change; a subject the register does not hold refuses the proposal' {
+    $ws = New-BacklogWorkspace
+    Set-Proposal $ws @{ operations = @(New-SubjectOperation) }
+    $run = Invoke-Register $ws apply -Today 2026-03-02
+    Assert-Equal 0 $run.ExitCode "exit code when recording the subject, with output: $($run.Output)"
+    $draft = @{ id = '1'; kind = 'create'; ticket = $null; field = $null; before = $null; project = 'ONB'; subject = 'mobile-onboarding'; state = 'proposed'
+        source = @{ where = 'inbox/onboarding workshop.md'; read_on = '2026-03-02' }
+        after = @{ title = 'Branch finder'; description = 'As a customer, I want to find a branch, so that I can open my account there.'; 'acceptance criteria' = '- [ ] Given a postcode, the three nearest branches are listed.' } }
+    Set-Changes $ws @(New-Change $draft)
+
+    $run = Invoke-Register $ws backlog show 1
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '(?m)^Subject: mobile-onboarding$' 'the subject shown'
+
+    $draft.subject = 'branch-finder'
+    Set-Changes $ws @(New-Change $draft)
+    $before = Get-WorkspaceSnapshot $ws
+
+    $run = Invoke-Register $ws backlog check
+
+    Assert-Equal 1 $run.ExitCode "exit code for a subject not held, with output: $($run.Output)"
+    Assert-Match $run.Output "- Change 1: the subject 'branch-finder' is no subject of the register" 'the reason'
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+}
+
+Test 'the backlog routine drafts tickets from a note, the collect only offers to, and the workspace rules say where a ticket template of the organisation goes' {
+    $routine = Get-Content -LiteralPath (Join-Path $KitRoot 'routines\backlog\SKILL.md') -Raw -Encoding UTF8
+    Assert-Match $routine '(?m)^## Draft tickets from a note\r?$' 'the step of the backlog routine'
+    Assert-Match $routine 'One draft per need the note states' 'one draft per need'
+    Assert-Match $routine 'A need one of them already covers is not drafted again: tell the PO which ticket covers it' 'a duplicate'
+    Assert-Match $routine 'A criterion, a role or a benefit the note leaves unclear is never invented\*\*: leave it out, and keep an open question' 'an unclear need'
+    Assert-Match $routine '`backlog template`' 'the template'
+    Assert-Match (Get-Content -LiteralPath (Join-Path $KitRoot 'routines\collect\SKILL.md') -Raw -Encoding UTF8) 'describes work for the team.+offer to draft its tickets.+the collect drafts no ticket' 'the offer of the collect'
+    $rules = Get-Content -LiteralPath (Join-Path $KitRoot 'workspace-template\AGENTS.md') -Raw -Encoding UTF8
+    Assert-Match $rules 'A template of the organisation goes in `templates/ticket-<language>\.md` in this workspace\*\*, never under `tools/`, which every update replaces: it then replaces the kit''s for this workspace only' 'where the template of the organisation goes'
+}
+
 Test 'with the tracker read from a folder, backlog apply writes the approved change in the outbox, marks it applied and logs it, once, leaving the other changes as they are' {
     $ws = New-BacklogWorkspace
     Set-Changes $ws @((New-Change), (New-Change @{ id = '2'; after = 'Document scan'; state = 'proposed' }))
@@ -223,7 +320,7 @@ Test 'backlog check refuses a change that would delete, close, reopen or move a 
 
 Test 'the backlog routine splits a ticket too large into two to four created tickets and an edit of the original, never closing it, and proposes an order of the top of the backlog that moves nothing' {
     $routine = Get-Content -LiteralPath (Join-Path $KitRoot 'routines\backlog\SKILL.md') -Raw -Encoding UTF8
-    Assert-Match $routine '(?s)## Split a ticket too large.+estimate is above `split_estimate_above`.+several needs.+two to four smaller tickets.+`create` change.+from the ticket template when the workspace has one.+user story.+acceptance criteria.+one `edit` change.+what remains.+never closed' 'the split'
+    Assert-Match $routine '(?s)## Split a ticket too large.+estimate is above `split_estimate_above`.+several needs.+two to four smaller tickets.+`create` change.+written from the ticket template.+`backlog template`.+one `edit` change.+what remains.+never closed' 'the split'
     Assert-Match $routine '(?s)## Propose an order for the top of the backlog.+Reordering is a move, which stays the PO.s.+`backlog_top`.+10 when it is not set.+cites by its identifier.+`backlog order`.+nothing was moved in the tracker' 'the order'
     Assert-Match (Get-Content -LiteralPath (Join-Path $KitRoot 'workspace-template\AGENTS.md') -Raw -Encoding UTF8) '(?s)`backlog_top`: as `10`.+`split_estimate_above`: as `8`' 'the settings in the workspace rules'
 }

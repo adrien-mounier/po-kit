@@ -365,6 +365,7 @@
     "create": "créer un ticket dans le projet {0}",
     "reason": "Pourquoi : {0}",
     "source": "Source : {0}, lue le {1}",
+    "subject": "Sujet : {0}",
     "before": "Texte avant :",
     "after": "Texte après :",
     "fields": { "title": "Titre", "description": "Description", "acceptance criteria": "Critères d'acceptation" },

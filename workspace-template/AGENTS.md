@@ -31,6 +31,7 @@ Written with a forward slash, the command runs the same in every shell.
 - `view ranking` writes the ranked portfolio, `views/ranking.md`, replacing the last one: see "Scores and the ranked portfolio" below. It takes a language and a client bank as `view` does: `view ranking fr bank Harbour Bank`.
 - `steering 2026-03-09` writes the steering pack of the committee of that date, `views/steering/2026-03-09.html`, replacing the last one; `steering` alone names the committees whose pack to offer and writes nothing: see "The steering pack" below.
 - `backlog check` validates the change proposal, `state/backlog-changes.json`; `backlog show 2` shows change 2 as the exact text before and after; `backlog apply 2` applies change 2 once it is approved; `backlog order` writes the order you propose for the top of the backlog, `views/backlog-order.md`, replacing the last one: see "Changes to the tracker" below.
+- `backlog template` gives the ticket template a ticket draft is written from, `backlog template fr` in another language: see "Ticket drafts" below.
 
 A refused proposal lists its reasons and writes nothing: correct the proposal and preview again.
 
@@ -79,13 +80,14 @@ The changes you propose to the tracker are your change proposal, `state/backlog-
           "before": "Scan screen", "after": "Identity document scan screen",
           "reason": "The title does not say what is scanned.",
           "source": { "where": "the PO, in conversation", "read_on": "2026-03-02" }, "state": "proposed" },
-        { "id": "2", "kind": "create", "project": "ONB",
+        { "id": "2", "kind": "create", "project": "ONB", "subject": "mobile-onboarding",
           "after": { "title": "Branch finder", "description": "...", "acceptance criteria": "..." },
           "reason": "...", "source": { "where": "...", "read_on": "2026-03-02" }, "state": "proposed" } ] }
 
 - `id`: letters, digits and dashes, one more than the highest of the proposal and of the log; never reused.
 - `kind`: `create` or `edit`, nothing else. An edit names its `ticket`, its `field` (`title`, `description` or `acceptance criteria`), the exact text `before`, as the ticket held it when last read, and the text `after`. A create names the tracker `project` of the new ticket and gives its texts in `after`, a title at least.
 - `reason` and its `source`, as a record's.
+- `subject`, when the change serves a subject of the register: its identifier. The register tool refuses one it does not hold.
 - `state`: `proposed`; `accepted` once the PO said yes; `approved` once the PO approved the exact change `backlog show` gave; `applied`, which only the register tool sets; `refused` when the PO says no or the change no longer fits the ticket.
 
 The register tool refuses the change proposal whole when a change would delete, close, reopen or move a ticket, or touch its status, assignee, estimate, sprint, priority or any field but its text, and says why. `backlog apply` applies one change, only from `approved`, and only once:
@@ -106,6 +108,12 @@ Each change recorded as applied goes to the applied-change log, `state/backlog-l
                    "why": "The pilot branches are awaited by 2026-03-27 [D-2026-002]." } ] }
 
 Each `why` cites, as a view does, the record that places the ticket: the subject's horizon `[mobile-onboarding]`, a commitment's due date or a decision. `backlog order` writes it as the view `views/backlog-order.md`, stamped, and refuses it whole when a record it cites is missing or superseded, a `why` cites none, a ticket is placed twice, or it holds more tickets than `backlog_top`. Nothing is moved in the tracker; the PO reorders there.
+
+### Ticket drafts
+
+A ticket draft is a `create` change written from a ticket template, from a note that describes work for the team: a title, a user story with a definition of ready, and acceptance criteria as a checklist. The backlog routine says how it is drafted; it waits for the PO's yes and approval as any change, and nothing of it reaches the tracker or the register before.
+
+`backlog template` gives the template, each text of a ticket under the name it has in `after`. The kit's is `tools/templates/ticket-<language>.md`. **A template of the organisation goes in `templates/ticket-<language>.md` in this workspace**, never under `tools/`, which every update replaces: it then replaces the kit's for this workspace only. It holds one section per text of a ticket, headed as the labels of its language name them (`## Title`, `## Description`, `## Acceptance criteria` in English), and no other; the register tool refuses one that lacks a section or holds another.
 
 ## The settings
 
