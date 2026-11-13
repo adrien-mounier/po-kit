@@ -1,0 +1,12 @@
+{
+  "routine": "subject",
+  "prompt": "Create a subject. Its title is Group data platform. It is a service rendered to the organisation. Horizon: later. Client banks: all of them, it concerns the whole group. Clearance: none yet. Gates: nobody knows yet about the architecture review or the security review. Watch list: one person, the data architect; one keyword, data platform; no tracker project. Next step: list the data sources, with no date yet. I accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "record": "group-data-platform", "field": "kind", "is": "service" },
+    { "record": "group-data-platform", "field": "horizon", "is": "later" },
+    { "record": "group-data-platform", "field": "banks", "is": [] },
+    { "records": "subjects", "count": 4 },
+    { "file": "views/portfolio.md", "line": "Group data platform [group-data-platform]" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

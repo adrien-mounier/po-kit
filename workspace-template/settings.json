@@ -13,6 +13,7 @@
   "per_source_cap": 50,
   "gates": [],
   "objectives": [],
+  "banks": [],
   "sponsor": {
     "name": "",
     "email": ""

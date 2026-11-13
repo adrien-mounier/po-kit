@@ -1,0 +1,27 @@
+{
+  "operations": [
+    {
+      "op": "create",
+      "type": "subject",
+      "interpreted": false,
+      "fields": {
+        "title": "Group data platform",
+        "kind": "service",
+        "horizon": "later",
+        "banks": [],
+        "evidence_level": "fact",
+        "source": { "where": "conversation with the PO", "read_on": "2026-03-02" },
+        "gates": [
+          { "name": "architecture review", "state": "unknown" },
+          { "name": "security review", "state": "unknown" }
+        ],
+        "next_step": "List the data sources",
+        "watch_list": {
+          "people": ["the data architect"],
+          "keywords": ["data platform"],
+          "tracker_projects": []
+        }
+      }
+    }
+  ]
+}

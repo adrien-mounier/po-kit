@@ -653,13 +653,14 @@ function Get-Labels([string]$Language) {
     Read-JsonFile $file
 }
 
-function Get-Stamp($Labels) {
+function Get-Stamp($Labels, [string]$Bank) {
     # The stamp that opens every view, as lines of Markdown. It is produced here and nowhere else:
     #   > Generated: 2026-03-02T09:15:00+01:00.
     #   > Register state: 4b825dc642cb.
     #   > Last collect: 2026-03-02T08:30:00+01:00.
     #   > Sources not covered by the last collect: mail, tracker.
-    # or, in place of the last two lines, that no collect has run yet.
+    # or, in place of the last two lines, that no collect has run yet. A view kept to one client
+    # bank adds a line that names it.
     #
     # The register state is the start of the name git gives to the content of register\, which
     # git rev-parse <commit>:register prints for any commit of the workspace history. The same
@@ -677,6 +678,7 @@ function Get-Stamp($Labels) {
             $stamp.not_covered -f $(if ($notCovered) { $notCovered -join ', ' } else { $stamp.none })
         }
         else { $stamp.no_collect }
+        if ($Bank) { $stamp.bank -f $Bank }
     )
     $said | ForEach-Object { "> $_" }
 }
@@ -705,19 +707,22 @@ function Format-Clearance($Subject, [string]$Clearance, [string]$By, [string]$On
     $Clearance
 }
 
-function Get-PortfolioHorizons($Labels) {
+function Get-PortfolioHorizons($Labels, [string]$Bank) {
     # The portfolio view below its title and its stamp, as lines: every active subject under its
-    # horizon. export prints these lines too, for the weekly synthesis that opens with them.
+    # horizon. export prints these lines too, for the weekly synthesis that opens with them. Given a
+    # client bank, only the subjects that name it or name no bank.
     $portfolio = $Labels.portfolio
     # In the order of their identifiers.
-    $subjects = @(Get-RecordFiles | Where-Object { $_.type -eq 'subject' } | ForEach-Object { Read-JsonFile $_.path } | Where-Object { $_.status -ceq 'active' })
+    $subjects = @(Get-RecordFiles | Where-Object { $_.type -eq 'subject' } | ForEach-Object { Read-JsonFile $_.path } |
+            Where-Object { $_.status -ceq 'active' -and (-not $Bank -or -not $_.banks -or $_.banks -ccontains $Bank) })
     $lines = @()
     foreach ($horizon in 'now', 'next', 'later') {
         $lines += '', "## $($portfolio.horizons.$horizon)", ''
         $rows = @(foreach ($subject in $subjects | Where-Object { $_.horizon -ceq $horizon }) {
                 $clearance = Format-Clearance $subject $portfolio.clearances.($subject.clearance) $portfolio.cleared_by $portfolio.cleared_on
                 # A date that is not confirmed is not shown, so that the view never promises it.
-                $cells = "$($subject.title) [$($subject.id)]", $portfolio.kinds.($subject.kind), $clearance,
+                # The banks of a subject follow its title; a subject that names none concerns everyone.
+                $cells = "$($subject.title) [$($subject.id)]$(if ($subject.banks) { " ($(Format-Value $subject.banks))" })", $portfolio.kinds.($subject.kind), $clearance,
                     $(if ($subject.next_date_confirmed) { "$($subject.next_date)" } else { '' }), "$($subject.next_step)"
                 , @($cells | ForEach-Object { ($_ -replace '\s*\r?\n\s*', ' ').Replace('|', '\|') })
             })
@@ -727,9 +732,10 @@ function Get-PortfolioHorizons($Labels) {
     $lines
 }
 
-function Write-PortfolioView($Labels) {
-    # Writes the portfolio view, views\portfolio.md: its title, its stamp, then its horizons.
-    $lines = @("# $($Labels.portfolio.title)", '') + @(Get-Stamp $Labels) + @(Get-PortfolioHorizons $Labels)
+function Write-PortfolioView($Labels, [string]$Bank) {
+    # Writes the portfolio view, views\portfolio.md: its title, its stamp, then its horizons. Given
+    # a client bank, the view keeps to its subjects, and its stamp says so.
+    $lines = @("# $($Labels.portfolio.title)", '') + @(Get-Stamp $Labels $Bank) + @(Get-PortfolioHorizons $Labels $Bank)
     Write-TextFile (Join-Path $Workspace 'views\portfolio.md') (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
 }
 

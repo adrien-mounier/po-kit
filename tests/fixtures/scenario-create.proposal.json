@@ -8,6 +8,7 @@
         "title": "Savings simulator",
         "kind": "product",
         "horizon": "next",
+        "banks": ["Harbour Bank", "Alpine Bank"],
         "clearance": "cleared",
         "cleared_by": "the sponsor",
         "cleared_on": "2026-02-27",

@@ -51,7 +51,7 @@ Test 'the record carries the common fields and every subject field, with its dat
     $record = Read-Json (Join-Path $ws 'register\subjects\refonte-de-l-entree-en-relation.json')
     $expected = 'id', 'type', 'title', 'status', 'date_recorded', 'date_updated', 'evidence_level', 'source', 'objectives',
         'notes', 'supersedes', 'superseded_by', 'history',
-        'kind', 'horizon', 'clearance', 'cleared_by', 'cleared_on', 'owning_entity', 'sponsor', 'decider', 'gates',
+        'kind', 'horizon', 'clearance', 'cleared_by', 'cleared_on', 'owning_entity', 'sponsor', 'decider', 'banks', 'gates',
         'next_step', 'next_date', 'next_date_confirmed', 'watch_list', 'links'
     $actual = @($record.PSObject.Properties | ForEach-Object { $_.Name })
     Assert-Equal (($expected | Sort-Object) -join ' ') (($actual | Sort-Object) -join ' ') 'fields of the record'
@@ -84,7 +84,7 @@ Test 'a subject proposed with its required fields only is recorded with the defa
     Assert-Equal 'none' $record.clearance 'clearance'
     Assert-Equal $false $record.next_date_confirmed 'next date confirmed'
     Assert-True ($null -eq $record.next_date) 'a next date was recorded'
-    foreach ($list in $record.objectives, $record.history, $record.gates, $record.links,
+    foreach ($list in $record.objectives, $record.history, $record.banks, $record.gates, $record.links,
         $record.watch_list.people, $record.watch_list.keywords, $record.watch_list.tracker_projects, $record.watch_list.chat_channels) {
         Assert-True ($list -is [array] -and $list.Count -eq 0) 'a list left out of the proposal is not recorded as an empty list'
     }

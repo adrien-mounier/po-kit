@@ -20,7 +20,7 @@ Test 'the workspace template has the full layout, and a new workspace starts emp
     Assert-True (-not (Test-Path (Join-Path $ws 'state\proposal.json'))) 'a new workspace has a pending proposal'
 }
 
-Test 'the default settings hold the delays, the validation mode, the languages, the cap and empty gates, objectives and sponsor' {
+Test 'the default settings hold the delays, the validation mode, the languages, the cap and empty gates, objectives, client banks and sponsor' {
     $settings = Read-Json (Join-Path $Template 'settings.json')
 
     Assert-Equal 1 $settings.format_version 'format version'
@@ -33,6 +33,7 @@ Test 'the default settings hold the delays, the validation mode, the languages, 
     Assert-True ($settings.per_source_cap -is [int] -and $settings.per_source_cap -gt 0) 'the per-source cap is not a positive number'
     Assert-Equal 0 @($settings.gates).Count 'gates'
     Assert-Equal 0 @($settings.objectives).Count 'objectives'
+    Assert-True ($null -ne $settings.PSObject.Properties['banks'] -and @($settings.banks).Count -eq 0) 'client banks'
     Assert-Equal '' $settings.sponsor.name "sponsor's name"
     Assert-Equal '' $settings.sponsor.email "sponsor's address"
 }
@@ -62,11 +63,13 @@ Test 'every routine is a folder that an agent loads as a skill: its SKILL.md ope
     }
 }
 
-Test 'the workspace rules say how the settings list the gates and the objectives' {
+Test 'the workspace rules say how the settings list the gates, the objectives and the client banks' {
     $rules = Get-Content -LiteralPath (Join-Path $Template 'AGENTS.md') -Raw -Encoding UTF8
 
     Assert-Match $rules '`gates`: .*\["architecture review", "security review"\]' 'how gates are listed'
     Assert-Match $rules '`objectives`: .*\{ "number": 1, "title": "[^"]+" \}' 'how objectives are listed'
+    Assert-Match $rules '`banks`: .*\["Harbour Bank", "North Bank"\]' 'how client banks are listed'
+    Assert-Match $rules 'view bank Harbour Bank' 'how the portfolio view keeps to one client bank'
 }
 
 Test 'the workspace rules say how the connections declare a source: off, read from a folder, or read through a connector with what its verification gave' {

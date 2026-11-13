@@ -8,7 +8,7 @@
 # What it prints, in this order:
 #   # Export of the register since <date>
 #   ## Stamp                  the stamp of the view to write from this export, ready to copy
-#   ## Active subjects        with horizon and clearance
+#   ## Active subjects        with horizon, clearance and client banks ("all" when it names none)
 #   ## Changes since <date>   each record recorded since, each field corrected since
 #   ## Open commitments       with owner and due date
 #   ## Pending decisions      under one "### Awaited from: <person>" per person awaited
@@ -37,6 +37,8 @@ function Format-Record($Record, [string[]]$More = @()) {
         if ($Record.type -ceq 'subject') {
             "horizon: $($Record.horizon)"
             "clearance: $(Format-Clearance $Record $Record.clearance 'by {0}' 'on {0}')"
+            # A subject that names no client bank concerns them all.
+            "banks: $(if ($Record.banks) { Format-Value $Record.banks } else { 'all' })"
         }
         else { "subject: $($Record.subject)$(if ($closed -ccontains $Record.subject) { ' (closed)' })"; "date of fact: $($Record.date_of_fact)"; "status: $($Record.status)" }
         if ($Record.type -ceq 'commitment') { "owner: $(Get-OrMissing $Record.owner)"; "due date: $(Get-OrMissing $Record.due_date)" }
