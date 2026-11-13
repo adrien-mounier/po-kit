@@ -376,5 +376,13 @@
     "fields": { "title": "Title", "description": "Description", "acceptance criteria": "Acceptance criteria" },
     "paste_edit": "To paste in the tracker: in ticket {0}, replace the text before of the field {1} with the text after. Then tell me it is done.",
     "paste_create": "To paste in the tracker: create this ticket in project {0}, with each text in its field. Then tell me it is done."
+  },
+  "backlog_order": {
+    "title": "Proposed order of the backlog",
+    "note": "Proposed by the agent from the register, the ticket to take first at the top, each with why it stands there. Nothing is moved in the tracker: reordering the backlog is yours, in the tracker.",
+    "rank": "Rank",
+    "ticket": "Ticket",
+    "ticket_title": "Title",
+    "why": "Why"
   }
 }

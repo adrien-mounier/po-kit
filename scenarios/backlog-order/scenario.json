@@ -1,0 +1,21 @@
+{
+  "routine": "backlog",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "decision", "interpreted": false, "fields": {
+          "title": "Choose the pilot branches of the mobile onboarding", "subject": "mobile-onboarding", "date_of_fact": "{workday-2}",
+          "status": "pending", "needed_from": "the sponsor", "needed_by": "{workday+5}", "evidence_level": "fact",
+          "source": { "where": "conversation with the PO", "read_on": "{workday-2}" } } }
+    ]
+  },
+  "prompt": "Propose an order for the top of the backlog: what should the team take first?",
+  "expect": [
+    { "verified": "views/backlog-order.md" },
+    { "file": "views/backlog-order.md", "line": "reordering the backlog is yours" },
+    { "file": "views/backlog-order.md", "lines": ["ONB-160", "PAY-12"] },
+    { "file": "views/backlog-order.md", "line": "ONB-142" },
+    { "file": "views/backlog-order.md", "line": "ONB-130", "absent": true },
+    { "file": "state/backlog-changes.json", "absent": true },
+    { "file": "exports/tracker/ONB-160.txt", "line": "Status: To do" }
+  ]
+}

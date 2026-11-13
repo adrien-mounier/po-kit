@@ -1,0 +1,16 @@
+{
+  "routine": "backlog",
+  "prompt": "Ticket ONB-160 is too large for one sprint: propose how to split it.",
+  "expect": [
+    { "printed": "backlog check", "line": "create a ticket in ONB (proposed)" },
+    { "printed": "backlog check", "line": "edit ONB-160, description (proposed)" },
+    { "file": "state/backlog-changes.json", "field": "changes[0].state", "is": "proposed" },
+    { "file": "state/backlog-changes.json", "field": "changes[1].state", "is": "proposed" },
+    { "file": "state/backlog-changes.json", "field": "changes[2].state", "is": "proposed" },
+    { "file": "state/backlog-changes.json", "field": "changes[5]", "is": null },
+    { "file": "state/backlog-log.json", "absent": true },
+    { "file": "outbox/tracker/1.md", "absent": true },
+    { "file": "exports/tracker/ONB-160.txt", "line": "Status: To do" },
+    { "file": "exports/tracker/ONB-160.txt", "line": "the account opens the same day with a welcome pack sent by mail." }
+  ]
+}

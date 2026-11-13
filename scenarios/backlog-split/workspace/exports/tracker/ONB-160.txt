@@ -1,0 +1,10 @@
+Key: ONB-160
+Project: ONB
+Title: Pilot branch onboarding
+Status: To do
+Estimate: 13
+Assignee: the tech lead
+Reporter: the PO
+Updated: {workday-2}T10:00:00+01:00
+
+The customer books an appointment in a pilot branch, the branch adviser checks the identity document of the customer, and the account opens the same day with a welcome pack sent by mail.

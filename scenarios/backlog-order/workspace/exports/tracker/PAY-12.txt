@@ -1,0 +1,10 @@
+Key: PAY-12
+Project: PAY
+Title: Payment status endpoint
+Status: To do
+Estimate: 5
+Assignee: the tech lead
+Reporter: the head of payments
+Updated: {workday-4}T09:30:00+01:00
+
+The payments API tells a caller the status of a payment.

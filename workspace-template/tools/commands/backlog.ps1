@@ -6,6 +6,7 @@
 #   backlog apply <id>     applies one approved change, once (see Invoke-Apply below)
 #   backlog alerts         checks the backlog alerts, state\backlog-alerts.json, and names the
 #                          refinement sessions near
+#   backlog order          writes the order the agent proposes for the top of the backlog as a view
 #
 # The one exception to "the agent modifies nothing in a source": a change creates a ticket or
 # edits one of its texts (title, description, acceptance criteria), nothing else. A change that
@@ -117,7 +118,44 @@ if ($action -ceq 'alerts') {
     if (-not $sessions) { 'No refinement session within five working days in the calendar snapshot of today: not_ready stays empty, and the morning page shows none.' }
     return
 }
-if ('check', 'show', 'apply' -cnotcontains $action) { Stop-Run 'backlog takes check, show <id> or apply <id>.' }
+if ($action -ceq 'order') {
+    # The order the agent proposes for the top of the backlog, state\backlog-order.json, written as
+    # a view, views\backlog-order.md. It moves nothing in the tracker: reordering is the PO's.
+    #   { "order": [ { "ticket": "ONB-160", "title": "...", "why": "... [D-2026-002]" } ] }
+    # first the ticket to take first. Each one says why it stands there, citing a record as a view
+    # does. A record cited missing or superseded, a reason that cites none, a ticket placed twice or
+    # more tickets than backlog_top of settings.json (10 when not set) refuses the order whole.
+    Assert-RegisterCommitted
+    $orderPath = Join-Path $Workspace 'state\backlog-order.json'
+    if (-not (Test-Path -LiteralPath $orderPath)) { Stop-Run 'No order proposed: state\backlog-order.json does not exist.' }
+    $file = try { Read-JsonFile $orderPath } catch { Stop-Run 'state\backlog-order.json cannot be read: it must hold JSON, saved as UTF-8. Nothing was written.' }
+    $definition = '{ "type": "object", "fields": { "order": { "type": "list", "required": true, "items": { "type": "object", "fields": {
+        "ticket": { "type": "text", "required": true }, "title": { "type": "text" }, "why": { "type": "text", "required": true } } } } } }' | ConvertFrom-Json
+    $top = if ($Settings.backlog_top -is [int] -and $Settings.backlog_top -gt 0) { $Settings.backlog_top } else { 10 }
+    $tickets = @($file.order | Where-Object { $null -ne $_ })
+    $placed = @{}
+    $problems = @(
+        Test-Value $definition $file ''
+        if (-not $tickets) { 'the order holds no ticket' }
+        if ($tickets.Count -gt $top) { "the order holds $($tickets.Count) tickets, and the top of the backlog is $top, as backlog_top in settings.json says" }
+        foreach ($ticket in $tickets) {
+            if (-not @(Get-Cited "$($ticket.why)").Count) { "the reason of ticket $($ticket.ticket) cites no record: it cites the subject, the commitment or the decision that places it, as [D-2026-002]" }
+            if ($placed["$($ticket.ticket)"]) { "ticket $($ticket.ticket) is placed twice" }
+            $placed["$($ticket.ticket)"] = $true
+        }
+    ) + @(Test-Cited @(Get-Cited (@(Get-Texts $file) -join "`n")))
+    if ($problems) { Stop-Run (@('Order refused: state\backlog-order.json. Nothing was written; correct it, then run backlog order again.') + @($problems | ForEach-Object { "- $_" })) }
+    $labels = Get-Labels $Settings.languages.default
+    $words = $labels.backlog_order
+    $rank = 0
+    $rows = @(foreach ($ticket in $tickets) { , @("$((++$rank))", "$($ticket.ticket)", "$($ticket.title)", "$($ticket.why)" | ForEach-Object { ($_ -replace '\s*\r?\n\s*', ' ').Replace('|', '\|') }) })
+    $lines = @("# $($words.title)", '') + @(Get-Stamp $labels) + @('', $words.note, '') + @(Write-Table $words.rank, $words.ticket, $words.ticket_title, $words.why $rows)
+    Write-TextFile (Join-Path $Workspace 'views\backlog-order.md') (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
+    "Proposed order written: views/backlog-order.md, $($tickets.Count) ticket(s). Nothing was moved in the tracker: reordering the backlog is the PO's, in the tracker."
+    return
+}
+
+if ('check', 'show', 'apply' -cnotcontains $action) { Stop-Run 'backlog takes check, show <id>, apply <id>, order or alerts.' }
 $changes = @(Get-BacklogChanges)
 
 if ($action -ceq 'check') {

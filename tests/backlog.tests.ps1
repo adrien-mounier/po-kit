@@ -220,3 +220,58 @@ Test 'backlog check refuses a change that would delete, close, reopen or move a 
         Assert-Equal $before (Get-WorkspaceSnapshot $ws) "files of the workspace for $($case.reason)"
     }
 }
+
+Test 'the backlog routine splits a ticket too large into two to four created tickets and an edit of the original, never closing it, and proposes an order of the top of the backlog that moves nothing' {
+    $routine = Get-Content -LiteralPath (Join-Path $KitRoot 'routines\backlog\SKILL.md') -Raw -Encoding UTF8
+    Assert-Match $routine '(?s)## Split a ticket too large.+estimate is above `split_estimate_above`.+several needs.+two to four smaller tickets.+`create` change.+from the ticket template when the workspace has one.+user story.+acceptance criteria.+one `edit` change.+what remains.+never closed' 'the split'
+    Assert-Match $routine '(?s)## Propose an order for the top of the backlog.+Reordering is a move, which stays the PO.s.+`backlog_top`.+10 when it is not set.+cites by its identifier.+`backlog order`.+nothing was moved in the tracker' 'the order'
+    Assert-Match (Get-Content -LiteralPath (Join-Path $KitRoot 'workspace-template\AGENTS.md') -Raw -Encoding UTF8) '(?s)`backlog_top`: as `10`.+`split_estimate_above`: as `8`' 'the settings in the workspace rules'
+}
+
+function Set-Order([string]$Workspace, [object[]]$Order) {
+    Write-Json (Join-Path $Workspace 'state\backlog-order.json') @{ order = $Order }
+}
+
+Test 'backlog order writes the order the agent proposes for the top of the backlog as a stamped view, each ticket with its reason citing the register, that verify passes, and says reordering is the PO''s' {
+    $ws = New-TestWorkspaceWithWeek
+    Set-Order $ws @(
+        @{ ticket = 'ONB-160'; title = 'Choose a pilot branch'; why = 'The pilot branches are awaited by 2026-03-27 [D-2026-002], and the subject is under Now [mobile-onboarding].' },
+        @{ ticket = 'ONB-142'; title = 'Identity document scan screen'; why = 'The subject is under Now [mobile-onboarding].' }
+    )
+
+    $run = Invoke-Register $ws backlog order -Now 2026-03-11T09:00:00+01:00
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'Proposed order written: views/backlog-order\.md, 2 ticket\(s\)\. Nothing was moved in the tracker' 'output'
+    $view = [IO.File]::ReadAllText((Join-Path $ws 'views\backlog-order.md'))
+    Assert-Match $view '(?m)^# Proposed order of the backlog' 'its title'
+    Assert-Match $view '(?m)^> Generated: 2026-03-11T09:00:00\+01:00\.' 'its stamp'
+    Assert-Match $view 'Nothing is moved in the tracker: reordering the backlog is yours, in the tracker\.' 'who reorders'
+    Assert-Match $view '(?s)\| 1 +\| ONB-160 \| Choose a pilot branch +\| The pilot branches are awaited by 2026-03-27 \[D-2026-002\].+\| 2 +\| ONB-142 \| Identity document scan screen \| The subject is under Now \[mobile-onboarding\]\. \|' 'the tickets in order, each with its reason'
+    $run = Invoke-Register $ws verify views\backlog-order.md
+    Assert-Equal 0 $run.ExitCode "verify, with output: $($run.Output)"
+}
+
+Test 'backlog order refuses an order citing a record missing or superseded, a ticket placed without a record cited, and more tickets than the top of the backlog, 10 by default, saying why and writing nothing' {
+    Assert-Equal 10 (Read-Json (Join-Path $KitRoot 'workspace-template\settings.json')).backlog_top 'the top of the backlog by default'
+    $ws = New-TestWorkspaceWithWeek
+    $settings = Read-Json (Join-Path $ws 'settings.json')
+    $settings | Add-Member backlog_top 2 -Force
+    Write-Json (Join-Path $ws 'settings.json') $settings
+    Set-Order $ws @(
+        @{ ticket = 'ONB-160'; why = 'The pilot is presented to the committee [C-2026-001].' },
+        @{ ticket = 'ONB-142'; why = 'The team asked for it.' },
+        @{ ticket = 'ONB-150'; why = 'The branches are chosen [D-2026-099].' }
+    )
+    $before = Get-WorkspaceSnapshot $ws
+
+    $run = Invoke-Register $ws backlog order
+
+    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'Order refused: state\\backlog-order\.json\. Nothing was written' 'output'
+    Assert-Match $run.Output '(?m)^- C-2026-001 is superseded by D-2026-005\.$' 'the record superseded'
+    Assert-Match $run.Output '(?m)^- D-2026-099 is not in the register\.$' 'the record missing'
+    Assert-Match $run.Output '(?m)^- the reason of ticket ONB-142 cites no record' 'the ticket placed without a record'
+    Assert-Match $run.Output '(?m)^- the order holds 3 tickets, and the top of the backlog is 2, as backlog_top in settings\.json says$' 'the top'
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+}

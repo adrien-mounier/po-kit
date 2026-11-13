@@ -30,7 +30,7 @@ Written with a forward slash, the command runs the same in every shell.
 - `view intake <subject>` writes the intake card of a subject, `views/intake/<subject>.md`, replacing the last one: see "Requests for AI use cases" below. `view intake <subject> fr` writes it in another language.
 - `view ranking` writes the ranked portfolio, `views/ranking.md`, replacing the last one: see "Scores and the ranked portfolio" below. It takes a language and a client bank as `view` does: `view ranking fr bank Harbour Bank`.
 - `steering 2026-03-09` writes the steering pack of the committee of that date, `views/steering/2026-03-09.html`, replacing the last one; `steering` alone names the committees whose pack to offer and writes nothing: see "The steering pack" below.
-- `backlog check` validates the change proposal, `state/backlog-changes.json`; `backlog show 2` shows change 2 as the exact text before and after; `backlog apply 2` applies change 2 once it is approved: see "Changes to the tracker" below.
+- `backlog check` validates the change proposal, `state/backlog-changes.json`; `backlog show 2` shows change 2 as the exact text before and after; `backlog apply 2` applies change 2 once it is approved; `backlog order` writes the order you propose for the top of the backlog, `views/backlog-order.md`, replacing the last one: see "Changes to the tracker" below.
 - `backlog alerts` checks your backlog alerts, `state/backlog-alerts.json`, and names each refinement session near: see "Backlog alerts" below.
 
 A refused proposal lists its reasons and writes nothing: correct the proposal and preview again.
@@ -99,6 +99,15 @@ An edit whose text before no longer matches the ticket is never applied: tell th
 
 Each change recorded as applied goes to the applied-change log, `state/backlog-log.json`, which is the register tool's: the date, the change, its ticket or project, its field, the text before and after, who approved it and how it was applied. The next `apply` of the register commits it.
 
+**A split** of a ticket too large for one sprint is changes like any other: a `create` for each smaller ticket and an `edit` of the original's text saying what remains, each approved one at a time. The original is never closed.
+
+**The order you propose for the top of the backlog** is no change: reordering is a move, which stays the PO's. You write it in `state/backlog-order.json`, written as UTF-8 without a byte order mark and replaced each time, the ticket to take first at the top:
+
+    { "order": [ { "ticket": "ONB-160", "title": "Choose a pilot branch",
+                   "why": "The pilot branches are awaited by 2026-03-27 [D-2026-002]." } ] }
+
+Each `why` cites, as a view does, the record that places the ticket: the subject's horizon `[mobile-onboarding]`, a commitment's due date or a decision. `backlog order` writes it as the view `views/backlog-order.md`, stamped, and refuses it whole when a record it cites is missing or superseded, a `why` cites none, a ticket is placed twice, or it holds more tickets than `backlog_top`. Nothing is moved in the tracker; the PO reorders there.
+
 ## Backlog alerts
 
 The tickets of the watched projects that need the PO's eye are your backlog alerts, `state/backlog-alerts.json`, written as UTF-8 without a byte order mark and rewritten whole each time, every list present even when it holds nothing. The backlog routine says how you find them; the morning page counts them.
@@ -117,6 +126,7 @@ The tickets of the watched projects that need the PO's eye are your backlog aler
 **An alert is about the ticket, never about a person**: it names no one who works on the ticket or let it wait, and holds no field but these. You flag; the PO decides: you never close, merge or move a ticket, and you never set an estimate. A fix you propose is a change to the tracker, as above.
 
 The register tool checks the file as it checks your notes: a decision cited that is missing, superseded or no decision, a ticket said stale that was updated within the delay, any field not of the format, and the file is left off the morning page, which says so.
+
 ## The settings
 
 `settings.json` is the PO's, edited by hand. Four of its lists bound what a record may say:
@@ -136,6 +146,8 @@ When the PO names a gate, an objective, a client bank or a kind of task that is 
 `steering_words`: as `["steering committee"]`, the words that show a steering committee in a meeting's title: see "The steering pack" above.
 
 `refinement_words`: as `["refinement", "backlog grooming"]`, the words that show a refinement session in a meeting's title; and `delays_in_days.ticket`, as `60`, the days after which a ticket not updated is stale: see "Backlog alerts" above.
+
+`backlog_top`: as `10`, how many tickets the order you propose for the top of the backlog holds at most. `split_estimate_above`: as `8`, the estimate, in the tracker's own unit, above which a ticket is too large for one sprint and you propose to split it. See "Changes to the tracker" above.
 
 `briefing_minutes`: as `30`, the length the morning briefing aims at. When it holds more questions than fit, the most important are asked and the rest wait for the next one.
 

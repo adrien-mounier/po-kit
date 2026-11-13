@@ -1,0 +1,5 @@
+{ "order": [
+    { "ticket": "ONB-160", "title": "Pilot branch onboarding", "why": "The pilot branches are awaited from the sponsor [D-{year}-001], and the subject is under Now [mobile-onboarding]." },
+    { "ticket": "ONB-142", "title": "Scan screen", "why": "The subject is under Now [mobile-onboarding]." },
+    { "ticket": "PAY-12", "title": "Payment status endpoint", "why": "The subject is under Next [payments-api-contribution]." }
+] }
