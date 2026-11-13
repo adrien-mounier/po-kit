@@ -39,12 +39,12 @@ function Get-Count([string]$Block) {
 
 function Get-Ids([string]$Html) {
     # The identifiers of the records the lines of some HTML name, in order.
-    @([regex]::Matches($Html, '<span class="ref"><span class="subj">[^<]*</span> &middot; <span class="id">([^<]+)</span>') | ForEach-Object { $_.Groups[1].Value }) -join ' '
+    @([regex]::Matches($Html, '<span class="ref"><span class="subj">[^<]*</span> &middot; <span class="ref-id">([^<]+)</span>') | ForEach-Object { $_.Groups[1].Value }) -join ' '
 }
 
 function Get-Row([string]$Html, [string]$Id) {
     # The HTML of the line that names a record.
-    if ($Html -match "(?s)<li class=`"row[^`"]*`">(?:(?!</li>).)*&middot; <span class=`"id`">$Id</span>.*?</li>") { $Matches[0] }
+    if ($Html -match "(?s)<li class=`"row[^`"]*`">(?:(?!</li>).)*&middot; <span class=`"ref-id`">$Id</span>.*?</li>") { $Matches[0] }
 }
 
 function New-TestWorkspaceWithDay {

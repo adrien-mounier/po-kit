@@ -124,7 +124,7 @@ function New-Line([string]$Date, [string]$Id, [string]$Title, [string]$Who, [str
     $class = @{ late = ' is-late'; today = ' is-soon'; week = ' is-soon' }[$dated]
     @{
         date = $Date; id = $Id; dated = $dated
-        html = New-Row $class $when $Title $Who "<span class=`"subj`">$(Html $Subject)</span> &middot; <span class=`"id`">$(Html $Id)</span>" $Button $Ask $Effort $Id
+        html = New-Row $class $when $Title $Who "<span class=`"subj`">$(Html $Subject)</span> &middot; <span class=`"ref-id`">$(Html $Id)</span>" $Button $Ask $Effort $Id
     }
 }
 

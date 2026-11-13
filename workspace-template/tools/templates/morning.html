@@ -93,7 +93,7 @@ h1 .sub { font: 400 0.875rem/1.2 "Segoe UI Variable Text", "Segoe UI", system-ui
 /* A subject and an identifier: the subject is cut, the identifier always shows whole. */
 .ref:has(> .subj) { display: flex; gap: 0 0.3em; }
 .ref .subj { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.ref:has(> .subj) .id { flex: none; }
+.ref .ref-id { flex: none; }
 .ask { font: inherit; font-size: 0.8125rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; padding: 0.25rem 0.625rem; min-height: 2rem; border: 1px solid var(--edge); border-radius: 6px; background: var(--btn); color: var(--ink); cursor: pointer; white-space: nowrap; transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out; }
 .ask:hover { background: var(--btn-hover); border-color: var(--ink-2); }
 .ask:active { transform: translateY(1px); }

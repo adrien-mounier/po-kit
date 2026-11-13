@@ -28,7 +28,7 @@ function Get-Action([string]$Block, [int]$Number) {
 
 function Get-ItemsRow([string]$Html, [string]$Id) {
     # The HTML of the line of a ruled block that names a record.
-    if ($Html -match "(?s)<li class=`"row[^`"]*`"[^>]*>(?:(?!</li>).)*(<span class=`"id`">|<span class=`"ref`">)$Id</span>.*?</li>") { $Matches[0] }
+    if ($Html -match "(?s)<li class=`"row[^`"]*`"[^>]*>(?:(?!</li>).)*(<span class=`"ref-id`">|<span class=`"ref`">)$Id</span>.*?</li>") { $Matches[0] }
 }
 
 function Get-ItemsButton([string]$Html) {
@@ -125,7 +125,7 @@ Test 'the reference of a line shows its subject and its identifier apart, so tha
 
     Invoke-Register $ws morning -Now $ItemsMorning | Out-Null
 
-    Assert-Match (Get-ItemsRow (Get-ItemsBlock (Read-ItemsPage $ws) 'owe') 'C-2026-001') '<span class="ref"><span class="subj">mobile-onboarding</span> &middot; <span class="id">C-2026-001</span></span>' 'the reference of a line'
+    Assert-Match (Get-ItemsRow (Get-ItemsBlock (Read-ItemsPage $ws) 'owe') 'C-2026-001') '<span class="ref"><span class="subj">mobile-onboarding</span> &middot; <span class="ref-id">C-2026-001</span></span>' 'the reference of a line'
     Assert-Match (Read-ItemsPage $ws) '\.ref:has\(> \.subj\) \{ display: flex;' 'the reference laid out so that only the subject shrinks'
     Assert-Match (Read-ItemsPage $ws) '\.ref \.subj \{ min-width: 0; overflow: hidden; text-overflow: ellipsis; \}' 'the subject cut with an ellipsis'
 }
