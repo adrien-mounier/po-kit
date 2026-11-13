@@ -27,6 +27,7 @@ Written with a forward slash, the command runs the same in every shell.
 - `check` verifies the whole register and what has gone stale, and writes the check report, `views/check-report.md`. It fails on an error, not on a warning. `apply` runs it after every write and prints its summary, `Check: 0 error(s), 2 warning(s).`: when it counts anything, read the check report and tell the PO what it lists.
 
 - `view intake <subject>` writes the intake card of a subject, `views/intake/<subject>.md`, replacing the last one: see "Requests for AI use cases" below. `view intake <subject> fr` writes it in another language.
+- `view ranking` writes the ranked portfolio, `views/ranking.md`, replacing the last one: see "Scores and the ranked portfolio" below. It takes a language and a client bank as `view` does: `view ranking fr bank Harbour Bank`.
 
 A refused proposal lists its reasons and writes nothing: correct the proposal and preview again.
 
@@ -41,6 +42,14 @@ A request for an AI use case, someone asking for one in a mail, a chat message, 
 A refused request is closed with its reason: an update that gives `status` `closed` and `notes` that end with `Refused on <date>: <reason>`. Its history keeps the reason, and the portfolio view no longer shows it.
 
 The intake card, `view intake <subject>`, shows the five parts, the work changes answer and the clearance; a part not given is shown as not given. It is a draft: it counts for nothing until the PO uses it. It is written from a template: the kit's is `tools/templates/intake-<language>.md`. **A template of the organisation goes in `templates/intake-<language>.md` in this workspace**, never under `tools/`, which every update replaces: it then replaces the kit's for this workspace only. It holds each of `{title}`, `{id}`, `{stamp}`, `{problem}`, `{banks}`, `{requested_by}`, `{data_needed}`, `{expected_gain}`, `{work_changes}` and `{clearance}`; the register tool refuses one that leaves any out.
+
+## Scores and the ranked portfolio
+
+A subject may carry three scores, each a whole number from 1 to 5 with one sentence of reason: `value_score` with `value_reason` (what it would bring: 5 is the most), `feasibility_score` with `feasibility_reason` (how easily it can be done: 5 is the easiest) and `risk_score` with `risk_reason` (what could go wrong: 5 is the riskiest). It may carry the AI Act mark too: `ai_act_high_risk`, `true` or `false`, with `ai_act_reason`. The register tool refuses a score outside 1 to 5, one that is not a whole number, and a score or a mark without its reason.
+
+**Scores are yours to propose and the PO's to accept.** The collect and subject routines say when and how: always on a line of their own, `"interpreted": true`, so that nothing is recorded without the PO's yes and the PO can keep a subject while dropping its scores. The AI Act mark is a mark to check, never legal advice.
+
+`view ranking` ranks the active subjects by value times feasibility, highest first, ties by value, then title; those without both scores follow, under "Not scored". Risk, the AI Act mark and whether the work changes stand in their own columns, never in the score, and a subject marked high-risk is shown so, in a word and an icon, wherever it stands. `export` gives each subject's scores and mark with their reasons.
 
 ## The settings
 

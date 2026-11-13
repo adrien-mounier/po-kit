@@ -17,6 +17,7 @@
 #   -Check            has the register tool run the check
 #   -Morning          has the register tool write the morning page
 #   -Intake <subject> has the register tool write the intake card of this subject
+#   -Ranking          has the register tool write the ranked portfolio
 #   -Weekly <file>    stores this text as the weekly synthesis of the day, with the stamp and the
 #                     portfolio view that export prints in place of {stamp} and {portfolio}
 #   -ByHand           writes a record itself, which no routine may do
@@ -26,7 +27,7 @@
 #   -Stream           prints all it prints as a transcript does, one line of JSON per step, as
 #                     Claude Code does with --output-format stream-json --verbose
 param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [string]$Snapshot, [string]$MeetingNotes, [string]$Questions, [switch]$ByHand,
-    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake)
+    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [switch]$Ranking)
 
 $prompt = [Console]::In.ReadToEnd()
 $steps = {
@@ -54,6 +55,7 @@ foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'stat
 if ($Check) { & powershell.exe -NoProfile -File tools\register.ps1 check }
 if ($Morning) { & powershell.exe -NoProfile -File tools\register.ps1 morning }
 if ($Intake) { & powershell.exe -NoProfile -File tools\register.ps1 view intake $Intake }
+if ($Ranking) { & powershell.exe -NoProfile -File tools\register.ps1 view ranking }
 if ($Weekly) {
     # The register tool prints UTF-8; read it as such.
     try { [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false } catch { }

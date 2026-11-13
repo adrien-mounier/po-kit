@@ -6,8 +6,17 @@
 #                            bank; its stamp says so. view fr bank Harbour Bank does both.
 #   view intake <subject>    the intake card of a subject, views\intake\<subject>.md; view intake
 #                            <subject> fr in another language
+#   view ranking             the ranked portfolio, views\ranking.md; it takes a language and a client
+#                            bank as the portfolio view does: view ranking fr bank Harbour Bank
 #
-# apply regenerates the view after every write, in the default language, with every subject.
+# apply regenerates the portfolio view after every write, in the default language, with every
+# subject. The ranked portfolio is written on request only.
+#
+# The ranked portfolio orders the active subjects by value times feasibility, highest first, ties
+# by value, then title; those without both scores follow, under "not scored", by title. Risk, the
+# AI Act mark and whether the work changes have their own columns: they never weigh on the rank,
+# and a subject marked high-risk under the AI Act is shown so, in a word and an icon, wherever it
+# stands.
 #
 # The intake card is written from a template: templates\intake-<language>.md in the workspace when
 # the organisation has its own, otherwise the kit's, tools\templates\intake-<language>.md. Each
@@ -42,6 +51,37 @@ function Write-IntakeCard($Subject, [string]$Language) {
     "Intake card written in '$Language': views\intake\$($Subject.id).md"
 }
 
+function Write-RankingView($Labels, [string]$Bank) {
+    $words = $Labels.ranking
+    $given = { param($Value) if ($null -ne $Value) { "$Value" } else { '-' } }
+    # The cells of a subject after its rank and its score: itself, its scores, its AI Act mark and
+    # whether the work changes.
+    $cells = {
+        param($Subject)
+        "$($Subject.title) [$($Subject.id)]$(if ($Subject.banks) { " ($(Format-Value $Subject.banks))" })"
+        foreach ($score in 'value_score', 'feasibility_score', 'risk_score') { & $given $Subject.$score }
+        if ($Subject.ai_act_high_risk -eq $true) { $words.high_risk } elseif ($Subject.ai_act_high_risk -eq $false) { $words.not_high_risk } else { '-' }
+        if ($Subject.work_changes) { $Labels.intake.work_changes.($Subject.work_changes) } else { '-' }
+    }
+    $escape = { param($Cells) , @($Cells | ForEach-Object { ($_ -replace '\s*\r?\n\s*', ' ').Replace('|', '\|') }) }
+    $subjects = Get-ActiveSubjects $Bank
+    $isScored = { $null -ne $_.value_score -and $null -ne $_.feasibility_score }
+    $scored = @($subjects | Where-Object $isScored | Sort-Object @{ Expression = { $_.value_score * $_.feasibility_score }; Descending = $true },
+        @{ Expression = { $_.value_score }; Descending = $true }, @{ Expression = { "$($_.title)" } })
+    $rank = 0
+    $rows = @(foreach ($subject in $scored) {
+            $all = @(& $cells $subject)
+            & $escape (@("$((++$rank))", $all[0], "$($subject.value_score * $subject.feasibility_score)") + $all[1..5])
+        })
+    $others = @($subjects | Where-Object { -not (& $isScored) } | Sort-Object { "$($_.title)" } | ForEach-Object { & $escape @(& $cells $_) })
+    $columns = $words.value, $words.feasibility, $words.risk, $words.ai_act, $words.work_changes
+    $lines = @("# $($words.title)", '') + @(Get-Stamp $Labels $Bank) + @('', $words.note, '', "## $($words.ranked)", '')
+    $lines += if ($rows) { Write-Table (@($words.rank, $Labels.portfolio.subject, $words.score) + $columns) $rows } else { $Labels.portfolio.no_subject }
+    $lines += '', "## $($words.not_scored)", ''
+    $lines += if ($others) { Write-Table (@($Labels.portfolio.subject) + $columns) $others } else { $Labels.portfolio.no_subject }
+    Write-TextFile (Join-Path $Workspace 'views\ranking.md') (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
+}
+
 # The stamp of the view names a committed register.
 Assert-RegisterCommitted
 $words = @($Arguments | Where-Object { $null -ne $_ })
@@ -53,6 +93,8 @@ if ($words.Count -and $words[0] -ceq 'intake') {
     Write-IntakeCard $found.record $(if ($words.Count -gt 2) { "$($words[2])" } else { $Settings.languages.default })
     return
 }
+$ranking = $words.Count -and $words[0] -ceq 'ranking'
+if ($ranking) { $words = @($words | Select-Object -Skip 1) }
 $at = [Array]::IndexOf([string[]]$words, 'bank')
 $bank = $null
 if ($at -ge 0) {
@@ -66,6 +108,11 @@ if ($null -ne $bank) {
     if ($listed -cnotcontains $bank) {
         Stop-Run "The client bank '$bank' is not listed. Nothing was written. settings.json lists these client banks under 'banks': $(if ($listed) { $listed -join ', ' } else { 'none' }). A bank the PO names that is not listed, the PO adds there first."
     }
+}
+if ($ranking) {
+    Write-RankingView $labels $bank
+    "Ranked portfolio written in '$language'$(if ($bank) { " for the client bank $bank" }): views\ranking.md"
+    return
 }
 Write-PortfolioView $labels $bank
 "Portfolio view written in '$language'$(if ($bank) { " for the client bank $bank" }): views\portfolio.md"

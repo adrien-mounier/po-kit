@@ -24,6 +24,7 @@
       "missing_gate_not_out_of_frame": "Subject under Now with a missing gate and a clearance other than out of frame",
       "taken_decision_without_author": "Taken decision without its author",
       "effort_of_another_person": "Effort or start recorded on a commitment the PO does not own",
+      "score_without_reason": "Score without its reason",
       "commitment_without_owner": "Open commitment without owner",
       "commitment_without_due_date": "Open commitment without due date",
       "commitment_overdue": "Overdue commitment",
@@ -64,6 +65,21 @@
     "not_given": "not given",
     "parts": { "problem": "problem", "banks": "client bank", "requested_by": "who asks", "data_needed": "data needed", "expected_gain": "expected gain" },
     "work_changes": { "yes": "Yes", "no": "No", "unknown": "Unknown" }
+  },
+  "ranking": {
+    "title": "Ranked portfolio",
+    "note": "Ranked by value times feasibility, highest first; ties by value, then title. Risk, the AI Act mark and whether the work changes stand beside the score, never in it. A score is from 1 to 5; \"-\" is not given.",
+    "ranked": "Ranked",
+    "not_scored": "Not scored",
+    "rank": "Rank",
+    "score": "Value x feasibility",
+    "value": "Value",
+    "feasibility": "Feasibility",
+    "risk": "Risk",
+    "ai_act": "AI Act",
+    "work_changes": "Work changes",
+    "high_risk": "**⚠ High-risk**",
+    "not_high_risk": "No"
   },
   "effort": {
     "adjusted": "est. {0} d, adjusted x{1} from past {2}: {3} d",

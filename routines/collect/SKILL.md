@@ -124,6 +124,28 @@ When no kind of `task_kinds` fits, leave `task_kind` out, and tell the PO the ki
 
 A part the request does not give is left out: keep one question for it, with the answer you recommend. **Every new subject gets the work changes question**: when the source does not settle it, keep the question `Does <title> change the way people work, or only add a tool?`, with your recommended answer and why, as `No: the analysts keep their work and gain a search tool.` While the line waits for the PO, ask these questions in the same answer as the table; once the subject is recorded, those not answered go to your open questions, about the subject. Then run the register tool's `view intake <identifier of the subject>`, and tell the PO where the intake card is: a draft, to review before using it.
 
+**The scores of a request.** Each subject a request creates is followed, on the next line, by one update that proposes its scores. It names the subject by its line, `"id": "line 2"` for the subject that line 2 creates, is `"interpreted": true`, carries the source of the subject, and gives, each with its reason in one short sentence:
+
+- `value_score` and `value_reason`: what the use case would bring, from 1 (little) to 5 (a lot): its expected gain, and how many people or cases it serves;
+- `feasibility_score` and `feasibility_reason`: how easily it can be done, from 1 (hard) to 5 (easy): the data it needs and whether that data is at hand;
+- `risk_score` and `risk_reason`: what could go wrong, from 1 (little) to 5 (a lot): harm to a customer, sensitive data, an error no one would catch;
+- `ai_act_high_risk` and `ai_act_reason`: the AI Act mark, below.
+
+```json
+{ "op": "update", "id": "line 2", "interpreted": true,
+  "source": { "where": "exports/mail/received/credit memo drafting.txt", "read_on": "2026-03-02" },
+  "fields": { "value_score": 4, "value_reason": "Every credit memo would take two hours instead of a day.",
+              "feasibility_score": 3, "feasibility_reason": "The memos exist, but they must be gathered from three teams.",
+              "risk_score": 2, "risk_reason": "An analyst reviews every draft before it is used.",
+              "ai_act_high_risk": false, "ai_act_reason": "It drafts a memo an analyst reviews; it does not assess the creditworthiness of a person." } }
+```
+
+A score is a whole number from 1 to 5: the register tool refuses any other, and a score or a mark without its reason. A score the source gives you nothing to ground is left out, with a question. The scores are on a line of their own so that the PO can keep the subject and drop them, and they wait for the PO's yes like any interpreted line.
+
+**The AI Act mark is a mark to check, never legal advice.** Give `true` when the use case would fall in an area that the EU AI Act lists as high-risk (its Annex III), such as assessing the creditworthiness or the credit score of natural persons, deciding their access to essential private services, or recruiting and managing workers; or when it would be the safety component of a product. Give `false` when it plainly falls in none, as a tool that drafts a text a person reviews. Name the area in `ai_act_reason`, and tell the PO that the mark is theirs and the organisation's compliance function's to confirm. When you cannot tell, leave the mark out and keep the question. The mark never weighs on a score: the ranked portfolio shows it beside the score.
+
+When the PO asks for the ranked portfolio, run the register tool's `view ranking` (`view ranking bank <client bank>` for one client bank) and tell the PO where it is.
+
 **What fits no subject.** A passage that matters to the PO's work and is about no subject of the register becomes no record. It goes to `unclassified`, with the note as its source, and you tell the PO.
 
 **A question you cannot settle.** When a note leaves unclear something a record needs (who of two people owns it, a date "to be confirmed", which subject a passage is about), record what the note does say and keep the question. Once the proposal is applied or waits for the PO, add it to your open questions, as `AGENTS.md` says: about the record once it is recorded, its subject otherwise, with the answer you recommend. A real effort you keep a question for goes there too. The briefing asks them when the PO does not answer first.
@@ -178,7 +200,7 @@ Done when the proposal holds one operation per change found in step 4, and every
 ## 6. Preview, then apply once the PO accepts
 
 1. Run the register tool's `preview`. When it refuses the proposal, it lists its reasons: correct the proposal and preview again. A reason the notes cannot settle is a question for the PO.
-2. An answer the PO gave ahead, with the request, counts: go to 4. Otherwise the last line of `preview` states the validation mode the PO chose in the settings:
+2. An answer the PO gave ahead, with the request, counts: go to 4. It counts for your scores only when it accepts the proposal as `preview` shows it, or names the scores; otherwise run `apply plain` and show what waits. Otherwise the last line of `preview` states the validation mode the PO chose in the settings:
    - `Validation mode: all.` Every line waits for the PO, and the table to show is the one `preview` printed.
    - `Validation mode: interpreted.` The PO accepted the plain facts ahead: run `apply plain`. It records them, files the notes, and prints under `Waiting for the PO` the table of the lines that still wait, numbered again from 1: that table is the one to show. Tell the PO first what was recorded without asking: each record with its identifier, the notes filed, what went to unclassified, what the check found. When it prints no such table, no line waits.
 3. Copy the table into your answer, unchanged, every line and every column: the PO reads there the evidence level and the interpreted mark of each line, and names lines by their number. Say that these lines wait for the PO, then wait for the answer.
@@ -192,4 +214,4 @@ Done when the proposal holds one operation per change found in step 4, and every
 
 **Ask the real effort you could not infer.** Each question on a real effort that you kept in step 4 goes in the same answer, one line each, as step 4 writes it. When the PO answers, propose the update it gives and preview it as any proposal.
 
-Done when every line is recorded, dropped, or shown to the PO as waiting for them, you have told the PO each record written with its identifier, the notes filed, what went to unclassified, what the check found, each objective you recommend and each real effort you ask, each subject a request created has its intake card, and each question you could not settle is in your open questions.
+Done when every line is recorded, dropped, or shown to the PO as waiting for them, you have told the PO each record written with its identifier, the notes filed, what went to unclassified, what the check found, each objective you recommend and each real effort you ask, each subject a request created has its intake card and its scores proposed, and each question you could not settle is in your open questions.

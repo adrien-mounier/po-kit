@@ -53,7 +53,8 @@ Test 'the record carries the common fields and every subject field, with its dat
         'notes', 'supersedes', 'superseded_by', 'history',
         'kind', 'horizon', 'clearance', 'cleared_by', 'cleared_on', 'owning_entity', 'sponsor', 'decider', 'banks', 'gates',
         'next_step', 'next_date', 'next_date_confirmed', 'watch_list', 'links',
-        'work_changes', 'work_changes_reason', 'problem', 'requested_by', 'data_needed', 'expected_gain'
+        'work_changes', 'work_changes_reason', 'problem', 'requested_by', 'data_needed', 'expected_gain',
+        'value_score', 'value_reason', 'feasibility_score', 'feasibility_reason', 'risk_score', 'risk_reason', 'ai_act_high_risk', 'ai_act_reason'
     $actual = @($record.PSObject.Properties | ForEach-Object { $_.Name })
     Assert-Equal (($expected | Sort-Object) -join ' ') (($actual | Sort-Object) -join ' ') 'fields of the record'
 

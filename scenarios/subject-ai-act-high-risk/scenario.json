@@ -1,0 +1,12 @@
+{
+  "routine": "subject",
+  "prompt": "A request for an AI use case reached me, and I take it in as a subject: Instant credit scoring, asked by the head of retail credit of Alpine Bank. The problem: a personal loan application waits two days for an analyst to assess whether the applicant is creditworthy. The data needed: five years of personal loan applications and their repayments, which the bank already holds in one place. The expected gain: every applicant answered within the hour, for thousands of applications a month. The work changes: the analysts only review the borderline applications. Propose its scores and its AI Act mark. I accept the whole proposal as your preview will show it, scores included: apply it without asking me again. Then write the ranked portfolio.",
+  "expect": [
+    { "record": "instant-credit-scoring", "field": "horizon", "is": "later" },
+    { "record": "instant-credit-scoring", "field": "ai_act_high_risk", "is": true },
+    { "file": "views/ranking.md", "line": "[instant-credit-scoring]" },
+    { "file": "views/ranking.md", "line": "High-risk" },
+    { "verified": "views/ranking.md" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

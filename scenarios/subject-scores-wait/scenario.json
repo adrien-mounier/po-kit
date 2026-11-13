@@ -1,0 +1,20 @@
+{
+  "routine": "subject",
+  "prompt": "A request for an AI use case reached me, and I take it in as a subject: Complaint triage assistant, asked by the head of customer care of Harbour Bank. The problem: complaints wait three days before anyone reads them. The data needed: two years of complaint mails, with their category. The expected gain: every complaint routed to the right team within one hour. The work changes: the care agents stop sorting complaints by hand. Propose its scores. I accept the subject as I described it, in advance: record it at once. Your scores I want to see before anything of them is recorded.",
+  "expect": [
+    { "record": "complaint-triage-assistant", "field": "horizon", "is": "later" },
+    { "record": "complaint-triage-assistant", "field": "clearance", "is": "pending" },
+    { "record": "complaint-triage-assistant", "field": "value_score", "is": null },
+    { "record": "complaint-triage-assistant", "field": "feasibility_score", "is": null },
+    { "record": "complaint-triage-assistant", "field": "risk_score", "is": null },
+    { "record": "complaint-triage-assistant", "field": "ai_act_high_risk", "is": null },
+    { "file": "state/proposal.json", "field": "operations[0].op", "is": "update" },
+    { "file": "state/proposal.json", "field": "operations[0].id", "is": "complaint-triage-assistant" },
+    { "file": "state/proposal.json", "field": "operations[0].interpreted", "is": true },
+    { "file": "state/proposal.json", "field": "operations[1]", "is": null },
+    { "file": "state/proposal.json", "line": "value_reason" },
+    { "file": "state/proposal.json", "line": "feasibility_reason" },
+    { "file": "state/proposal.json", "line": "risk_reason" },
+    { "printed": "preview", "line": "value_score" }
+  ]
+}

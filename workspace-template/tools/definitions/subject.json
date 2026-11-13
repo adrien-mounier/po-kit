@@ -40,6 +40,14 @@
     "problem": { "type": "text" },
     "requested_by": { "type": "text" },
     "data_needed": { "type": "text" },
-    "expected_gain": { "type": "text" }
+    "expected_gain": { "type": "text" },
+    "value_score": { "type": "integer", "allowed": [1, 2, 3, 4, 5] },
+    "value_reason": { "type": "text" },
+    "feasibility_score": { "type": "integer", "allowed": [1, 2, 3, 4, 5] },
+    "feasibility_reason": { "type": "text" },
+    "risk_score": { "type": "integer", "allowed": [1, 2, 3, 4, 5] },
+    "risk_reason": { "type": "text" },
+    "ai_act_high_risk": { "type": "boolean" },
+    "ai_act_reason": { "type": "text" }
   }
 }

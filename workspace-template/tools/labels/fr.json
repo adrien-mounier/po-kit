@@ -24,6 +24,7 @@
       "missing_gate_not_out_of_frame": "Sujet sous Maintenant avec un jalon obligatoire manquant et un feu vert autre que hors cadre",
       "taken_decision_without_author": "Décision prise sans son auteur",
       "effort_of_another_person": "Effort ou démarrage noté sur un engagement dont le PO n'est pas responsable",
+      "score_without_reason": "Note sans sa justification",
       "commitment_without_owner": "Engagement ouvert sans responsable",
       "commitment_without_due_date": "Engagement ouvert sans échéance",
       "commitment_overdue": "Engagement en retard",
@@ -64,6 +65,21 @@
     "not_given": "non renseigné",
     "parts": { "problem": "problème", "banks": "banque cliente", "requested_by": "demandeur", "data_needed": "données nécessaires", "expected_gain": "gain attendu" },
     "work_changes": { "yes": "Oui", "no": "Non", "unknown": "Inconnu" }
+  },
+  "ranking": {
+    "title": "Portefeuille classé",
+    "note": "Classé par valeur fois faisabilité, du plus haut au plus bas ; à égalité, par valeur, puis par titre. Le risque, la marque AI Act et le changement du travail sont à côté de la note, jamais dedans. Une note va de 1 à 5 ; « - » signifie non renseigné.",
+    "ranked": "Classés",
+    "not_scored": "Non notés",
+    "rank": "Rang",
+    "score": "Valeur x faisabilité",
+    "value": "Valeur",
+    "feasibility": "Faisabilité",
+    "risk": "Risque",
+    "ai_act": "AI Act",
+    "work_changes": "Le travail change",
+    "high_risk": "**⚠ Haut risque**",
+    "not_high_risk": "Non"
   },
   "effort": {
     "adjusted": "estim. {0} j, ajustée x{1} d'après les tâches passées « {2} » : {3} j",

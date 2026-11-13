@@ -8,7 +8,8 @@
 # What it prints, in this order:
 #   # Export of the register since <date>
 #   ## Stamp                  the stamp of the view to write from this export, ready to copy
-#   ## Active subjects        with horizon, clearance and client banks ("all" when it names none)
+#   ## Active subjects        with horizon, clearance and client banks ("all" when it names none),
+#                             then the scores and the AI Act mark it holds, each with its reason
 #   ## Changes since <date>   each record recorded since, each field corrected since
 #   ## Open commitments       with owner and due date; one the PO owns also with its effort,
 #                             adjusted as Format-Effort says, and its start with the sign seen
@@ -40,6 +41,9 @@ function Format-Record($Record, [string[]]$More = @()) {
             "clearance: $(Format-Clearance $Record $Record.clearance 'by {0}' 'on {0}')"
             # A subject that names no client bank concerns them all.
             "banks: $(if ($Record.banks) { Format-Value $Record.banks } else { 'all' })"
+            # The scores and the AI Act mark it holds, each with its reason.
+            foreach ($score in 'value', 'feasibility', 'risk') { if ($null -ne $Record."${score}_score") { "${score}: $($Record."${score}_score"), $(Format-Value $Record."${score}_reason")" } }
+            if ($null -ne $Record.ai_act_high_risk) { "AI Act high-risk: $(if ($Record.ai_act_high_risk) { 'yes' } else { 'no' }), $(Format-Value $Record.ai_act_reason)" }
         }
         else { "subject: $($Record.subject)$(if ($closed -ccontains $Record.subject) { ' (closed)' })"; "date of fact: $($Record.date_of_fact)"; "status: $($Record.status)" }
         if ($Record.type -ceq 'commitment') {

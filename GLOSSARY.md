@@ -82,6 +82,14 @@ _Avoid_: phase, priority, status
 Whether a subject changes the way people work, or only adds a tool: yes, no or unknown, with one sentence. The agent asks it for every new subject.
 _Avoid_: transformation, impact, change management
 
+**Score**:
+The agent's rating of a subject from 1 to 5, with one reason: its value, its feasibility or its risk. Proposed as an interpreted operation, it counts once the PO says yes.
+_Avoid_: rating, grade, priority
+
+**AI Act mark**:
+Whether a subject would be a high-risk use case under the EU AI Act, true or false, with its reason. A mark to check, never legal advice; shown beside the score, never in it.
+_Avoid_: compliance status, AI Act classification, risk score
+
 **Clearance**:
 Whether someone with authority has approved work on a subject: cleared, pending, out of frame, or none, which is what a subject carries until a clearance is stated. It is independent of the horizon. (French: pastille « feu vert ».)
 _Avoid_: approval status, validation, sign-off
@@ -189,6 +197,10 @@ _Avoid_: header, metadata, footer
 **Portfolio view**:
 The view listing every active subject by horizon, with its clearance and its client banks. Asked for one client bank, it keeps to that bank's subjects and those that name no bank.
 _Avoid_: roadmap, board, portfolio overview
+
+**Ranked portfolio**:
+The view ranking the active subjects by value times feasibility, highest first, with risk, the AI Act mark and whether the work changes beside the score; the subjects without both scores follow, not scored. Asked for one client bank, it keeps to that bank's subjects and those that name no bank.
+_Avoid_: priority list, leaderboard, scoring board
 
 **Intake card**:
 The view of a subject taken in from a request for an AI use case, written from a template: the problem, the client bank, who asks, the data needed and the expected gain, whether the work changes, and the clearance. A part not given is shown as such. A request taken in is a subject under Later, pending; a refused one is closed with its reason. (French: demande de cas d'usage.)
