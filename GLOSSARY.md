@@ -168,6 +168,14 @@ _Avoid_: agenda, schedule, calendar sync
 The list of register changes a routine has prepared and that awaits validation. Nothing reaches the register except through an applied proposal.
 _Avoid_: draft, patch, changeset
 
+**Change proposal**:
+The changes to the tracker the agent prepares, kept in the workspace state apart from the proposal: each creates a ticket or edits one of its texts (title, description, acceptance criteria), with the exact text before and after, its reason and its source. Each is applied only after the PO said yes, reviewed the exact change and approved it, one at a time; a change that would delete, close, reopen or move a ticket, or touch another field, is refused.
+_Avoid_: ticket update, tracker sync, changeset
+
+**Applied-change log**:
+The register tool's list, in the workspace state, of every change to the tracker applied: the date, the change, the ticket, the field, the text before and after, who approved it and how it was applied. It is committed with the next apply.
+_Avoid_: audit trail, history (which is a record's), journal
+
 **Open question**:
 A question a routine could not settle, kept in the workspace state with the record or subject it concerns, the agent's recommended answer and the day it was added, until the PO answers it. The agent asks it when its moment comes: when the PO talks about its subject, or at the briefing.
 _Avoid_: todo, pending question, query

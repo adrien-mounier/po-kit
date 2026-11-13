@@ -1,0 +1,8 @@
+{
+  "changes": [
+    { "id": "1", "kind": "close", "ticket": "ONB-150", "field": "title",
+      "before": "Branch finder", "after": "Branch finder",
+      "reason": "The PO says it is done.",
+      "source": { "where": "the PO, in conversation", "read_on": "2026-03-02" }, "state": "approved" }
+  ]
+}

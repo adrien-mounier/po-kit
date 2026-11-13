@@ -1,6 +1,6 @@
 # Reading mail, the tracker and chat
 
-How the collect reads the sources `mail`, `tracker` and `chat` of `connections.json`. You only read them: you send nothing, and you create, change or delete nothing in a source.
+How the collect reads the sources `mail`, `tracker` and `chat` of `connections.json`. You only read them: you send nothing, and you create, change or delete nothing in a source. The backlog routine reads the tracker this way too, to find a ticket the PO names: its key is the word searched.
 
 **The watch lists bound what you read.** A source holds far more than the PO's subjects: private mail, the tickets of other teams, private one-to-one chats. You search it, and you open only what the search returns: step 2. Never list the folder of a source or its subfolders (`ls -R exports`, `find exports`, `Get-ChildItem -Recurse exports`, `ls exports/chat/one-to-one`): their names alone tell what is private, as who the PO chats with one to one.
 

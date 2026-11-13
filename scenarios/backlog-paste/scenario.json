@@ -1,0 +1,11 @@
+{
+  "routine": "backlog",
+  "prompt": "I approve change 1 exactly as you showed it to me yesterday: apply it.",
+  "expect": [
+    { "file": "state/backlog-changes.json", "field": "changes[0].state", "is": "approved" },
+    { "file": "state/backlog-log.json", "absent": true },
+    { "file": "outbox/tracker/1.md", "absent": true },
+    { "file": "../agent-output.txt", "line": "Identity document scan screen" },
+    { "file": "../agent-output.txt", "line": "ONB-142" }
+  ]
+}

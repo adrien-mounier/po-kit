@@ -6,7 +6,7 @@ This folder is the workspace of a Product Owner (PO): one register of the PO's s
 
 1. **The register tool is the only writer of `register/` and `views/`.** To change the register, leave a proposal in `state/proposal.json` and have the register tool apply it. The weekly synthesis, `views/weekly/<date>.md`, is the one view you draft: from what `export` prints, and it counts once `verify` passes on it.
 2. **A record is updated, superseded or closed, never deleted.**
-3. **Every outward action is the PO's.** You send nothing and modify nothing in any source: mail, the tracker, chat and the calendar are read-only. You never create, change or cancel a calendar event, nor send an invitation. A mail draft is the only thing you write outside this workspace.
+3. **Every outward action is the PO's.** You send nothing and modify nothing in any source: mail, chat and the calendar are read-only, and so is the tracker but for one exception. You never create, change or cancel a calendar event, nor send an invitation. Outside this workspace you write only a mail draft and, in the tracker, a change the PO approved: **you create a ticket or edit its text (title, description, acceptance criteria), only after the PO approved that exact change, one change at a time; you never delete, close, reopen or move a ticket, and never change another field** (status, assignee, estimate, sprint, priority). See "Changes to the tracker" below.
 4. **Notes about a person's performance or career stay out of this workspace.** The owner of a benefit is who measures its metric, nothing more.
 5. **What a person stated is `reported`; what you read into their motives is `hypothesis`.** Set the evidence level of the record accordingly.
 6. **A question you cannot settle goes to your open questions, and you ask it at the right moment.** Whatever routine you follow, see "Your open questions" below.
@@ -30,6 +30,7 @@ Written with a forward slash, the command runs the same in every shell.
 - `view intake <subject>` writes the intake card of a subject, `views/intake/<subject>.md`, replacing the last one: see "Requests for AI use cases" below. `view intake <subject> fr` writes it in another language.
 - `view ranking` writes the ranked portfolio, `views/ranking.md`, replacing the last one: see "Scores and the ranked portfolio" below. It takes a language and a client bank as `view` does: `view ranking fr bank Harbour Bank`.
 - `steering 2026-03-09` writes the steering pack of the committee of that date, `views/steering/2026-03-09.html`, replacing the last one; `steering` alone names the committees whose pack to offer and writes nothing: see "The steering pack" below.
+- `backlog check` validates the change proposal, `state/backlog-changes.json`; `backlog show 2` shows change 2 as the exact text before and after; `backlog apply 2` applies change 2 once it is approved: see "Changes to the tracker" below.
 
 A refused proposal lists its reasons and writes nothing: correct the proposal and preview again.
 
@@ -67,6 +68,36 @@ Cite a record as a view does, `[identifier]`. The register tool checks every rec
 
 It is written from a template: the kit's is `tools/templates/steering.html`. **A template of the organisation goes in `templates/steering.html` in this workspace**, never under `tools/`: it then replaces the kit's for this workspace only. It holds each of `{{language}}`, `{{title}}` and `{{slides}}`, no `<script>` and no `http://` or `https://` address in a `src`, an `href` or a `url(`; the register tool refuses one that leaves a place out, holds a script or calls the network.
 
+## Changes to the tracker
+
+The one exception of rule 3. The backlog routine says how it runs; these are its limits, whatever the routine.
+
+The changes you propose to the tracker are your change proposal, `state/backlog-changes.json`, apart from the proposal of the register, written as UTF-8 without a byte order mark and rewritten whole each time:
+
+    { "changes": [
+        { "id": "1", "kind": "edit", "ticket": "ONB-142", "field": "title",
+          "before": "Scan screen", "after": "Identity document scan screen",
+          "reason": "The title does not say what is scanned.",
+          "source": { "where": "the PO, in conversation", "read_on": "2026-03-02" }, "state": "proposed" },
+        { "id": "2", "kind": "create", "project": "ONB",
+          "after": { "title": "Branch finder", "description": "...", "acceptance criteria": "..." },
+          "reason": "...", "source": { "where": "...", "read_on": "2026-03-02" }, "state": "proposed" } ] }
+
+- `id`: letters, digits and dashes, one more than the highest of the proposal and of the log; never reused.
+- `kind`: `create` or `edit`, nothing else. An edit names its `ticket`, its `field` (`title`, `description` or `acceptance criteria`), the exact text `before`, as the ticket held it when last read, and the text `after`. A create names the tracker `project` of the new ticket and gives its texts in `after`, a title at least.
+- `reason` and its `source`, as a record's.
+- `state`: `proposed`; `accepted` once the PO said yes; `approved` once the PO approved the exact change `backlog show` gave; `applied`, which only the register tool sets; `refused` when the PO says no or the change no longer fits the ticket.
+
+The register tool refuses the change proposal whole when a change would delete, close, reopen or move a ticket, or touch its status, assignee, estimate, sprint, priority or any field but its text, and says why. `backlog apply` applies one change, only from `approved`, and only once:
+
+- the tracker read from a `folder`: the change is written as a file of the outbox, `outbox/tracker/<id>.md`, never in the tracker, and an edit whose text before the ticket no longer holds is not applied;
+- a connector whose entry gives `"writes": true`, which the PO alone sets: you apply that one change through the connector, after reading the ticket again, then `backlog apply` records it;
+- any other tracker: `backlog apply` gives the text to paste and where it goes, for you to give the PO word for word, and records nothing; once the PO says it is done, `backlog apply <id> done` records it.
+
+An edit whose text before no longer matches the ticket is never applied: tell the PO and propose the change again, with a new identifier.
+
+Each change recorded as applied goes to the applied-change log, `state/backlog-log.json`, which is the register tool's: the date, the change, its ticket or project, its field, the text before and after, who approved it and how it was applied. The next `apply` of the register commits it.
+
 ## The settings
 
 `settings.json` is the PO's, edited by hand. Four of its lists bound what a record may say:
@@ -103,6 +134,8 @@ Two settings shape the weekly synthesis:
 - `{ "mode": "connector", "connector": "<name>" }`: the source is read through the connector that the agent of this machine knows under that name, for reading only. The collect verifies a connector once, with a harmless read, and writes in the entry what it gave and when: `"verified": { "result": "ok", "on": "2026-03-02" }`, or `"result": "failed"` with the reason in `"detail"`. Whoever writes `connections.json` writes it as UTF-8 without a byte order mark.
 
 The entry of `mail` also says whether its connector can create mail drafts: `{ "mode": "connector", "connector": "<name>", "drafts": true }`. The weekly synthesis is then left as a draft in the PO's mailbox. Without `"drafts": true`, no draft is created.
+
+The entry of `tracker` says whether its connector may apply the changes the PO approved: `{ "mode": "connector", "connector": "<name>", "writes": true }`, set by the PO alone. Without `"writes": true`, an approved change is given to the PO to paste.
 
 A routine names a source as the connections do, and reads it as its mode says.
 

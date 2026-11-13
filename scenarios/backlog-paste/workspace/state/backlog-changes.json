@@ -1,0 +1,8 @@
+{
+  "changes": [
+    { "id": "1", "kind": "edit", "ticket": "ONB-142", "field": "title",
+      "before": "Scan screen", "after": "Identity document scan screen",
+      "reason": "The title does not say what the customer scans.",
+      "source": { "where": "the PO, in conversation", "read_on": "{workday-1}" }, "state": "accepted" }
+  ]
+}

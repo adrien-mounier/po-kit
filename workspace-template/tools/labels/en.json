@@ -358,5 +358,17 @@
       "refused": "Could not copy. Copy the request by hand:",
       "close": "Close"
     }
+  },
+  "backlog": {
+    "change": "Change {0}",
+    "edit": "edit ticket {0}, field {1}",
+    "create": "create a ticket in project {0}",
+    "reason": "Why: {0}",
+    "source": "Source: {0}, read on {1}",
+    "before": "Text before:",
+    "after": "Text after:",
+    "fields": { "title": "Title", "description": "Description", "acceptance criteria": "Acceptance criteria" },
+    "paste_edit": "To paste in the tracker: in ticket {0}, replace the text before of the field {1} with the text after. Then tell me it is done.",
+    "paste_create": "To paste in the tracker: create this ticket in project {0}, with each text in its field. Then tell me it is done."
   }
 }

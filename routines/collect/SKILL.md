@@ -11,6 +11,8 @@ Work in the PO's workspace, under its rules: read `AGENTS.md` there first when i
 
 **Mail, the tracker and chat are read only as `sources.md` says, never listed.** No `ls`, `ls -R`, `find`, `tree`, `dir` or `Get-ChildItem` on `exports` or on any folder `connections.json` names, not even for a first look: to look around the workspace, list `register`, `state`, `views` and `inbox` only.
 
+**The collect writes nothing in a source.** The one exception of the workspace rules is the backlog routine's, never the collect's: create a ticket or edit its text, only after the PO's approval of that exact change, one at a time; never delete, close or move a ticket, never change another field. When a note asks for a change to a ticket, tell the PO the backlog routine can propose it.
+
 ## 1. Settle a pending proposal first
 
 When `state/proposal.json` exists, a proposal is pending and this collect waits for it. Run the register tool's `preview`, show the PO its table, ask whether to apply it, change it or delete it, and end there.

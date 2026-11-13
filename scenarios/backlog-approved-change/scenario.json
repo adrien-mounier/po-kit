@@ -1,0 +1,17 @@
+{
+  "routine": "backlog",
+  "prompt": "I approve change 1 exactly as you showed it to me yesterday: apply it. Change 2 I have not decided on yet.",
+  "expect": [
+    { "file": "outbox/tracker/1.md", "line": "Identity document scan screen" },
+    { "file": "outbox/tracker/1.md", "line": "ONB-142" },
+    { "file": "outbox/tracker/2.md", "absent": true },
+    { "file": "state/backlog-log.json", "field": "applied[0].change", "is": "1" },
+    { "file": "state/backlog-log.json", "field": "applied[0].ticket", "is": "ONB-142" },
+    { "file": "state/backlog-log.json", "field": "applied[0].after", "is": "Identity document scan screen" },
+    { "file": "state/backlog-log.json", "field": "applied[1]", "is": null },
+    { "file": "state/backlog-changes.json", "field": "changes[0].state", "is": "applied" },
+    { "file": "state/backlog-changes.json", "field": "changes[1].state", "is": "proposed" },
+    { "file": "exports/tracker/ONB-142.txt", "line": "Title: Scan screen" },
+    { "file": "exports/tracker/ONB-150.txt", "line": "The customer finds a branch." }
+  ]
+}
