@@ -231,8 +231,10 @@ function Test-Fact($Fact, [string]$Workspace) {
         if ($printed.Count -lt 2 -or @($printed | Where-Object { $_.Trim() -notmatch '^\{.*\}$' }).Count) {
             return @{ What = $what; Holds = $false; Found = 'no transcript: the agent''s command printed its answer only; for Claude Code, give it --output-format stream-json --verbose' }
         }
-        $lines = @($printed | Where-Object { $_.Replace('\\', '/').Contains($Fact.transcript) })
-        if ($Fact.absent) { return @{ What = $what; Holds = ($lines.Count -eq 0); Found = ($lines -join "`n") } }
+        $lines = @($printed | ForEach-Object { $_.Replace('\\', '/') } | Where-Object { $_.Contains($Fact.transcript) })
+        # A line of a transcript can be long: what was found is the text with what surrounds it.
+        $around = @($lines | ForEach-Object { $at = [Math]::Max(0, $_.IndexOf($Fact.transcript) - 100); '...' + $_.Substring($at, [Math]::Min(200 + $Fact.transcript.Length, $_.Length - $at)) + '...' })
+        if ($Fact.absent) { return @{ What = $what; Holds = ($lines.Count -eq 0); Found = ($around -join "`n") } }
         return @{ What = $what; Holds = ($lines.Count -gt 0); Found = 'no such line' }
     }
     if ($Fact.record) {

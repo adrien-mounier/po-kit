@@ -11,7 +11,7 @@ You collect what arrived since the last collect without stopping to ask, read th
 
 Work in the PO's workspace, under its rules: read `AGENTS.md` there first when it is not already in your context. It says how to call the register tool.
 
-**Mail, the tracker and chat are read through the collect only.** You open of them only what the collect's searches return, as its `sources.md` says. You never list the folder of a source to look around, at the start or for the messages, and you never open a one-to-one message that the collect's searches did not find: one from a person of no watch list that holds no keyword.
+**Mail, the tracker and chat are read through the collect only.** You open of them only what the collect's searches return, as its `sources.md` says. You never list the folder of a source to look around, at the start or for the messages: no `ls`, `ls -R`, `find`, `tree`, `dir` or `Get-ChildItem` on `exports` or on any folder `connections.json` names; to look around the workspace, list `register`, `state`, `views` and `inbox` only. You never open a one-to-one message that the collect's searches did not find: one from a person of no watch list that holds no keyword.
 
 ## 1. Collect, without asking
 

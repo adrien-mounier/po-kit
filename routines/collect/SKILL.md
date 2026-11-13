@@ -9,6 +9,8 @@ You read the PO's notes, and the mail, the tickets and the chat messages within 
 
 Work in the PO's workspace, under its rules: read `AGENTS.md` there first when it is not already in your context. It says how to call the register tool.
 
+**Mail, the tracker and chat are read only as `sources.md` says, never listed.** No `ls`, `ls -R`, `find`, `tree`, `dir` or `Get-ChildItem` on `exports` or on any folder `connections.json` names, not even for a first look: to look around the workspace, list `register`, `state`, `views` and `inbox` only.
+
 ## 1. Settle a pending proposal first
 
 When `state/proposal.json` exists, a proposal is pending and this collect waits for it. Run the register tool's `preview`, show the PO its table, ask whether to apply it, change it or delete it, and end there.
