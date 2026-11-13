@@ -138,7 +138,7 @@ Test 'the stamp names the last collect and the sources it did not cover, whether
     $run = Invoke-Register $ws view -Now $Morning
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    Assert-Match (Read-Stamp $ws) '\n> Last collect: 2026-03-02T08:30:00\+01:00\.\n> Sources not covered by the last collect: tracker\.$' 'stamp after the first collect'
+    Assert-Match (Read-Stamp $ws) '\n> Last collect: 2026-03-02T08:30:00\+01:00\.\n> Sources not covered by the last collect: tracker, chat\.$' 'stamp after the first collect'
 
     # The next collect reads the notes only and says nothing of the rest: the mail an earlier
     # collect read is not covered by this one.
@@ -149,12 +149,12 @@ Test 'the stamp names the last collect and the sources it did not cover, whether
     $run = Invoke-Register $ws view -Now 2026-03-03T09:15:00+01:00
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    Assert-Match (Read-Stamp $ws) '\n> Last collect: 2026-03-03T08:30:00\+01:00\.\n> Sources not covered by the last collect: mail, tracker\.$' 'stamp after the second collect'
+    Assert-Match (Read-Stamp $ws) '\n> Last collect: 2026-03-03T08:30:00\+01:00\.\n> Sources not covered by the last collect: mail, tracker, chat\.$' 'stamp after the second collect'
 }
 
 Test 'after a collect that read every source, the stamp says that none is left uncovered' {
     $ws = New-TestWorkspaceWithSubject
-    Set-CollectProposal $ws '2026-03-02T08:30:00+01:00' 'notes', 'mail', 'tracker'
+    Set-CollectProposal $ws '2026-03-02T08:30:00+01:00' 'notes', 'mail', 'tracker', 'chat'
     $collect = Invoke-Register $ws apply -Today 2026-03-02
     Assert-Equal 0 $collect.ExitCode "exit code of the collect, with output: $($collect.Output)"
 
@@ -210,7 +210,7 @@ Test 'view fr writes every label in French, and leaves what the subject says as 
 Test 'a French view says of each subject its kind and its clearance in French, and names the sources the last collect did not cover' {
     $ws = New-TestWorkspaceWithSubjects @{ title = 'Mobile onboarding'; kind = 'product'; clearance = 'pending' },
         @{ title = 'Branch kiosks pilot'; kind = 'contribution'; clearance = 'out of frame' }, @{ title = 'Card dispute handling' }
-    Set-CollectProposal $ws '2026-03-02T08:30:00+01:00' 'notes', 'mail', 'tracker'
+    Set-CollectProposal $ws '2026-03-02T08:30:00+01:00' 'notes', 'mail', 'tracker', 'chat'
     $collect = Invoke-Register $ws apply -Today 2026-03-02
     Assert-Equal 0 $collect.ExitCode "exit code of the collect, with output: $($collect.Output)"
 
