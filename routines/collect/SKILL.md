@@ -24,7 +24,7 @@ Done when no proposal is pending.
    It prints the time of this collect, as `2026-03-02T08:30:00+01:00`. Its first ten characters are today's date.
 2. Text the PO pasted into the conversation becomes a note first. Save it unchanged as `inbox/pasted-<today's date>.md`, as `inbox/pasted-2026-03-02.md`, written as UTF-8 without a byte order mark. When `inbox/` or `inbox/done/<this month>/` already holds that name, end it with `-2`, then `-3`.
 3. The notes are the files directly in `inbox/`. Read each one whole. `inbox/done/` holds the notes already processed.
-4. `connections.json` declares the other sources, `mail`, `tracker` and `chat`. A source whose `mode` is `off` is not read: it is not covered. To read one in any other mode, follow `sources.md`, in the folder of this routine, before you look into the source: it gives you the mails, the tickets and the chat messages to treat as notes.
+4. `connections.json` declares the other sources, `mail`, `tracker` and `chat`. A source whose `mode` is `off` is not read: it is not covered. To read one in any other mode, follow `sources.md`, in the folder of this routine, before you look into the source, and never list its folder: it gives you the mails, the tickets and the chat messages to treat as notes.
 
 A file you cannot read as text is not processed: it stays in the inbox, and you tell the PO.
 

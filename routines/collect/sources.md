@@ -2,7 +2,7 @@
 
 How the collect reads the sources `mail`, `tracker` and `chat` of `connections.json`. You only read them: you send nothing, and you create, change or delete nothing in a source.
 
-**The watch lists bound what you read.** A source holds far more than the PO's subjects: private mail, the tickets of other teams, one-to-one chats. You search it, and you open only what the search returns: step 2.
+**The watch lists bound what you read.** A source holds far more than the PO's subjects: private mail, the tickets of other teams, one-to-one chats. You search it, and you open only what the search returns: step 2. Never list the folder of a source or its subfolders (`ls -R exports`, `find exports`, `Get-ChildItem -Recurse exports`): their names alone tell what is private, as who the PO chats with one to one.
 
 Take `mail`, then `tracker`, then `chat`. A source that cannot be read never stops the collect: it is **not covered**, you tell the PO why, and you go on.
 
@@ -10,7 +10,7 @@ Take `mail`, then `tracker`, then `chat`. A source that cannot be read never sto
 
 Its `mode` says how:
 
-- `folder`: exported files, one per mail, per ticket or per chat message, under the folder that the entry names in `folder`. The mail the PO received is under `received/`, the mail the PO sent under `sent/`. A chat message is under the folder of its conversation: `channels/<name>/` for a channel, `group chats/<name>/` for a group chat, `one-to-one/<name>/` for a one-to-one chat. When the folder is missing, the source is not covered. Never list the folder or its subfolders, as a recursive listing would (`ls -R`, `find`, `Get-ChildItem -Recurse`): their names alone tell what is private, as who the PO chats with one to one. Step 2 says what you may look into.
+- `folder`: exported files, one per mail, per ticket or per chat message, under the folder that the entry names in `folder`. The mail the PO received is under `received/`, the mail the PO sent under `sent/`. A chat message is under the folder of its conversation: `channels/<name>/` for a channel, `group chats/<name>/` for a group chat, `one-to-one/<name>/` for a one-to-one chat. When the folder is missing, the source is not covered.
 - `connector`: the connector that the entry names in `connector`. The entry must hold `"verified"` with `"result": "ok"` before you rely on it. When it does not, verify the connector now: make one harmless read through it (ask for one recent item), then write in the entry what it gave and today's date, as `AGENTS.md` shows, leave the rest of `connections.json` as it is, and write the file as UTF-8 without a byte order mark. A connector that this machine does not have, or whose read fails, gets `"result": "failed"`, and the source is not covered.
 
 A connector that was verified and fails while you read leaves the source not covered too. Its `"verified"` stays.
