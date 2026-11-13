@@ -15,6 +15,10 @@ Open commitments:
 
 No commitment is open.
 
+# Value delivered
+
+No benefit is recorded.
+
 # Proposed priorities
 
 - Agree the scope of the contribution with the head of payments, the next step that is not suspended [payments-api-contribution]

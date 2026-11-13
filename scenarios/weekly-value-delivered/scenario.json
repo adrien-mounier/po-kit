@@ -1,0 +1,32 @@
+{
+  "routine": "weekly",
+  "collected": {
+    "collected_at": "{today}T08:30:00+01:00",
+    "sources_read": [ { "source": "notes", "cutoff": "{today}T08:30:00+01:00", "items": 0 } ],
+    "sources_not_covered": [ "mail", "tracker", "chat" ],
+    "operations": [
+      { "op": "create", "type": "benefit", "interpreted": false,
+        "fields": { "title": "Fewer onboarding files sent back", "subject": "mobile-onboarding",
+          "metric": "Onboarding files sent back for an error", "unit": "files per week", "baseline": 30, "target": 5,
+          "owner": "the head of retail operations",
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "{today}" } } },
+      { "op": "create", "type": "benefit", "interpreted": false,
+        "fields": { "title": "Halve the time to open an account", "subject": "mobile-onboarding",
+          "metric": "Time a customer takes to open an account", "unit": "minutes", "baseline": 40, "target": 20,
+          "owner": "the head of retail operations", "current_value": 31, "measured_on": "{workday-1}",
+          "evidence_level": "fact", "source": { "where": "inbox/pilot review.md", "read_on": "{today}" } } }
+    ]
+  },
+  "prompt": "Weekly. There is no earlier synthesis: the period starts on 2026-03-09. I have nothing to say on team capacity this week.",
+  "expect": [
+    { "record": "B-{year}-002", "field": "current_value", "is": 31 },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Portfolio view", "# Progress and commitments", "# Value delivered", "# Proposed priorities", "# Blockers and decisions expected from the sponsor", "# Team capacity", "# Not covered this week" ] },
+    { "verified": "views/weekly/{today}.md" },
+    { "exported": "views/weekly/{today}.md", "since": "2026-03-09" },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Progress and commitments", "# Value delivered", "[mobile-onboarding]", "[B-{year}-002]", "[B-{year}-001]", "# Proposed priorities" ] },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Value delivered", "31 minutes", "# Proposed priorities" ] },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Value delivered", "a target of 20 minutes", "# Proposed priorities" ] },
+    { "file": "views/weekly/{today}.md", "lines": [ "# Value delivered", "no value measured yet", "# Proposed priorities" ] },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

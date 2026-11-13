@@ -38,17 +38,18 @@ Done when you hold the export.
 
 ## 4. Write the synthesis
 
-`settings.json` gives the sponsor's language in `languages.sponsor`. The template of that language is beside this routine, in its folder: `template-en.md` for `en`, `template-fr.md` for `fr`. It gives the six blocks in their order, with their headings and their set phrases. A passage between angle brackets tells you what to write in its place.
+`settings.json` gives the sponsor's language in `languages.sponsor`. The template of that language is beside this routine, in its folder: `template-en.md` for `en`, `template-fr.md` for `fr`. It gives the seven blocks in their order, with their headings and their set phrases. A passage between angle brackets tells you what to write in its place.
 
 Write the template, filled, to `views/weekly/<today's date>.md`, as UTF-8 without a byte order mark. A synthesis already stored today is replaced.
 
 - **Copy the stamp and the portfolio view** from the export line for line and character for character: every space, every bar and every dash of the tables as printed, and the words of the records as they are.
 - **Write the other blocks in the sponsor's language, from the lines of the export.** Each statement says what one line of the export says and ends with the identifier of that record in square brackets, as the export prints it: `[C-2026-004]`, or `[C-2026-004, D-2026-002]` for two. A text taken from the export may hold square brackets of its own, as a ticket reference in a title, `[REQ#4521]`: copy it as it is.
 - **Keep to the export.** A fact, a date or a name is in the synthesis because a line of the export gives it. The only other sources are the PO's sentence on team capacity and the date the period starts on.
+- **Value delivered** comes after the progress and commitments: per subject, each benefit that `Benefits` in the export lists as open or achieved, with its latest value, its target, its baseline and the date it was measured, cited by its identifier. The benefits with a value recorded in the period come first. A subject with no benefit is not listed, and an empty block says so in the one line the template gives. A value is what the export gives: you compute none, not even a gap to the target.
 - **Keep the evidence level.** Each line of the export gives one: `fact` is stated plainly, `reported` as what a person said, `hypothesis` as a guess.
 - **Keep the headings and the set phrases** of the template word for word.
 
-Done when the file holds the six blocks of the template in their order, no angle bracket is left, and every line of blocks 2 to 4 that speaks of a record cites it.
+Done when the file holds the seven blocks of the template in their order, no angle bracket is left, and every line of blocks 2 to 5 that speaks of a record cites it.
 
 ## 5. Have the register tool verify it
 

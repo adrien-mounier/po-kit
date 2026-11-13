@@ -14,6 +14,10 @@ Engagements ouverts :
 
 - Présenter le parcours cible au comité de pilotage de la banque de détail : le PO, échéance le 2026-03-16 [C-{year}-001]
 
+# Valeur apportée
+
+Aucun bénéfice n'est enregistré.
+
 # Priorités proposées
 
 - Présenter le parcours cible au comité de pilotage, dont l'échéance est dépassée [C-{year}-001]

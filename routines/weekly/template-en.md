@@ -19,6 +19,15 @@ Open commitments:
 An owner that is missing is written "no owner", a due date that is missing "no due date".
 When that section says "None.": No commitment is open.>
 
+# Value delivered
+
+<for each subject with a benefit that "Benefits" in the export lists as open or achieved, the subject on a line of its own, then one line per such benefit, as:
+Title of the subject [identifier of the subject]:
+- the metric: the latest value, measured yyyy-mm-dd, against a target of the target, from a baseline of the baseline [identifier of the benefit]
+A benefit with no value yet is written "no value measured yet" in place of its latest value and its date; a baseline or a target that is missing, "no baseline" or "no target"; an achieved benefit says "achieved" after its metric.
+The benefits with a value recorded in the period come first in their subject, and the subjects that hold one come first. A subject with no benefit is not listed.
+When there is none: No benefit is recorded.>
+
 # Proposed priorities
 
 <one to five lines, the most pressing first, as:
