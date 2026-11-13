@@ -151,7 +151,7 @@ Test 'the workspace rules come from the kit and state the five rules and how to 
     Assert-Match $rules 'only writer of `register/` and `views/`' 'rule: the register tool alone writes the register and the views'
     Assert-Match $rules 'updated, superseded or closed, never deleted' 'rule: records are never deleted'
     Assert-Match $rules 'send nothing and modify nothing' 'rule: nothing is sent, no source is modified'
-    Assert-Match $rules 'mail draft is the only' 'rule: mail drafts are the only write outside the workspace'
+    Assert-Match $rules 'Outside this workspace you write only a mail draft and, in the tracker, a change the PO approved' 'rule: a mail draft and an approved change to the tracker are the only writes outside the workspace'
     Assert-Match $rules 'performance or career' "rule: no notes about people's performance or career"
     Assert-Match $rules '`reported`' 'rule: a stated position is reported'
     Assert-Match $rules '`hypothesis`' 'rule: a reading of motives is a hypothesis'
