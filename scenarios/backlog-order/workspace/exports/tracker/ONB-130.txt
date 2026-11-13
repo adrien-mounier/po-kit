@@ -1,0 +1,10 @@
+Key: ONB-130
+Project: ONB
+Title: Welcome screen
+Status: Done
+Estimate: 2
+Assignee: the tech lead
+Reporter: the PO
+Updated: {workday-8}T11:00:00+01:00
+
+The customer sees a welcome screen when the app first opens.

@@ -1283,3 +1283,33 @@ Test 'the scenario "backlog paste" passes when, with a tracker that may not writ
     Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has a line containing "Identity document scan screen"' 'no text given'
     Assert-Equal 1 $run.ExitCode 'exit code when no text is given'
 }
+
+Test 'the scenario "backlog split" passes when the ticket too large is split into proposed tickets and an edit of its text, none applied, and fails when nothing is proposed' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Changes `"$Fixtures\backlog-split.json`"" backlog-split
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    what the register tool prints for backlog check has a line containing "edit ONB-160, description \(proposed\)"' 'the edit of the original'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Changes `"$Fixtures\backlog-split.json`" -BacklogApply 1" backlog-split
+
+    Assert-Equal 0 $run.ExitCode "exit code when the agent tries to apply a change not approved, with output: $($run.Output)"
+
+    $run = Invoke-Scenarios -Agent $FakeAgent backlog-split
+
+    Assert-Match $run.Output '  FAIL  what the register tool prints for backlog check has a line containing "create a ticket in ONB \(proposed\)"' 'nothing proposed'
+    Assert-Equal 1 $run.ExitCode 'exit code when nothing is proposed'
+}
+
+Test 'the scenario "backlog order" passes when the order proposed cites the register and leaves the tracker as it is, and fails when the order cites a record missing' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Order `"$Fixtures\backlog-order.json`"" backlog-order
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    the register tool verifies views/backlog-order\.md' 'the view verified'
+
+    $order = Join-Path $TestRoot 'order-missing.json'
+    [IO.File]::WriteAllText($order, [IO.File]::ReadAllText("$Fixtures\backlog-order.json").Replace('D-{year}-001', 'D-{year}-009'), $Utf8)
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Order `"$order`"" backlog-order
+
+    Assert-Match $run.Output '  FAIL  the register tool verifies views/backlog-order\.md' 'no view written for an order citing a record missing'
+    Assert-Equal 1 $run.ExitCode 'exit code when the order cites a record missing'
+}

@@ -214,6 +214,14 @@ _Avoid_: roadmap, board, portfolio overview
 The view ranking the active subjects by value times feasibility, highest first, with risk, the AI Act mark and whether the work changes beside the score; the subjects without both scores follow, not scored. Asked for one client bank, it keeps to that bank's subjects and those that name no bank.
 _Avoid_: priority list, leaderboard, scoring board
 
+**Proposed order**:
+The view of the order the agent proposes for the top of the backlog, the ticket to take first at the top, each with why it stands there, citing a subject's horizon, a commitment's due date or a decision. Nothing is moved in the tracker: reordering is the PO's.
+_Avoid_: backlog ranking, prioritisation, ranked portfolio (which ranks subjects)
+
+**Split**:
+The agent's proposal to cut a ticket too large for one sprint into two to four smaller tickets: a `create` change for each, and an `edit` of the original's text saying what remains, each in the change proposal and approved one at a time. The original is never closed.
+_Avoid_: breakdown, decomposition, sub-tasks
+
 **Intake card**:
 The view of a subject taken in from a request for an AI use case, written from a template: the problem, the client bank, who asks, the data needed and the expected gain, whether the work changes, and the clearance. A part not given is shown as such. A request taken in is a subject under Later, pending; a refused one is closed with its reason. (French: demande de cas d'usage.)
 _Avoid_: intake form, request form, use case sheet

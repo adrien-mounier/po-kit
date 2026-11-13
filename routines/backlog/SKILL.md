@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: Propose changes to tickets of the tracker - create a ticket, or reword the title, the description or the acceptance criteria of one - and apply each one only after the PO said yes and approved the exact text, one change at a time, logging each. Use when the PO asks to reword a ticket, to create a ticket they describe, approves or refuses a change you proposed, or says a change they pasted is done.
+description: Propose changes to tickets of the tracker - create a ticket, or reword the title, the description or the acceptance criteria of one - and apply each one only after the PO said yes and approved the exact text, one change at a time, logging each. Use when the PO asks to reword a ticket, to create a ticket they describe, to split a ticket too large, or how to order the top of the backlog, approves or refuses a change you proposed, or says a change they pasted is done.
 ---
 
 # Backlog
@@ -11,7 +11,7 @@ You propose changes to the tickets of the tracker; the PO says yes, reviews the 
 - **Only after the PO approved that exact change, one change at a time.**
 - **You never delete, close, reopen or move a ticket, and you never change another field**: status, assignee, estimate, sprint, priority stay the PO's, whoever asks.
 
-Your writes are `state/backlog-changes.json`, the change proposal, and the one change the PO approved, applied as step 5 says. The applied-change log, `state/backlog-log.json`, is the register tool's.
+Your writes are `state/backlog-changes.json`, the change proposal, `state/backlog-order.json`, the order you propose, and the one change the PO approved, applied as step 5 says. The applied-change log, `state/backlog-log.json`, is the register tool's.
 
 Work in the PO's workspace, under its rules: read `AGENTS.md` there first when it is not already in your context. Its section "Changes to the tracker" gives the format of the change proposal; it says how to call the register tool. The tracker is read as the collect's `sources.md` says, never listed: a ticket the PO names is found by searching the tracker's folder for its key, or by asking the connector for it.
 
@@ -76,3 +76,29 @@ Your answer is short:
 5. That the applied-change log is committed with the next apply of the register.
 
 Done when the PO knows what changed in the tracker, what waits for them, and what stays theirs.
+
+## Split a ticket too large
+
+When the PO names a ticket to split, or a ticket you read is too large for one sprint: its estimate is above `split_estimate_above` in `settings.json` (8 when it is not set), or its description holds several needs, each of which a user could get without the others.
+
+1. **Read the ticket** as step 2 says: its text as it is now is the text `before`, word for word.
+2. **Cut it into two to four smaller tickets**, each one need a user gets on its own, small enough for one sprint. Each is a `create` change in the original's project. Its texts come from the ticket template when the workspace has one; otherwise a `title`, a `description` written as a user story ("As a ..., I want ..., so that ...") and `acceptance criteria`, one per line ("Given ..., when ..., then ..."). You set no estimate: estimating stays the team's.
+3. **Add one `edit` change** of the original's `description`: what remains of it once the smaller tickets exist, naming each by its title. The original is never closed, deleted or moved, whoever asks: that stays the PO's.
+4. Write each change as step 2 says, `proposed`: its `reason` says why the ticket is too large (its estimate, or the needs it holds), and its `source` is the ticket as you read it (`{ "where": "exports/tracker/ONB-160.txt", "read_on": "<today>" }` in a folder, `tracker: ONB-160` through a connector). Run the register tool's `backlog check`, and correct the proposal until it passes.
+5. **Propose them**, one line per change as step 2 says, and ask which the PO wants. Each one then goes through steps 3 to 5, one at a time: nothing is applied before the PO approved its exact text.
+
+Done when each smaller ticket and the edit of the original are proposed, and nothing is applied.
+
+## Propose an order for the top of the backlog
+
+When the PO asks how to order the backlog, or what the team should take next. Reordering is a move, which stays the PO's: you give the order, the PO reorders in the tracker.
+
+1. **Read the register**: run the register tool's `export` with the date four weeks before today. It prints the active subjects with their horizon, the open commitments with their due date, the pending decisions and the decisions taken since, each with its identifier.
+2. **Read the backlog**: search the tracker once for each tracker project of an active subject's watch list, as the collect's `sources.md` says, and open what the searches return. The tickets not done are the backlog.
+3. **Place at most `backlog_top` tickets** (`settings.json`, 10 when it is not set), the ticket to take first at the top: one that serves a subject under Now before Next before Later; among them, one that a commitment due soon or a decision awaited by a date waits on before one nothing waits on. A ticket for work a decision taken dropped is not placed: tell the PO. A ticket no record places is left out of the order.
+4. **Write `state/backlog-order.json`** as the workspace rules show: each ticket's key, its title and `why`, one sentence that cites by its identifier in square brackets the record that places it, as the export prints it: the subject `[mobile-onboarding]`, the commitment or the decision. A record the export does not print, or that is superseded, is never cited.
+5. Run the register tool's `backlog order`. It writes the view `views/backlog-order.md`. When it refuses the order, correct what it lists and run it again.
+
+Then tell the PO: the order, one line per ticket with its reason; the view to open; the tickets left out and why; and that nothing was moved in the tracker: reordering the backlog is theirs, there. You never move a ticket, nor change its rank, priority or sprint, whoever asks.
+
+Done when the view is written and the PO has the order, or knows why there is none.

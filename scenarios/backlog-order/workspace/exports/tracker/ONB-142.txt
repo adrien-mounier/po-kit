@@ -1,0 +1,10 @@
+Key: ONB-142
+Project: ONB
+Title: Scan screen
+Status: To do
+Estimate: 3
+Assignee: the tech lead
+Reporter: the PO
+Updated: {workday-3}T16:40:00+01:00
+
+The customer scans an identity document during onboarding.

@@ -24,6 +24,8 @@
 #   -Changes <file>   leaves this change proposal for the tracker
 #   -BacklogApply <id>
 #                     has the register tool apply this change of the change proposal
+#   -Order <file>     leaves this order for the top of the backlog, dated as the notes on the
+#                     meetings, then has the register tool write it as a view
 #   -Weekly <file>    stores this text as the weekly synthesis of the day, with the stamp and the
 #                     portfolio view that export prints in place of {stamp} and {portfolio}
 #   -ByHand           writes a record itself, which no routine may do
@@ -35,7 +37,7 @@
 #                     of the result, which gives the text of -Say as its final answer
 #   -Read <file>      with -Stream, shows this file in the transcript, as a file the agent opened
 param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [string]$Snapshot, [string]$MeetingNotes, [string]$Questions, [switch]$ByHand,
-    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [switch]$Ranking, [string]$SteeringNotes, [switch]$Steering, [string]$Read, [string]$Changes, [string]$BacklogApply)
+    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [switch]$Ranking, [string]$SteeringNotes, [switch]$Steering, [string]$Read, [string]$Changes, [string]$BacklogApply, [string]$Order)
 
 $prompt = [Console]::In.ReadToEnd()
 $steps = {
@@ -48,7 +50,7 @@ if ($Proposal) {
     Copy-Item -LiteralPath $Proposal -Destination 'state\proposal.json'
     if (-not $Pending) { & powershell.exe -NoProfile -File tools\register.ps1 apply $(if ($Plain) { 'plain' }) }
 }
-foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'state\morning.json'), @($Questions, 'state\questions.json'), @($SteeringNotes, 'state\steering.json')) | Where-Object { $_[0] }) {
+foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'state\morning.json'), @($Questions, 'state\questions.json'), @($SteeringNotes, 'state\steering.json'), @($Order, 'state\backlog-order.json')) | Where-Object { $_[0] }) {
     $day = Get-Date
     $text = [IO.File]::ReadAllText($given[0]).Replace('{today}', $day.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)).Replace('{year}', $day.ToString('yyyy', [Globalization.CultureInfo]::InvariantCulture))
     $text = [regex]::Replace($text, '\{workday([+-])(\d+)\}', {
@@ -62,6 +64,7 @@ foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'stat
 }
 if ($Changes) { Copy-Item -LiteralPath $Changes -Destination 'state\backlog-changes.json' }
 if ($BacklogApply) { & powershell.exe -NoProfile -File tools\register.ps1 backlog apply $BacklogApply }
+if ($Order) { & powershell.exe -NoProfile -File tools\register.ps1 backlog order }
 if ($Check) { & powershell.exe -NoProfile -File tools\register.ps1 check }
 if ($Morning) { & powershell.exe -NoProfile -File tools\register.ps1 morning }
 if ($Intake) { & powershell.exe -NoProfile -File tools\register.ps1 view intake $Intake }

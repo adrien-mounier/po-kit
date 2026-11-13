@@ -21,6 +21,8 @@
   "banks": [],
   "task_kinds": ["steering pack", "intake review", "ticket refinement", "client meeting preparation"],
   "steering_words": ["steering committee"],
+  "backlog_top": 10,
+  "split_estimate_above": 8,
   "sponsor": {
     "name": "",
     "email": ""

@@ -1,0 +1,14 @@
+{
+  "changes": [
+    { "id": "1", "kind": "create", "project": "ONB",
+      "after": { "title": "Book an appointment in a pilot branch", "description": "As a customer, I want to book an appointment in a pilot branch, so that I open my account with an adviser.", "acceptance criteria": "Given a pilot branch, when I pick a free slot, then the appointment is booked." },
+      "reason": "ONB-160 is too large for one sprint: an estimate of 13 and three needs.", "source": { "where": "exports/tracker/ONB-160.txt", "read_on": "2026-03-02" }, "state": "proposed" },
+    { "id": "2", "kind": "create", "project": "ONB",
+      "after": { "title": "Open the account the same day", "description": "As a customer, I want my account opened the same day once my identity document is checked, so that I can use it at once.", "acceptance criteria": "Given the adviser checked the identity document, when the check passes, then the account opens the same day." },
+      "reason": "ONB-160 is too large for one sprint: an estimate of 13 and three needs.", "source": { "where": "exports/tracker/ONB-160.txt", "read_on": "2026-03-02" }, "state": "proposed" },
+    { "id": "3", "kind": "edit", "ticket": "ONB-160", "field": "description",
+      "before": "The customer books an appointment in a pilot branch, the branch adviser checks the identity document of the customer, and the account opens the same day with a welcome pack sent by mail.",
+      "after": "The welcome pack is sent by mail once the account opens. Split from it: Book an appointment in a pilot branch; Open the account the same day.",
+      "reason": "ONB-160 is too large for one sprint: what remains once it is split.", "source": { "where": "exports/tracker/ONB-160.txt", "read_on": "2026-03-02" }, "state": "proposed" }
+  ]
+}
