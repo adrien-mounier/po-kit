@@ -18,7 +18,7 @@ Test 'apply writes a commitment as one record, filed under its year, whose ident
     Assert-True ($committed -contains 'register/commitments/2026/C-2026-001.json') "the last commit holds: $committed"
 }
 
-Test 'a commitment carries the common fields, its subject, the date of the fact, its owner, whom it is owed to, its due date and the PO''s effort fields' {
+Test 'a commitment carries the common fields, its subject, the date of the fact, its owner, whom it is owed to, its due date, the PO''s effort fields and whether it is optional' {
     $ws = New-TestWorkspaceWithSubject
     Set-Proposal $ws @{ operations = @(New-RecordOperation commitment @{
                 title    = 'Send the onboarding figures'
@@ -34,7 +34,7 @@ Test 'a commitment carries the common fields, its subject, the date of the fact,
     $record = Read-Json (Join-Path $ws 'register\commitments\2026\C-2026-001.json')
     $expected = 'id', 'type', 'title', 'status', 'date_recorded', 'date_updated', 'evidence_level', 'source', 'objectives',
         'notes', 'supersedes', 'superseded_by', 'history', 'subject', 'date_of_fact', 'owner', 'owed_to', 'due_date',
-        'estimated_effort', 'task_kind', 'estimate_reason', 'started_on', 'started_sign', 'real_effort'
+        'estimated_effort', 'task_kind', 'estimate_reason', 'started_on', 'started_sign', 'real_effort', 'optional'
     $actual = @($record.PSObject.Properties | ForEach-Object { $_.Name })
     Assert-Equal (($expected | Sort-Object) -join ' ') (($actual | Sort-Object) -join ' ') 'fields of the record'
     Assert-Equal 'Send the onboarding figures' $record.title 'title'
