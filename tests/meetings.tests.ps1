@@ -177,7 +177,7 @@ Test 'a calendar snapshot read on an earlier day is not read today, for the bloc
 
     $page = Read-MorningPage $ws
     Assert-Equal 'not read: calendar' (Get-BlockCount (Get-PageBlock $page 'meetings')) 'counts of the block'
-    Assert-Match $page '<span class="src fail"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Not read: calendar</span>' 'the bar'
+    Assert-Match $page '<span class="src fail"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>Not read: calendar</span>' 'the bar'
 }
 
 Test 'a meeting is linked to subjects by its attendees and its title against the watch lists, and its brief lists their open commitments and decisions awaited' {
@@ -264,7 +264,7 @@ Test 'notes that cite a record missing or superseded are left off the page, whic
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     $block = Get-PageBlock (Read-MorningPage $ws) 'meetings'
     Assert-True ($block -notmatch 'm-key|Still lacks') 'a note of the refused notes is shown'
-    Assert-Match $block '<p class="refused late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> The agent&#39;s notes on the meetings are not shown: C-2026-099 is not in the register\. D-2026-007 is not in the register\.</p>' 'what the page says'
+    Assert-Match $block '<p class="refused warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg> The agent&#39;s notes on the meetings are not shown: C-2026-099 is not in the register\. D-2026-007 is not in the register\.</p>' 'what the page says'
     Assert-Match $run.Output '(?m)^Not verified: state\\morning\.json\..*\n- C-2026-099 is not in the register\.\n- D-2026-007 is not in the register\.$' 'what morning prints'
 }
 

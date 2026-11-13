@@ -146,7 +146,7 @@ Test 'the morning page states under What you owe the effort of each line, with t
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     $page = [IO.File]::ReadAllText((Join-Path $ws 'views\morning.html'), $Utf8)
-    $row = { param($Id) if ($page -match "(?s)<li class=`"row[^`"]*`">(?:(?!</li>).)*&middot; $Id</span>.*?</li>") { $Matches[0] } }
+    $row = { param($Id) if ($page -match "(?s)<li class=`"row[^`"]*`">(?:(?!</li>).)*&middot; <span class=`"id`">$Id</span>.*?</li>") { $Matches[0] } }
     Assert-Match (& $row 'C-2026-006') '<span class="t">March steering pack</span> <span class="who">est\. 2 d, adjusted x1\.4 from past steering pack: 2\.8 d</span></span>' 'a steering pack'
     Assert-Match (& $row 'C-2026-007') '<span class="who">est\. 1 d, not adjusted: no past intake review</span>' 'an intake review'
     Assert-True ((& $row 'C-2026-009') -notmatch 'class="who"') 'a line without an estimate states an effort'

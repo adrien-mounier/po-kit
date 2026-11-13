@@ -98,7 +98,9 @@
       "heading": "À faire d'abord",
       "count": "{0} action(s)",
       "must_today": "Pour {0}, {1} de travail, pas commencé : c'est aujourd'hui le dernier jour pour commencer.",
-      "must_late": "Pour {0}, {1} de travail, pas commencé : le dernier jour pour commencer était {2}."
+      "must_late": "Pour {0}, {1} de travail, pas commencé : le dernier jour pour commencer était {2}.",
+      "show": "Afficher",
+      "ask_show": "Montre-moi {0} : {1}"
     },
     "messages": {
       "heading": "Messages qui attendent votre réponse",

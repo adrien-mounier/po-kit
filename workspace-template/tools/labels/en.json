@@ -98,7 +98,9 @@
       "heading": "Do first",
       "count": "{0} action(s)",
       "must_today": "Due {0}, {1} of work, not started: today is the latest start.",
-      "must_late": "Due {0}, {1} of work, not started: the latest start was {2}."
+      "must_late": "Due {0}, {1} of work, not started: the latest start was {2}.",
+      "show": "Show it",
+      "ask_show": "Show me {0}: {1}"
     },
     "messages": {
       "heading": "Messages awaiting your reply",

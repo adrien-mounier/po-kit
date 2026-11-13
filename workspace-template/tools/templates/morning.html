@@ -12,7 +12,6 @@
   --bar: #0e3b43;
   --bar-ink: #eef5f4;
   --bar-muted: #a9c6c5;
-  --bar-warn: #ffc7c9;
   --bg: #f3f6f5;
   --surface: #ffffff;
   --ink: #142120;
@@ -35,7 +34,6 @@
     --bar: #0a2e35;
     --bar-ink: #e6f0ef;
     --bar-muted: #9dbbba;
-    --bar-warn: #ffb3b6;
     --bg: #0f1514;
     --surface: #161e1d;
     --ink: #e7eeec;
@@ -74,6 +72,9 @@ svg.i { width: 1rem; height: 1rem; flex: none; fill: none; stroke: currentColor;
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .late { color: var(--late); font-weight: 600; }
 .soon { color: var(--soon); font-weight: 600; }
+/* Red means late, a contradiction or a day that does not fit; amber, this week. Anything else to
+   heed (a source not read, notes not shown) is a warning: an icon and words, in the colour of the text. */
+.warn { color: var(--ink); font-weight: 600; }
 h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.125rem 0.75rem; font-size: 1.25rem; line-height: 1.25; font-weight: 600; }
 h2 .count { font-size: 0.875rem; font-weight: 400; color: var(--muted); }
 h2 .count .late, h2 .count .soon { font-weight: 600; }
@@ -85,10 +86,14 @@ h1 { font: 600 1.375rem/1.2 "Segoe UI Variable Display", "Segoe UI", system-ui, 
 h1 .sub { font: 400 0.875rem/1.2 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; color: var(--bar-muted); letter-spacing: 0; margin-left: 0.625rem; }
 .sources { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 1.25rem; font-size: 0.875rem; color: var(--bar-muted); }
 .sources .src { display: inline-flex; align-items: center; gap: 0.375rem; }
-.sources .fail { color: var(--bar-warn); font-weight: 600; }
+.sources .fail { color: var(--bar-ink); font-weight: 600; }
 
 /* ---------- Shared bits ---------- */
 .ref { font-size: 0.8125rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* A subject and an identifier: the subject is cut, the identifier always shows whole. */
+.ref:has(> .subj) { display: flex; gap: 0 0.3em; }
+.ref .subj { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ref:has(> .subj) .id { flex: none; }
 .ask { font: inherit; font-size: 0.8125rem; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; padding: 0.25rem 0.625rem; min-height: 2rem; border: 1px solid var(--edge); border-radius: 6px; background: var(--btn); color: var(--ink); cursor: pointer; white-space: nowrap; transition: background-color 150ms ease-out, color 150ms ease-out, border-color 150ms ease-out; }
 .ask:hover { background: var(--btn-hover); border-color: var(--ink-2); }
 .ask:active { transform: translateY(1px); }
@@ -258,6 +263,7 @@ footer p { padding-top: 0.875rem; border-top: 1px solid var(--rule); }
   <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5"/><path d="M12 17.5v.01"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5"/><path d="M12 16.5v.01"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
   <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
   <symbol id="i-up" viewBox="0 0 24 24"><path d="M12 19V5.5"/><path d="M6 11l6-6 6 6"/></symbol>

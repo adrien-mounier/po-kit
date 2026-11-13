@@ -39,12 +39,12 @@ function Get-Count([string]$Block) {
 
 function Get-Ids([string]$Html) {
     # The identifiers of the records the lines of some HTML name, in order.
-    @([regex]::Matches($Html, '<span class="ref">[^<]*&middot; ([^<]+)</span>') | ForEach-Object { $_.Groups[1].Value }) -join ' '
+    @([regex]::Matches($Html, '<span class="ref"><span class="subj">[^<]*</span> &middot; <span class="id">([^<]+)</span>') | ForEach-Object { $_.Groups[1].Value }) -join ' '
 }
 
 function Get-Row([string]$Html, [string]$Id) {
     # The HTML of the line that names a record.
-    if ($Html -match "(?s)<li class=`"row[^`"]*`">(?:(?!</li>).)*&middot; $Id</span>.*?</li>") { $Matches[0] }
+    if ($Html -match "(?s)<li class=`"row[^`"]*`">(?:(?!</li>).)*&middot; <span class=`"id`">$Id</span>.*?</li>") { $Matches[0] }
 }
 
 function New-TestWorkspaceWithDay {
@@ -173,8 +173,10 @@ Test 'when the last collect did not read a source, each block says so, empty or 
     $page = Read-Page $ws
     Assert-Equal '1 late, 1 due today, 1 this week, 1 later, not read: mail' (Get-Count (Get-Block $page 'owe')) 'counts of What you owe'
     Assert-Equal 'none, not read: mail' (Get-Count (Get-Block $page 'sort')) 'counts of To sort'
-    Assert-Match (Get-Block $page 'sort') '<span class="late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> not read: mail</span>' 'what To sort says in red, with an icon'
-    Assert-Match $page '<span class="src fail"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Not read: mail</span>' 'what the bar says'
+    Assert-Match (Get-Block $page 'sort') '<span class="warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg> not read: mail</span>' 'what To sort says as a warning, with an icon and words, not in red'
+    Assert-True ($page -notmatch 'class="late"><svg[^>]*><use href="#i-alert"/></svg> not read') 'a source not read said in red'
+    Assert-Match $page '\.warn \{ color: var\(--ink\); font-weight: 600; \}' 'the warning in the colour of the text, in light and dark themes alike'
+    Assert-Match $page '<span class="src fail"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>Not read: mail</span>' 'what the bar says'
 }
 
 Test 'the bar is the stamp of the page: the date, when it was written, the sources read and by which collect, those not read or off, and the register state' {

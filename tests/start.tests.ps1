@@ -71,11 +71,31 @@ Test 'a commitment of the PO enters Start soon when its latest start, its due da
     Assert-Match (Get-StartRow $block 'C-2026-007') '<li class="row start is-late" id="start-C-2026-007">\s*<span class="when"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><span class="sr k">Start by </span><b>Fri 27</b> <span class="lag">3 days late</span></span>' 'a latest start past'
     Assert-Match (Get-StartRow $block 'C-2026-004') '<li class="row start is-soon" id="start-C-2026-004">\s*<span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="sr k">Start by </span><b>Today</b></span>' 'a latest start today'
     Assert-Equal 'Start by Today March steering pack C-2026-005 Effort 3 d est. 2 d, adjusted x1.5 from past steering pack: 3 d Due Fri 6 Not started 3 In Do first , number 3' (Get-StartText (Get-StartRow $block 'C-2026-005')) 'a line: start by, task, effort with how it was adjusted, due, status, and its pointer to Do first, where its button is'
-    Assert-Match (Get-StartRow $block 'C-2026-006') '<li class="row start is-soon" id="start-C-2026-006">\s*<span class="when"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="sr k">Start by </span><b>Wed 4</b></span>' 'a latest start within the lead, this week: amber'
+    Assert-Match (Get-StartRow $block 'C-2026-006') '<li class="row start" id="start-C-2026-006">\s*<span class="when"><span class="sr k">Start by </span><b>Wed 4</b></span>' 'a latest start within the lead, this week, of a task started: neither amber nor red'
     Assert-Match (Get-StartRow $block 'C-2026-006') '<span class="status"><span class="dot on" aria-hidden="true"></span>Started: a draft in the shared folder</span>' 'a commitment started, with the sign used'
     Assert-Match ([IO.File]::ReadAllText((Join-Path $ws 'views\morning.html'), $Utf8)) '(?s)<li id="first-3">(?:(?!</li>).)*data-ask="Tell me what C-2026-005 needs: March steering pack"' 'the request of a line to start today, in Do first'
     Assert-Match (Get-StartRow $block 'C-2026-006') 'data-ask="Show me where I am on C-2026-006: Draft the pilot timeline"' 'the request a line copies'
     Assert-Match $run.Output '(?m)^Start soon 1 late to start, 2 to start today, 1 more, not read: notes$' 'what morning prints'
+}
+
+Test 'a task started is not late to start: past its latest start it shows as started, and late only once past its due date' {
+    #   C-2026-001  due Wed 4, 2 d, started:  latest start Fri 27 Feb, past; due date ahead
+    #   C-2026-002  due Fri 27 Feb, 1 d, started:  latest start Wed 25 Feb; due date past
+    $ws = New-StartWorkspace @(
+        @{ title = 'Draft the pilot timeline'; owner = 'the PO'; due_date = '2026-03-04'; estimated_effort = 2; started_on = '2026-02-20'; started_sign = 'the PO said so' },
+        @{ title = 'Score the intake'; owner = 'the PO'; due_date = '2026-02-27'; estimated_effort = 1; started_on = '2026-02-20'; started_sign = 'the PO said so' }
+    )
+
+    $run = Invoke-Register $ws morning -Now $StartMorning
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $block = Read-StartBlock $ws
+    Assert-Match (Get-StartRow $block 'C-2026-001') '<li class="row start" id="start-C-2026-001">\s*<span class="when"><span class="sr k">Start by </span><b>Fri 27</b></span>' 'a latest start past, of a task started: no red, no icon, no days late'
+    Assert-Equal 'Start by Fri 27 Draft the pilot timeline C-2026-001 Effort 2 d est. 2 d, not adjusted: no kind of task Due Wed 4 Started: the PO said so Where am I' (Get-StartText (Get-StartRow $block 'C-2026-001')) 'the line of a task started, due ahead'
+    Assert-Match (Get-StartRow $block 'C-2026-002') '<li class="row start" id="start-C-2026-002">\s*<span class="when"><span class="sr k">Start by </span><b>Wed 25</b></span>' 'a task started and past its due date is not late to start'
+    Assert-Match (Get-StartRow $block 'C-2026-002') '<span class="due late"><span class="sr k">Due </span><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg>Fri 27, 3 days late</span>' 'its due date says it is late, in red'
+    Assert-True ($block -notmatch 'late to start') "a task started is counted late to start: $block"
+    Assert-Match $run.Output '(?m)^Start soon 2 more, not read: notes$' 'what morning prints'
 }
 
 function Set-StartCalendar([string]$Workspace, [object[]]$Meetings, [object[]]$Absences = @()) {

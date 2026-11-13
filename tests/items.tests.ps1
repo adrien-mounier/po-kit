@@ -28,7 +28,7 @@ function Get-Action([string]$Block, [int]$Number) {
 
 function Get-ItemsRow([string]$Html, [string]$Id) {
     # The HTML of the line of a ruled block that names a record.
-    if ($Html -match "(?s)<li class=`"row[^`"]*`"[^>]*>(?:(?!</li>).)*(&middot; |<span class=`"ref`">)$Id</span>.*?</li>") { $Matches[0] }
+    if ($Html -match "(?s)<li class=`"row[^`"]*`"[^>]*>(?:(?!</li>).)*(<span class=`"id`">|<span class=`"ref`">)$Id</span>.*?</li>") { $Matches[0] }
 }
 
 function Get-ItemsButton([string]$Html) {
@@ -103,6 +103,33 @@ Test 'Do first shows the actions the agent wrote, numbered, each with one line o
     Assert-Equal 'Brief me | Brief me for the 14:00 with Harbour Bank' (Get-ItemsButton (Get-Action $block 3)) 'the button an action without a record gives'
 }
 
+Test 'an action about a record no longer awaited gets no button that says it is still awaited: the action''s own button, or a neutral one' {
+    $ws = New-ItemsWorkspace
+    Set-Items $ws @{ first = @(
+            @{ record = 'D-2026-002'; title = 'Tell the branches the paper form is dropped'; why = 'Taken by the sponsor [D-2026-002].' },
+            @{ record = 'D-2026-002'; title = 'Announce the paper form is dropped'; why = 'The branches ask.'; button = 'Draft the note'; ask = 'Draft the note to the branches on D-2026-002' }
+        )
+    }
+
+    $run = Invoke-Register $ws morning -Now $ItemsMorning
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $block = Get-ItemsBlock (Read-ItemsPage $ws) 'first'
+    Assert-Equal 'Show it | Show me D-2026-002: Drop the paper form' (Get-ItemsButton (Get-Action $block 2)) 'the neutral button of a decision taken'
+    Assert-Equal 'Draft the note | Draft the note to the branches on D-2026-002' (Get-ItemsButton (Get-Action $block 3)) 'the button the action gives, for a decision taken'
+    Assert-True ($block -notmatch 'still waiting for') "a decision taken is said to be still waiting: $block"
+}
+
+Test 'the reference of a line shows its subject and its identifier apart, so that a long subject is cut and the identifier never is' {
+    $ws = New-ItemsWorkspace
+
+    Invoke-Register $ws morning -Now $ItemsMorning | Out-Null
+
+    Assert-Match (Get-ItemsRow (Get-ItemsBlock (Read-ItemsPage $ws) 'owe') 'C-2026-001') '<span class="ref"><span class="subj">mobile-onboarding</span> &middot; <span class="id">C-2026-001</span></span>' 'the reference of a line'
+    Assert-Match (Read-ItemsPage $ws) '\.ref:has\(> \.subj\) \{ display: flex;' 'the reference laid out so that only the subject shrinks'
+    Assert-Match (Read-ItemsPage $ws) '\.ref \.subj \{ min-width: 0; overflow: hidden; text-overflow: ellipsis; \}' 'the subject cut with an ellipsis'
+}
+
 Test 'a commitment of the PO to start today or late to start, not started, is always among the actions: first, in the page''s words, when the agent left it out' {
     $ws = New-ItemsWorkspace
     Set-Items $ws @{ first = @(
@@ -167,7 +194,9 @@ Test 'a file of items that cites a missing or superseded record is refused: Do f
     $first = Get-ItemsBlock $page 'first'
     Assert-Equal '1 action(s), could not be written, not read: notes' (Get-ItemsCount $first) 'counts of Do first'
     Assert-Match $first 'Review the target journey' 'the action to start today stays'
-    Assert-Match $first '<p class="refused late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> The agent&#39;s notes are not shown: C-2026-099 is not in the register\. D-2026-007 is not in the register\.</p>' 'why'
+    Assert-Match $first '<p class="refused warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg> The agent&#39;s notes are not shown: C-2026-099 is not in the register\. D-2026-007 is not in the register\.</p>' 'why, as a warning, not in red'
+    Assert-Match $first '<span class="warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg> could not be written</span>' 'the count says it could not be written, as a warning, not in red'
+    Assert-True ($page -notmatch 'class="late">[^<]*(<svg[^>]*><use[^>]*/></svg>)? ?(could not be written|not read)') 'a block not written or a source not read is said in red'
     Assert-Equal 'could not be written, not read: mail, chat' (Get-ItemsCount (Get-ItemsBlock $page 'messages')) 'counts of the messages'
     Assert-Equal 'could not be written, not read: tracker' (Get-ItemsCount (Get-ItemsBlock $page 'backlog')) 'counts of the backlog alerts'
     Assert-True ($page -notmatch 'ONB-150') 'a line of the refused file is shown'

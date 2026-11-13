@@ -88,7 +88,7 @@ Test 'a file of questions that cites a record missing or superseded, or a questi
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     $sort = Get-QuestionsSort $ws
-    Assert-Match $sort '<span class="late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> open questions could not be read</span>' 'the count of To sort'
+    Assert-Match $sort '<span class="warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg> open questions could not be read</span>' 'the count of To sort'
     Assert-True ($sort -notmatch 'Who writes it') 'a question of the refused file is shown'
     Assert-Match $run.Output '(?m)^Not verified: state\\questions\.json\..*\n- C-2026-099 is not in the register\.\n- C-2026-002 is superseded by D-2026-001\.\n- Question 3 lacks: recommended, added\.$' 'what morning prints'
     Assert-True ($run.Output -notmatch '(?m)^Open question') 'a question of the refused file printed'

@@ -16,7 +16,8 @@
 #              its brief opening in place, then the free time for work within the PO's working
 #              hours. A calendar off, or not read today, is a block that says it was not read.
 #   start      Start soon, after the white sheet: the commitments of the PO whose latest start falls
-#              within the lead, under named columns, then the workload of the next ten working
+#              within the lead, under named columns (one started is never late to start: only
+#              its due date past is in red), then the workload of the next ten working
 #              days in half-days, one sentence per week, a day that does not fit in red, how many
 #              commitments it leaves out for lack of an estimate or a due date, and one way out
 #              when a day does not fit. The calendar not read, the workload says so.
@@ -123,7 +124,7 @@ function New-Line([string]$Date, [string]$Id, [string]$Title, [string]$Who, [str
     $class = @{ late = ' is-late'; today = ' is-soon'; week = ' is-soon' }[$dated]
     @{
         date = $Date; id = $Id; dated = $dated
-        html = New-Row $class $when $Title $Who "$(Html $Subject) &middot; $(Html $Id)" $Button $Ask $Effort $Id
+        html = New-Row $class $when $Title $Who "<span class=`"subj`">$(Html $Subject)</span> &middot; <span class=`"id`">$(Html $Id)</span>" $Button $Ask $Effort $Id
     }
 }
 
@@ -167,7 +168,7 @@ function Format-Count([string[]]$Counts, $Lines, [string[]]$NotRead = $unread) {
         if ($count) { $parts += $(if ($kind[2]) { "<span class=`"$($kind[2])`">$(Html ($words.($kind[1]) -f $count))</span>" } else { Html ($words.($kind[1]) -f $count) }) }
     }
     if (-not $parts) { $parts = , (Html $words.none) }
-    if ($unread) { $parts += "<span class=`"late`">$(Icon alert) $(Html ($words.block_not_read -f ($unread -join ', ')))</span>" }
+    if ($unread) { $parts += "<span class=`"warn`">$(Icon warn) $(Html ($words.block_not_read -f ($unread -join ', ')))</span>" }
     $parts -join ', '
 }
 
@@ -203,10 +204,10 @@ $StartToday = @()
 $Offers = @()
 
 function Format-Unwritten([string]$Key) {
-    # What a block of the agent's says when the agent's file gives it nothing: in red when the file
+    # What a block of the agent's says when the agent's file gives it nothing: a warning when the file
     # is refused, and that the agent wrote nothing for it when the file is absent or says nothing
     # of it.
-    if ($notes.problems) { "<span class=`"late`">$(Icon alert) $(Html $words.refused_block)</span>" }
+    if ($notes.problems) { "<span class=`"warn`">$(Icon warn) $(Html $words.refused_block)</span>" }
     elseif ($null -eq $items -or $null -eq $items.$Key) { Html $words.not_written }
 }
 
@@ -219,7 +220,8 @@ function Get-FirstBlock {
     # Do first: the three actions the agent recommends, each with one line of why and its button.
     # A commitment of the PO whose latest start is today or past and that is not started is always
     # among them: in the agent's words when its action names it, in the page's own otherwise, first.
-    # An action that names a record takes the button of that record; another gives its own.
+    # An action that names a record still awaited takes the button of that record; another gives its
+    # own, and one about a record no longer awaited that gives none takes a neutral button.
     $said = $words.first
     $musts = @($commitments | Where-Object { (Test-IsPo $_.owner) -and -not "$($_.started_on)".Trim() } | ForEach-Object {
             $start = Get-LatestStart $_
@@ -246,7 +248,7 @@ function Get-FirstBlock {
         $button, $ask = $action.button, $action.ask
         if ($action.record) {
             $found = Find-Record $action.record
-            if ($found) { $button, $ask = Get-RecordAsk $found.record }
+            if ($found -and ((Test-Awaited $found.record) -or -not "$ask".Trim())) { $button, $ask = Get-RecordAsk $found.record }
         }
         "<li id=`"first-$number`">"
         "<span class=`"pick`" aria-hidden=`"true`">$number</span>"
@@ -258,7 +260,7 @@ function Get-FirstBlock {
     $counts = @(if ($number) { Html ($said.count -f $number) }; Format-Unwritten 'first')
     $body = @(
         if ($lines) { '<ol class="actions">'; $lines; '</ol>' }
-        if ($notes.problems) { "<p class=`"refused late`">$(Icon alert) $(Html ($words.refused -f ($notes.problems -join ' ')))</p>" }
+        if ($notes.problems) { "<p class=`"refused warn`">$(Icon warn) $(Html ($words.refused -f ($notes.problems -join ' ')))</p>" }
     )
     Format-Block 'first' $said.heading (Format-Count $counts @()) $body
 }
@@ -294,7 +296,7 @@ function Get-FreeTime($Meetings) {
 
 function Get-MeetingsBlock {
     $said = $words.meetings
-    if (-not $calendar) { return Format-Block 'meetings' $said.heading "<span class=`"late`">$(Icon alert) $(Html ($words.block_not_read -f 'calendar'))</span>" @() }
+    if (-not $calendar) { return Format-Block 'meetings' $said.heading "<span class=`"warn`">$(Icon warn) $(Html ($words.block_not_read -f 'calendar'))</span>" @() }
     $meetings = @(Get-DayMeetings $calendar $Today)
     $dayOff = @($calendar.absences | Where-Object { $_.date -eq $Today }).Count
     if (-not $meetings -and -not $dayOff) { return Format-Block 'meetings' $said.heading (Html $words.none) @() }
@@ -361,7 +363,7 @@ function Get-MeetingsBlock {
     $count = if ($meetings) { Html ($said.count -f $meetings.Count, (Format-Duration $booked)) } else { Html $words.none }
     $body = @(
         if ($lines) { '<ol class="tt">'; $lines; '</ol>' }
-        if ($notes.problems) { "<p class=`"refused late`">$(Icon alert) $(Html ($said.refused -f ($notes.problems -join ' ')))</p>" }
+        if ($notes.problems) { "<p class=`"refused warn`">$(Icon warn) $(Html ($said.refused -f ($notes.problems -join ' ')))</p>" }
         "<p class=`"free`"><b>$(Html $said.free)</b> $(if ($dayOff) { Html $said.day_off } elseif ($stretches) { $stretches } else { Html $said.no_free })</p>"
     )
     Format-Block 'meetings' $said.heading $count $body
@@ -574,8 +576,15 @@ function Get-DecisionAsk($Decision) {
     $button, ($ask -f $Decision.id)
 }
 
+function Test-Awaited($Record) {
+    # Whether a record still waits for something: an open commitment, a pending decision.
+    ($Record.type -ceq 'commitment' -and $Record.status -ceq 'open') -or ($Record.type -ceq 'decision' -and $Record.status -ceq 'pending')
+}
+
 function Get-RecordAsk($Record) {
-    # The button a record has in its own block, and its request.
+    # The button a record has in its own block, and its request. A record no longer awaited has a
+    # neutral one, never one that says it still waits.
+    if (-not (Test-Awaited $Record)) { return $words.first.show, ($words.first.ask_show -f $Record.id, (Format-Value $Record.title)) }
     if ($Record.type -ceq 'decision') { return Get-DecisionAsk $Record }
     if (-not (Test-IsPo $Record.owner)) { return Get-OwedAsk $Record }
     $start = Get-LatestStart $Record
@@ -589,7 +598,15 @@ function Get-StartBlock {
     $lines = @(foreach ($commitment in $commitments | Where-Object { Test-IsPo $_.owner }) {
             $start = Get-LatestStart $commitment
             if (-not $start -or $start -gt $leadBy) { continue }
-            $dated = Get-Dated $start
+            $started = "$($commitment.started_on)".Trim()
+            # A task started is never late to start, nor soon to start: only its due date can be late.
+            $dated = if ($started) { 'started' } else { Get-Dated $start }
+            $due = Html (Format-Day $commitment.due_date)
+            $due = if ($started -and (Get-Dated $commitment.due_date) -eq 'late') {
+                $days = Get-DaysSince $commitment.due_date
+                "<span class=`"due late`"><span class=`"sr k`">$(Html $said.due) </span>$(Icon alert)$due, $(Html $(if ($days -eq 1) { $words.late_one } else { $words.late_many -f $days }))</span>"
+            }
+            else { "<span class=`"due`"><span class=`"sr k`">$(Html $said.due) </span>$due</span>" }
             $when = switch ($dated) {
                 'late' {
                     $days = Get-DaysSince $start
@@ -599,7 +616,6 @@ function Get-StartBlock {
                 'week' { "$(Icon clock)<span class=`"sr k`">$(Html $said.start_by) </span><b>$(Html (Format-Day $start))</b>" }
                 default { "<span class=`"sr k`">$(Html $said.start_by) </span><b>$(Html (Format-Day $start))</b>" }
             }
-            $started = "$($commitment.started_on)".Trim()
             $sign = "$($commitment.started_sign)".Trim()
             $button, $ask = Get-StartAsk $commitment
             @{
@@ -609,7 +625,7 @@ function Get-StartBlock {
                     "<span class=`"when`">$when</span>"
                     "<span class=`"what`"><span class=`"t`">$(Html $commitment.title)</span> <span class=`"ref`">$(Html $commitment.id)</span></span>"
                     "<span class=`"eff`"><span class=`"sr k`">$(Html $said.effort) </span><b>$(Html ($said.days -f (& $number (Get-AdjustedEffort $commitment).adjusted)))</b> <span class=`"adj`">$(Html (Format-Effort $commitment $labels.effort $culture))</span></span>"
-                    "<span class=`"due`"><span class=`"sr k`">$(Html $said.due) </span>$(Html (Format-Day $commitment.due_date))</span>"
+                    $due
                     "<span class=`"status`"><span class=`"dot$(if ($started) { ' on' })`" aria-hidden=`"true`"></span>$(Html $(if ($started -and $sign) { $said.started_with -f $sign } elseif ($started) { $said.started } else { $said.not_started }))</span>"
                     "<span class=`"act`">$(Format-Act $commitment.id $button $ask)</span>"
                     '</li>'
@@ -618,7 +634,7 @@ function Get-StartBlock {
         })
     foreach ($line in $lines | Where-Object { -not $placed[$_.id] }) { $placed[$line.id] = @{ anchor = "start-$($line.id)"; block = $said.heading } }
     $counts = @(
-        foreach ($kind in @(@('late', 'count_late', 'late'), @('today', 'count_today', 'soon'), @(@('week', 'later'), 'count_more', ''))) {
+        foreach ($kind in @(@('late', 'count_late', 'late'), @('today', 'count_today', 'soon'), @(@('week', 'later', 'started'), 'count_more', ''))) {
             $count = @($lines | Where-Object { $kind[0] -contains $_.dated }).Count
             if ($count) { $(if ($kind[2]) { "<span class=`"$($kind[2])`">$(Html ($said.($kind[1]) -f $count))</span>" } else { Html ($said.($kind[1]) -f $count) }) }
         }
@@ -659,7 +675,7 @@ function Get-StartBlock {
             "<div class=`"cols start`" aria-hidden=`"true`"><span>$(Html $said.start_by)</span><span>$(Html $said.task)</span><span>$(Html $said.effort)<span class=`"adj-h`">$(Html $said.adjusted_from)</span></span><span>$(Html $said.due)</span><span>$(Html $said.status)</span><span></span></div>"
             Format-Lines $lines $lines.Count
         }
-        if (-not $calendar) { "<p class=`"free`"><b>$(Html $said.workload_short)</b> <span class=`"late`">$(Icon alert) $(Html ($words.block_not_read -f 'calendar'))</span></p>" }
+        if (-not $calendar) { "<p class=`"free`"><b>$(Html $said.workload_short)</b> <span class=`"warn`">$(Icon warn) $(Html ($words.block_not_read -f 'calendar'))</span></p>" }
         elseif ($lines -or $planned) { Get-Workload $days $room $plan $share }
         if ($leftOut) { "<p class=`"free`"><b>$(Html $said.left_out)</b> $(Html $leftOut).</p>" }
         if ($overDays) { Format-WayOut (Get-WayOut $tasks $days $room $plan) }
@@ -791,7 +807,7 @@ function Get-SortBlock {
     # The agent's open questions, the oldest first, each with its age in working days.
     $questions = @($asked.questions | Sort-Object { "$($_.added)" })
     if ($questions) { $counts += Html ($said.count_questions -f $questions.Count) }
-    if ($asked.problems) { $counts += "<span class=`"late`">$(Icon alert) $(Html $said.questions_refused)</span>" }
+    if ($asked.problems) { $counts += "<span class=`"warn`">$(Icon warn) $(Html $said.questions_refused)</span>" }
     foreach ($question in $questions) {
         $age = Get-WorkingDaysSince $question.added
         $rows += New-Row '' "<b>$(Html $(if ($age) { $said.question_days -f $age } else { $said.question_new }))</b>" $question.question ($said.recommended -f (Format-Value $question.recommended)) (Html $question.about) $said.answer ($said.ask_answer -f (Format-Value $question.question))
@@ -823,11 +839,11 @@ function Get-Header {
         if (Test-Path -LiteralPath $collectPath) {
             $read = @($coverage | Where-Object { $_.covered } | ForEach-Object { $_.source })
             if ($read) { "<span class=`"src`">$(Icon check)$(Html ($words.read -f ($read -join ', '), (Format-Moment (Read-JsonFile $collectPath).collected_at)))</span>" }
-            if ($unread) { "<span class=`"src fail`">$(Icon alert)$(Html ($words.not_read -f ($unread -join ', ')))</span>" }
+            if ($unread) { "<span class=`"src fail`">$(Icon warn)$(Html ($words.not_read -f ($unread -join ', ')))</span>" }
         }
-        else { "<span class=`"src fail`">$(Icon alert)$(Html $words.no_collect)</span>" }
+        else { "<span class=`"src fail`">$(Icon warn)$(Html $words.no_collect)</span>" }
         if ($calendar) { "<span class=`"src`">$(Icon check)$(Html ($words.calendar_read -f (Format-Moment $calendar.read_at)))</span>" }
-        elseif ($Connections.calendar -and $Connections.calendar.mode -cne 'off') { "<span class=`"src fail`">$(Icon alert)$(Html ($words.not_read -f 'calendar'))</span>" }
+        elseif ($Connections.calendar -and $Connections.calendar.mode -cne 'off') { "<span class=`"src fail`">$(Icon warn)$(Html ($words.not_read -f 'calendar'))</span>" }
         $off = @($Connections.PSObject.Properties | Where-Object { $_.Value.mode -ceq 'off' } | ForEach-Object { $_.Name })
         if ($off) { "<span class=`"src`">$(Html ($words.off -f ($off -join ', ')))</span>" }
         "<span class=`"src`">$(Html ($words.register_state -f "$(Invoke-Git write-tree --prefix=register/)".Substring(0, 12)))</span>"
