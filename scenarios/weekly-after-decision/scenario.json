@@ -49,7 +49,7 @@
     { "exported": "views/weekly/{today}.md", "since": "2026-03-03" },
     { "file": "views/weekly/{today}.md", "lines": [ "# Progress and commitments", "Since 2026-03-03", "[D-{year}-001]", "Open commitments:", "No commitment is open.", "# Proposed priorities" ] },
     { "file": "views/weekly/{today}.md", "line": "C-{year}-001", "absent": true },
-    { "file": "views/weekly/{today}.md", "line": "2026-03-16", "absent": true },
+    { "file": "views/weekly/{today}.md", "line": "{workday+15}", "absent": true },
     { "file": "views/weekly/{today}.md", "line": "16 March", "absent": true },
     { "file": "views/weekly/{today}.md", "lines": [ "# Team capacity", "According to the PO: ", "# Not covered this week" ] },
     { "file": "views/weekly/2026-03-03.md", "line": "due 2026-03-16 [C-2026-001]" },

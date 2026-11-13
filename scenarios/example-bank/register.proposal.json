@@ -91,7 +91,7 @@
         "date_of_fact": "2026-02-27",
         "owner": "the PO",
         "owed_to": "the retail steering committee",
-        "due_date": "2026-03-16",
+        "due_date": "{workday+15}",
         "evidence_level": "fact",
         "source": { "where": "conversation with the PO", "read_on": "2026-03-02" }
       }

@@ -74,6 +74,9 @@ Test 'the scenario "missing answer" passes when the agent records nothing, and f
 # The register tool numbers a record in the year it is recorded and files a note under the month it
 # is processed: a scenario names them {year} and {month}, and {today} the day of the run.
 $Year, $Month, $Day = 'yyyy', 'yyyy-MM', 'yyyy-MM-dd' | ForEach-Object { (Get-Date).ToString($_, [Globalization.CultureInfo]::InvariantCulture) }
+# The due date of the commitment of Example Bank to present the target journey: the 15th working day
+# after the day of the run.
+$Presentation = @(1..21 | ForEach-Object { (Get-Date).Date.AddDays($_) } | Where-Object { 'Saturday', 'Sunday' -notcontains $_.DayOfWeek })[14].ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
 
 function New-CollectAgent([string[]]$Notes, [object[]]$Operations, [string]$Do = '', [hashtable]$Collect = @{}) {
     # The command of a fake agent that collects: it leaves the proposal of a collect that read these
@@ -751,15 +754,15 @@ Test 'the scenario "weekly after a decision" passes when the synthesis cites the
     Assert-Match $run.Output "  ok    the register tool verifies views/weekly/$Day\.md" 'the verdict of verify'
     Assert-Match $run.Output "  ok    every record that views/weekly/$Day\.md cites is in the export since 2026-03-03" 'the records cited are those of the export of the period'
     Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has lines containing, in this order: `"# Portfolio view`", .*`"## Now`", .*`"# Not covered this week`"" 'the portfolio view, then the blocks in order'
-    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has no line containing `"2026-03-16`"" 'the date of the presentation'
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has no line containing `"$Presentation`"" 'the date of the presentation'
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
 
-    $announced = { $args[0].Replace('No commitment is open.', "- Present the target journey to the retail steering committee: the PO, due 2026-03-16 [C-$Year-001]") }
+    $announced = { $args[0].Replace('No commitment is open.', "- Present the target journey to the retail steering committee: the PO, due $Presentation [C-$Year-001]") }
     $run = Invoke-Scenarios -Agent (New-WeeklyAgent after-decision $announced) weekly-after-decision
 
     Assert-Match $run.Output "  FAIL  the register tool verifies views/weekly/$Day\.md\n        found: Not verified: views/weekly/$Day\.md\n- C-$Year-001 is superseded by D-$Year-001\." 'the superseded commitment, named by verify'
     Assert-Match $run.Output "  FAIL  every record that views/weekly/$Day\.md cites is in the export since 2026-03-03\n        found: not in the export: C-$Year-001" 'the superseded commitment, which the export leaves out'
-    Assert-Match $run.Output "  FAIL  file views/weekly/$Day\.md has no line containing `"2026-03-16`"" 'the presentation still announced'
+    Assert-Match $run.Output "  FAIL  file views/weekly/$Day\.md has no line containing `"$Presentation`"" 'the presentation still announced'
     Assert-Match $run.Output '  FAIL  file views/weekly/\S+ has lines containing, in this order: "# Progress and commitments", .*\n        found: no line containing "No commitment is open\." further down' 'the commitment still listed as open'
     Assert-Equal 1 $run.ExitCode 'exit code when the presentation is still announced'
 }
@@ -995,6 +998,7 @@ Test 'in the files a scenario lays over the workspace, {today}, {month} and {yea
     Assert-Match $run.Output "  ok    file exports/calendar/stand-up\.txt has a line containing `"Due: $($weekdays[2].ToString('yyyy-MM-dd'))`"" 'the third working day after the run in a file of the scenario'
     $before = @(1..7 | ForEach-Object { (Get-Date).Date.AddDays(-$_) } | Where-Object { 'Saturday', 'Sunday' -notcontains $_.DayOfWeek })[0]
     Assert-Match $run.Output "  ok    file exports/calendar/stand-up\.txt has a line containing `"Before: $($before.ToString('yyyy-MM-dd'))`"" 'the working day before the run in a file of the scenario'
+    Assert-Match $run.Output "  ok    record C-$Year-001: due_date is `"$Presentation`"" 'the commitment of Example Bank, due three weeks after the run, so that no scenario starts with it overdue'
 }
 
 Test 'the Example Bank settings carry every setting of the template, so the register tool reads them as it reads any workspace; so do the settings a scenario lays over them' {

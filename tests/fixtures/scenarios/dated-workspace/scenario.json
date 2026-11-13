@@ -4,6 +4,7 @@
   "expect": [
     { "file": "exports/calendar/stand-up.txt", "line": "Start: {today}T09:30:00+01:00" },
     { "file": "exports/calendar/stand-up.txt", "line": "Due: {workday+3}" },
-    { "file": "exports/calendar/stand-up.txt", "line": "Before: {workday-1}" }
+    { "file": "exports/calendar/stand-up.txt", "line": "Before: {workday-1}" },
+    { "record": "C-{year}-001", "field": "due_date", "is": "{workday+15}" }
   ]
 }

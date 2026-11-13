@@ -57,8 +57,9 @@
 # fields of a group one by one.
 #
 # The register tool numbers a commitment, a decision or a risk in the year it is recorded, and
-# files a note under the month it is processed. Anywhere in scenario.json and in the files of the
-# scenario's workspace folder, {year}, {month} and {today} stand for those of the day of the run,
+# files a note under the month it is processed. Anywhere in scenario.json, in the files of the
+# scenario's workspace folder and in example-bank\register.proposal.json, {year}, {month} and
+# {today} stand for those of the day of the run,
 # as 2026, 2026-03 and 2026-03-02: the record C-{year}-002, the file inbox/done/{month}/workshop.md,
 # a meeting of the calendar that starts at {today}T14:00:00+01:00. {workday+N} stands for the Nth
 # working day, Monday to Friday, after the day of the run: a due date of {workday+3}; {workday-N}
@@ -134,7 +135,8 @@ function New-ExampleBankWorkspace([string]$Folder, [string]$Scenario, $Collected
     $run = Invoke-Script (Join-Path $Kit 'install.ps1') -Workspace $workspace -SkillsFolder (Join-Path $Folder 'skills')
     if ($run.ExitCode -ne 0) { throw "the kit did not install: $($run.Output)" }
     Copy-Item (Join-Path $ExampleBank 'workspace\*') $workspace -Recurse -Force
-    Copy-Item (Join-Path $ExampleBank 'register.proposal.json') (Join-Path $workspace 'state\proposal.json')
+    # Its dates that must stay ahead of the run, as a due date, are written as {workday+N}.
+    [IO.File]::WriteAllText((Join-Path $workspace 'state\proposal.json'), (Set-RunDate ([IO.File]::ReadAllText((Join-Path $ExampleBank 'register.proposal.json')))), $Utf8)
     $run = Invoke-Script (Join-Path $workspace 'tools\register.ps1') apply
     if ($run.ExitCode -ne 0) { throw "the register of Example Bank was refused: $($run.Output)" }
     $own = Join-Path $Scenario 'workspace'
