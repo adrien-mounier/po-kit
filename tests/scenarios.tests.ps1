@@ -225,6 +225,22 @@ Test 'the scenario "collect records the plain facts" passes when the quoted fact
     Assert-Equal 1 $run.ExitCode 'exit code when the whole proposal is applied'
 }
 
+Test 'the scenario "morning" passes when the note is collected and the page written with its late commitment under What you owe, and fails when no page is written' {
+    $note = 'pilot-follow-up.md'
+    $operations = @(New-NoteOperation commitment $note @{ title = 'Send the list of onboarding screens to the tech lead'; owner = 'the PO'; owed_to = 'the tech lead'; due_date = '2026-03-06'; date_of_fact = '2026-03-02' })
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $operations -Do '-Plain -Morning') morning
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    file views/morning\.html has lines containing, in this order: .*C-$Year-002" 'the late commitment under What you owe'
+    Assert-Match $run.Output "  ok    file inbox/done/$Month/pilot-follow-up\.md is there" 'the note is filed'
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $operations -Do '-Plain') morning
+
+    Assert-Match $run.Output '  FAIL  file views/morning\.html is there' 'the page not written'
+    Assert-Equal 1 $run.ExitCode 'exit code when no page is written'
+}
+
 Test 'the scenario "collect and drop a line" passes when the line kept is recorded alone and the note is filed, and fails when the line dropped is recorded too' {
     $note = 'pilot-preparation.md'
     $kept = New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }

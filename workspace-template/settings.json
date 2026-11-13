@@ -5,7 +5,7 @@
     "inbox_note": 2,
     "source": 3
   },
-  "validation_mode": "all",
+  "validation_mode": "interpreted",
   "languages": {
     "default": "en",
     "sponsor": "en"
