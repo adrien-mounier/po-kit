@@ -50,7 +50,7 @@ Take each note from top to bottom: the operations follow the order in which the 
 |---|---|
 | Someone is to do something: an action, a promise, a deliverable | create a `commitment`: `owner` who does it, `owed_to` who it is for, `due_date` |
 | A choice that was made | create a `decision`: `status` `taken`, and `decided_by` who made it |
-| A choice that is awaited | create a `decision`: `status` `pending`, `needed_from` who must make it, `needed_by` the date it is needed |
+| A choice that is awaited | create a `decision`: `status` `pending`, `needed_from` who must make it (`the steering committee` when it is the committee's to take), `needed_by` the date it is needed |
 | A threat to a subject or to a commitment: a danger, a blocking decision that cannot wait, a person who stands against the plan | create a `risk`: `severity` `urgent` when the note says it cannot wait, `watch` otherwise |
 | A change of a subject itself: its horizon, its clearance, a gate, its next step | update the subject |
 | A change of a commitment, a decision or a risk of the register: done, dropped, closed, a new due date | update that record |

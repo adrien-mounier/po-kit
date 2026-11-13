@@ -210,8 +210,11 @@ $awaited = {
         @{ title = Format-Cited $decision; meta = $meta }
     }
 }
-$fromCommittee = @($pending | Where-Object { Test-SteeringTitle "$($_.needed_from)" })
-$fromOthers = @($pending | Where-Object { -not (Test-SteeringTitle "$($_.needed_from)") })
+# A decision is awaited from the committee when who it is needed from names it: "committee" or a
+# word of steering_words, as a whole word, whatever the case.
+$committeeWords = '\b(?:' + ((@('committee') + @($Settings.steering_words | Where-Object { "$_".Trim() } | ForEach-Object { [regex]::Escape("$_".Trim()) })) -join '|') + ')\b'
+$fromCommittee = @($pending | Where-Object { "$($_.needed_from)" -imatch $committeeWords })
+$fromOthers = @($pending | Where-Object { "$($_.needed_from)" -inotmatch $committeeWords })
 $decisions = @(
     Format-Key 'decisions'
     '<div class="s-body cols">'

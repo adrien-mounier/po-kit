@@ -126,6 +126,21 @@ Test 'the decisions slide lists those taken since the last committee and those a
     Assert-True ($slide -notmatch 'D-2026-001') "a decision taken before the last committee is shown: $slide"
 }
 
+Test 'a decision is awaited from the committee when who it is needed from names the committee or a steering word, as a whole word, whatever the case' {
+    $ws = New-SteeringWorkspace
+    Set-Proposal $ws @{ operations = @(
+            (New-RecordOperation decision @{ title = 'Approve the pilot budget'; needed_from = 'The Committee' }),
+            (New-RecordOperation decision @{ title = 'Name the data owner'; needed_from = 'the subcommittee chair' })
+        )
+    }
+    Invoke-Register $ws apply -Today 2026-03-02 | Out-Null
+
+    Invoke-Register $ws steering $Committee -Now $SteeringNow | Out-Null
+
+    $slide = Get-Slide (Read-Deck $ws) 'decisions'
+    Assert-Match $slide 'Awaited from the committee Fund the second wave \[D-2026-002\] from the retail steering committee, by 9 Mar 2026 Approve the pilot budget \[D-2026-006\] from The Committee Awaited from others Choose the hosting \[D-2026-003\] from the architect Name the data owner \[D-2026-007\] from the subcommittee chair' 'the decisions awaited'
+}
+
 Test 'the risks slide lists the open risks, the urgent first, and the commitments late, in red with how late they are' {
     $ws = New-SteeringWorkspace
 
@@ -322,6 +337,8 @@ Test 'the kit ships the steering routine and the deck template, and the workspac
     $rules = Get-Content -LiteralPath (Join-Path $KitRoot 'workspace-template\AGENTS.md') -Raw -Encoding UTF8
     Assert-Match $rules 'A template of the organisation goes in `templates/steering\.html` in this workspace' 'where the deck template of the organisation goes'
     Assert-Match $rules '`steering_words`: as `\["steering committee"\]`' 'the setting'
+    Assert-Match $rules 'A decision the steering committee is to take is recorded with `needed_from` `the steering committee`' 'how a decision of the committee is recorded'
+    Assert-Match (Get-Content -LiteralPath (Join-Path $KitRoot 'routines\collect\SKILL.md') -Raw -Encoding UTF8) '`needed_from` who must make it \(`the steering committee` when it is the committee''s to take\)' 'the collect records it so'
     Assert-Match $rules '\{ "headline": "\.\.\.", "portfolio": "\.\.\.", "value": "\.\.\.", "decisions": "\.\.\.", "risks": "\.\.\.", "next_steps": \[' 'the commentary'
     $routine = Get-Content -LiteralPath (Join-Path $KitRoot 'routines\steering\SKILL.md') -Raw -Encoding UTF8
     Assert-Match $routine '`verify views/steering/2026-03-09\.html`' 'the routine verifies the deck'

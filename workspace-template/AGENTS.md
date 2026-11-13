@@ -57,6 +57,8 @@ A subject may carry three scores, each a whole number from 1 to 5 with one sente
 
 From five working days before a meeting of the calendar snapshot whose title shows a steering committee, the morning page offers its steering pack, until the deck of that day exists. The words that show one are `steering_words` in the settings, as `["steering committee"]`, found in the title whatever the case.
 
+**A decision the steering committee is to take is recorded with `needed_from` `the steering committee`**, whatever routine records it: the deck lists a pending decision as awaited from the committee when its `needed_from` holds `committee` or a word of `steering_words`, as a whole word, whatever the case, and as awaited from others otherwise.
+
 The deck is a view the register tool writes, `views/steering/<date>.html`: six slides in a fixed order, one A4 landscape page each (the title and the stamp; the portfolio ranked; the value delivered against target; the decisions taken since the last committee and those awaited, from the committee first; the risks and the commitments late; the next steps), in the sponsor's language. It holds no script and calls no network; the PO opens it in a browser and prints it to PDF. The steering routine says how it is drafted: the commentary is yours, in `state/steering.json`, written as UTF-8 without a byte order mark, replaced each time:
 
     { "headline": "...", "portfolio": "...", "value": "...", "decisions": "...", "risks": "...", "next_steps": [ "...", "..." ] }
