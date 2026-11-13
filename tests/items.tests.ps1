@@ -152,7 +152,7 @@ Test 'a commitment under Start soon and not in Do first keeps its button there, 
     Invoke-Register $ws morning -Now $ItemsMorning | Out-Null
 
     $page = Read-ItemsPage $ws
-    Assert-Match (Get-ItemsRow (Get-ItemsBlock $page 'start') 'C-2026-002') '<li class="row start" id="start-C-2026-002">(?s:.*)<button class="ask"' 'Start soon keeps the button'
+    Assert-Match (Get-ItemsRow (Get-ItemsBlock $page 'start') 'C-2026-002') '<li class="row start is-soon" id="start-C-2026-002">(?s:.*)<button class="ask"' 'Start soon keeps the button, in amber for this week'
     Assert-Match (Get-ItemsRow (Get-ItemsBlock $page 'owe') 'C-2026-002') '<a class="up" href="#start-C-2026-002"><span>In Start soon</span>' 'What you owe points to Start soon'
 }
 
