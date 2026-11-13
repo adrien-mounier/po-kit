@@ -68,8 +68,6 @@ if (-not $meeting) { $meeting = $words.meeting }
 $day = [DateTime]::ParseExact($date, 'yyyy-MM-dd', $invariant)
 $when = $day.ToString($words.date, $culture)
 
-function Html($Text) { [Net.WebUtility]::HtmlEncode((Format-Value $Text)) }
-
 function Format-Day([string]$Date) { [DateTime]::ParseExact($Date, 'yyyy-MM-dd', $invariant).ToString($labels.morning.far_date, $culture) }
 
 function Format-Cited($Record) { "$(Html $Record.title) <span class=`"id`">[$(Html $Record.id)]</span>" }
@@ -97,7 +95,6 @@ $icon = @{
     alert = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5"/><path d="M12 17.5v.01"/></svg>'
     check = '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
 }
-$slideCount = 6
 $script:number = 0
 
 function New-Slide([string]$Id, [string]$Heading, [string[]]$Body, [string]$Class = '') {
@@ -105,7 +102,8 @@ function New-Slide([string]$Id, [string]$Heading, [string[]]$Body, [string]$Clas
     "<section class=`"slide$Class`" id=`"slide-$Id`" aria-labelledby=`"h-$Id`">"
     if ($Heading) { "<header class=`"s-head`"><h2 id=`"h-$Id`">$(Html $Heading)</h2></header>" }
     $Body | Where-Object { $_ }
-    "<footer class=`"s-foot`"><span>$(Html $meeting) &middot; $(Html $when)</span><span>$(Html ($words.page -f $script:number, $slideCount))</span></footer>"
+    # The number of slides is known once they are all built: the mark takes it then.
+    "<footer class=`"s-foot`"><span>$(Html $meeting) &middot; $(Html $when)</span><span>$([string]::Format((Html $words.page), $script:number, '<!--slides-->'))</span></footer>"
     '</section>'
 }
 
@@ -136,13 +134,13 @@ $rows = @(
         $rank++
         $score = $subject.value_score * $subject.feasibility_score
         $banks = @($subject.banks | Where-Object { $_ } | ForEach-Object { "<span class=`"bank`">$(Html $_)</span>" }) -join ''
-        $mark = if ($subject.ai_act_high_risk -eq $true) { "<span class=`"mark`">$($icon.warn) $(Html $words.high_risk)</span>" } elseif ($subject.ai_act_high_risk -eq $false) { Html $words.not_high_risk } else { Html $words.not_given }
+        $mark = Format-AiActMark $subject "<span class=`"mark`">$($icon.warn) $(Html $words.high_risk)</span>" (Html $words.not_high_risk) (Html $words.not_given)
         $changes = if ($subject.work_changes) { Html $labels.intake.work_changes.($subject.work_changes) } else { Html $words.not_given }
         '<tr>'
         "<td><span class=`"rank`">$rank</span></td>"
         "<td class=`"t`">$(Format-Cited $subject)$banks</td>"
-        "<td><span class=`"score`">$score<span class=`"gauge`" aria-hidden=`"true`"><i style=`"width: $([int]($score * 4))%`"></i></span></span></td>"
-        "<td class=`"n`">$($subject.value_score)</td><td class=`"n`">$($subject.feasibility_score)</td><td class=`"n`">$(& $given $subject.risk_score)</td>"
+        "<td><span class=`"score`">$(Html $score)<span class=`"gauge`" aria-hidden=`"true`"><i style=`"width: $([int]($score * 4))%`"></i></span></span></td>"
+        "<td class=`"n`">$(Html $subject.value_score)</td><td class=`"n`">$(Html $subject.feasibility_score)</td><td class=`"n`">$(& $given $subject.risk_score)</td>"
         "<td>$mark</td><td>$changes</td>"
         '</tr>'
     }
@@ -271,7 +269,7 @@ if ($lacking) { Stop-Run "The template $name lacks $($lacking -join ', '). Nothi
 # The deck holds no script and calls no network, whoever wrote its template.
 if ($page -imatch '<script|(?:\b(?:src|href)\s*=\s*["'']?|url\(\s*["'']?)\s*https?:') { Stop-Run "The template $name holds a script or calls the network. Nothing was written. A deck template holds no <script> and no http:// or https:// address in a src, an href or a url(): the deck is read with no script and no network." }
 # In one pass, so that a text of a record or of the calendar holding a place to fill is left as it is.
-$values = @{ language = $Settings.languages.sponsor; title = (Html ($words.title -f $meeting, $when)); slides = ($slides -join [Environment]::NewLine) }
+$values = @{ language = $Settings.languages.sponsor; title = (Html ($words.title -f $meeting, $when)); slides = ($slides -join [Environment]::NewLine).Replace('<!--slides-->', "$script:number") }
 $page = [regex]::Replace($page, '\{\{(language|title|slides)\}\}', { param($Found) $values[$Found.Groups[1].Value] })
 # A deck that verify would fail is never written: the morning page offers the pack until one is.
 $problems = @(Test-View $page -Html)

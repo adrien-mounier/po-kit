@@ -752,6 +752,16 @@ function Format-Clearance($Subject, [string]$Clearance, [string]$By, [string]$On
     $Clearance
 }
 
+function Format-AiActMark($Subject, [string]$HighRisk, [string]$NotHighRisk, [string]$NotGiven) {
+    # The AI Act mark of a subject in the words given: high-risk, not high-risk, or not given.
+    if ($Subject.ai_act_high_risk -eq $true) { $HighRisk } elseif ($Subject.ai_act_high_risk -eq $false) { $NotHighRisk } else { $NotGiven }
+}
+
+function Html($Text) {
+    # A value on one line, as Format-Value gives it, made safe to put in an HTML page.
+    [Net.WebUtility]::HtmlEncode((Format-Value $Text))
+}
+
 function Get-ActiveSubjects([string]$Bank) {
     # The active subjects, in the order of their identifiers. Given a client bank, only those that
     # name it or name no bank.

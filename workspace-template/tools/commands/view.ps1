@@ -60,7 +60,7 @@ function Write-RankingView($Labels, [string]$Bank) {
         param($Subject)
         "$($Subject.title) [$($Subject.id)]$(if ($Subject.banks) { " ($(Format-Value $Subject.banks))" })"
         foreach ($score in 'value_score', 'feasibility_score', 'risk_score') { & $given $Subject.$score }
-        if ($Subject.ai_act_high_risk -eq $true) { $words.high_risk } elseif ($Subject.ai_act_high_risk -eq $false) { $words.not_high_risk } else { '-' }
+        Format-AiActMark $Subject $words.high_risk $words.not_high_risk '-'
         if ($Subject.work_changes) { $Labels.intake.work_changes.($Subject.work_changes) } else { '-' }
     }
     $escape = { param($Cells) , @($Cells | ForEach-Object { ($_ -replace '\s*\r?\n\s*', ' ').Replace('|', '\|') }) }

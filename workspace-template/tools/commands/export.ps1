@@ -47,7 +47,7 @@ function Format-Record($Record, [string[]]$More = @()) {
             "banks: $(if ($Record.banks) { Format-Value $Record.banks } else { 'all' })"
             # The scores and the AI Act mark it holds, each with its reason.
             foreach ($score in 'value', 'feasibility', 'risk') { if ($null -ne $Record."${score}_score") { "${score}: $($Record."${score}_score"), $(Format-Value $Record."${score}_reason")" } }
-            if ($null -ne $Record.ai_act_high_risk) { "AI Act high-risk: $(if ($Record.ai_act_high_risk) { 'yes' } else { 'no' }), $(Format-Value $Record.ai_act_reason)" }
+            if ($null -ne $Record.ai_act_high_risk) { "AI Act high-risk: $(Format-AiActMark $Record 'yes' 'no' ''), $(Format-Value $Record.ai_act_reason)" }
         }
         else {
             "subject: $($Record.subject)$(if ($closed -ccontains $Record.subject) { ' (closed)' })"

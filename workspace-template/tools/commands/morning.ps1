@@ -63,8 +63,6 @@ $day = [DateTime]::ParseExact($Today, 'yyyy-MM-dd', $invariant)
 $sunday = $day.AddDays((7 - [int]$day.DayOfWeek) % 7).ToString('yyyy-MM-dd', $invariant)
 $shortList = 5
 
-function Html($Text) { [Net.WebUtility]::HtmlEncode((Format-Value $Text)) }
-
 function Icon([string]$Name, [string]$Class = 'i') { "<svg class=`"$Class`" aria-hidden=`"true`"><use href=`"#i-$Name`"/></svg>" }
 
 function Format-Day([string]$Date) {
