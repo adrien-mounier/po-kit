@@ -10,6 +10,7 @@
     "owning_entity": { "type": "text" },
     "sponsor": { "type": "text" },
     "decider": { "type": "text" },
+    "banks": { "type": "list", "items": { "type": "text", "allowed_from": "banks" } },
     "gates": {
       "type": "list",
       "items": {

@@ -22,10 +22,10 @@ function Get-Section([string]$Export, [string]$Heading) {
         }) -join "`n"
 }
 
-Test 'export lists the active subjects, each with its horizon and its clearance' {
+Test 'export lists the active subjects, each with its horizon, its clearance and its client banks' {
     Assert-Equal (@(
-            '- Branch kiosks pilot [branch-kiosks-pilot] | subject | reported | horizon: next | clearance: out of frame'
-            '- Mobile onboarding [mobile-onboarding] | subject | fact | horizon: now | clearance: cleared by the sponsor on 2026-02-20'
+            '- Branch kiosks pilot [branch-kiosks-pilot] | subject | reported | horizon: next | clearance: out of frame | banks: all'
+            '- Mobile onboarding [mobile-onboarding] | subject | fact | horizon: now | clearance: cleared by the sponsor on 2026-02-20 | banks: all'
         ) -join "`n") (Get-Section (Get-WeekExport) 'Active subjects') 'active subjects'
 }
 

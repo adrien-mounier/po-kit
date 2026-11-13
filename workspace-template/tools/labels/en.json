@@ -5,7 +5,8 @@
     "last_collect": "Last collect: {0}.",
     "not_covered": "Sources not covered by the last collect: {0}.",
     "none": "none",
-    "no_collect": "No collect has run yet: no source is covered."
+    "no_collect": "No collect has run yet: no source is covered.",
+    "bank": "Filtered on the client bank {0}: its subjects and those that name no bank."
   },
   "check": {
     "title": "Check report",

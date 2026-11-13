@@ -1,13 +1,13 @@
 ---
 name: subject
-description: Create, modify or close a subject of the PO's register by asking the PO a few questions. Use when the PO wants to add a subject, change one (horizon, clearance, gates, watch list, next step) or close one.
+description: Create, modify or close a subject of the PO's register by asking the PO a few questions. Use when the PO wants to add a subject, change one (horizon, client banks, clearance, gates, watch list, next step) or close one.
 ---
 
 # Create, modify or close a subject
 
 The PO answers in plain words, you turn the answers into a proposal, and the register tool writes the record. Your only write is `state/proposal.json`.
 
-Work in the PO's workspace, under its rules: read `AGENTS.md` there first when it is not already in your context. It says how to call the register tool and how `settings.json` lists the gates and the objectives.
+Work in the PO's workspace, under its rules: read `AGENTS.md` there first when it is not already in your context. It says how to call the register tool and how `settings.json` lists the gates, the objectives and the client banks.
 
 ## 1. Know which subject, and what to do with it
 
@@ -23,13 +23,14 @@ Done when each change names a new title or the identifier of one existing subjec
 
 ## 2. Get every answer from the PO
 
-Creating a subject takes the seven answers below. Modifying one takes only the answers that change.
+Creating a subject takes the eight answers below. Modifying one takes only the answers that change.
 
 | Ask the PO | Fields | Recorded as |
 |---|---|---|
 | Its title | `title` | text |
 | Its kind | `kind` | `product` (a product the PO steers), `contribution` (to someone else's product) or `service` (rendered to the organisation) |
 | Its horizon | `horizon` | `now`, `next` or `later` |
+| Which client banks it concerns | `banks` | the names of the client banks, as `settings.json` lists them under `banks`; an empty list when the PO says "none" or "all": the subject concerns the whole group, or every bank |
 | Its clearance, who gave it and when | `clearance`, `cleared_by`, `cleared_on` | `cleared` (with who and the date), `pending`, `out of frame` (work exists while a mandatory gate is missing) or `none` |
 | The state of each gate | `gates` | one `{ "name": ..., "state": ... }` per gate that `settings.json` lists; the state is `unknown`, `not required`, `missing`, `planned` or `done` |
 | Its watch list | `watch_list` | three lists: `people`, `keywords`, `tracker_projects` |
@@ -53,7 +54,7 @@ To create:
 { "operations": [ {
   "op": "create", "type": "subject", "interpreted": false,
   "fields": {
-    "title": "Loan calculator", "kind": "service", "horizon": "later",
+    "title": "Loan calculator", "kind": "service", "horizon": "later", "banks": ["Harbour Bank"],
     "clearance": "cleared", "cleared_by": "the head of lending", "cleared_on": "2026-01-15",
     "gates": [ { "name": "architecture review", "state": "done" } ],
     "watch_list": { "people": ["the lending analyst"], "keywords": ["loan"], "tracker_projects": ["LOAN"] },
@@ -82,7 +83,7 @@ To modify or close:
 
 ## 4. Preview, then apply once the PO accepts
 
-1. Run the register tool's `preview`. When it refuses the proposal, it lists its reasons. Correct the proposal when the reason is its form. Ask the PO when the reason is an answer: a gate or an objective that `settings.json` does not list is the PO's to add there.
+1. Run the register tool's `preview`. When it refuses the proposal, it lists its reasons. Correct the proposal when the reason is its form. Ask the PO when the reason is an answer: a gate, an objective or a client bank that `settings.json` does not list is the PO's to add there.
 2. Show the PO the table that `preview` printed.
 3. Run `apply` once the PO accepts. An acceptance given ahead, with the request, counts. When the PO wants a change, correct the proposal and preview again. When the PO wants nothing recorded, delete `state/proposal.json`.
 
