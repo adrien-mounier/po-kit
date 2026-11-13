@@ -165,6 +165,27 @@ Test 'a week with a day that does not fit by less than a quarter of a day says s
     Assert-True ($block -notmatch 'nothing') "the workload says nothing: $block"
 }
 
+Test 'the workload says how many open commitments of the PO it leaves out, and why: no estimate or no due date' {
+    $ws = New-StartWorkspace @(
+        @{ title = 'Brief the branch managers'; owner = 'the PO'; due_date = '2026-03-13'; estimated_effort = 1 },
+        @{ title = 'Book the committee room'; owner = 'the PO'; due_date = '2026-03-06' },
+        @{ title = 'Archive the paper statement templates'; owner = 'the PO' },
+        @{ title = 'Score the intake'; owner = 'the PO'; estimated_effort = 2 },
+        @{ title = 'Deliver the test accounts'; owner = 'the tech lead'; owed_to = 'the PO' },
+        @{ title = 'January steering pack'; owner = 'the PO'; status = 'done' }
+    )
+    Set-StartCalendar $ws @()
+
+    $run = Invoke-Register $ws morning -Now $StartMorning
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match (Read-StartBlock $ws) '<p class="free"><b>Left out of the workload:</b> 2 commitment\(s\) without an estimate, 1 commitment\(s\) without a due date\.</p>' 'the commitments left out'
+
+    $run = Invoke-Register $ws morning fr -Now $StartMorning
+
+    Assert-Match ([IO.File]::ReadAllText((Join-Path $ws 'views\morning.html'), $Utf8)) '<p class="free"><b>Hors de la charge :</b> 2 engagement\(s\) sans estimation, 1 engagement\(s\) sans &#233;ch&#233;ance\.</p>' 'the commitments left out, in French'
+}
+
 Test 'the free time of a day goes first to the task due first' {
     # C-2026-002, due Wed 4 with 0.5 d, gets 0.5 d of Mon 2; C-2026-001, due Fri 13 with 1 d, the
     # rest of Mon 2 and its 0.8 d left after. Both started: everything fits.

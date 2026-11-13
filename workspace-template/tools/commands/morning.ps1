@@ -17,8 +17,9 @@
 #              hours. A calendar off, or not read today, is a block that says it was not read.
 #   start      Start soon, after the white sheet: the commitments of the PO whose latest start falls
 #              within the lead, under named columns, then the workload of the next ten working
-#              days in half-days, one sentence per week, a day that does not fit in red, and one
-#              way out when one does not. The calendar not read, the workload says so.
+#              days in half-days, one sentence per week, a day that does not fit in red, how many
+#              commitments it leaves out for lack of an estimate or a due date, and one way out
+#              when a day does not fit. The calendar not read, the workload says so.
 #   owe        What you owe: the open commitments whose owner is the PO
 #   owed       What others owe you: the open commitments owed to the PO, with a reminder offered
 #              for one late and a nudge for one due within three working days with no sign of
@@ -638,6 +639,11 @@ function Get-StartBlock {
                     last = $(@($days[0], (Add-WorkingDays $commitment.due_date -1)) | Sort-Object | Select-Object -Last 1)
                 }
             })
+        # The open commitments of the PO the plan cannot place, said with why.
+        $mine = @($commitments | Where-Object { Test-IsPo $_.owner })
+        $noEstimate = @($mine | Where-Object { $null -eq $_.estimated_effort }).Count
+        $noDue = @($mine | Where-Object { $null -ne $_.estimated_effort -and -not $_.due_date }).Count
+        $leftOut = @(if ($noEstimate) { $said.left_no_estimate -f $noEstimate }; if ($noDue) { $said.left_no_due -f $noDue }) -join ', '
         $plan = Get-Plan $tasks $days $room
         $planned = ($days | Where-Object { $plan.work[$_] -gt 0 -or $plan.over[$_] -gt 0 })
         $overDays = @($days | Where-Object { $plan.over[$_] -gt 0 })
@@ -653,6 +659,7 @@ function Get-StartBlock {
         }
         if (-not $calendar) { "<p class=`"free`"><b>$(Html $said.workload_short)</b> <span class=`"late`">$(Icon alert) $(Html ($words.block_not_read -f 'calendar'))</span></p>" }
         elseif ($lines -or $planned) { Get-Workload $days $room $plan $share }
+        if ($leftOut) { "<p class=`"free`"><b>$(Html $said.left_out)</b> $(Html $leftOut).</p>" }
         if ($overDays) { Format-WayOut (Get-WayOut $tasks $days $room $plan) }
     )
     Format-Block 'start' $said.heading (Format-Count $counts @()) $body
