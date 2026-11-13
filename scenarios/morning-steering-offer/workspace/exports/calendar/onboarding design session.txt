@@ -1,0 +1,6 @@
+Title: Onboarding design session
+Start: {today}T14:00:00+01:00
+End: {today}T15:00:00+01:00
+Organizer: the tech lead
+Attendees: the tech lead; the architect
+Your response: accepted

@@ -1,0 +1,14 @@
+{
+  "routine": "morning",
+  "prompt": "Morning.",
+  "expect": [
+    { "file": "state/calendar.json", "line": "Retail steering committee" },
+    { "file": "views/morning.html", "lines": [
+        "id=\"h-first\"",
+        "<p><b>Steering pack:</b> Retail steering committee, ",
+        "data-ask=\"Draft the steering pack for Retail steering committee of {workday+5}\""] },
+    { "printed": "morning", "line": "Steering pack to offer: Retail steering committee on {workday+5}." },
+    { "file": "../agent-output.txt", "line": "Retail steering committee" },
+    { "file": "views/steering/{workday+5}.html", "absent": true }
+  ]
+}

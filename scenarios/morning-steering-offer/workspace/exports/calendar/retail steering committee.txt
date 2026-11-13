@@ -1,0 +1,6 @@
+Title: Retail steering committee
+Start: {workday+5}T10:00:00+01:00
+End: {workday+5}T12:00:00+01:00
+Organizer: the sponsor
+Attendees: the sponsor; the retail steering committee
+Your response: accepted

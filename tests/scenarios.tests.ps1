@@ -451,6 +451,20 @@ Test 'the scenario "steering pack" passes when the deck of the committee five wo
     Assert-Equal 1 $run.ExitCode 'exit code when no deck is written'
 }
 
+Test 'the scenario "morning steering offer" passes when a steering committee five working days ahead in the calendar is offered on the morning page and in the agent''s report, and fails when the calendar is not read' {
+    $snapshot = Join-Path $KitRoot 'scenarios\steering-pack\workspace\state\calendar.json'
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Snapshot `"$snapshot`" -Morning -Say `"Shall I draft the steering pack for the Retail steering committee?`"" morning-steering-offer
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file views/morning\.html has lines containing, in this order: "id="h-first"", "<p><b>Steering pack:</b> Retail steering committee, "' 'the offer in Do first'
+    Assert-Match $run.Output '  ok    file \.\./agent-output\.txt has a line containing "Retail steering committee"' 'the offer in the report'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning -Say `"Good morning.`"" morning-steering-offer
+
+    Assert-Match $run.Output '  FAIL  file views/morning\.html has lines containing' 'no offer'
+    Assert-Equal 1 $run.ExitCode 'exit code when the calendar is not read'
+}
+
 Test 'the scenario "morning messages" passes when the chat messages that ask the PO something, in a watched channel, in a one-to-one chat with a watched person and in one that names a keyword, are under the messages awaiting a reply and the one-to-one chat with anyone else on nothing watched stays unread, and fails when the agent lists no message' {
     $run = Invoke-Scenarios -Agent "$FakeAgent -MeetingNotes `"$Fixtures\messages-notes.json`" -Morning -Stream" morning-messages
 
