@@ -56,6 +56,8 @@ Take each note from top to bottom: the operations follow the order in which the 
 
 A person or a date that the note does not give is left out: an action without a due date is a commitment all the same, and the check will list it. What fits no row is not recorded.
 
+**An owner is one person the note names.** Never two people as alternatives ("the tech lead or the architect"), never a person you guess. When the note names no single owner, leave `owner` out and keep the question, as "A question you cannot settle" below says, with the owner you recommend. The register tool refuses an owner that joins two people with "or".
+
 Every created record also gives:
 
 - `title`: one short sentence that reads alone, in the language of the note.

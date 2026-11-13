@@ -131,6 +131,30 @@ Test 'each type accepts its own statuses only, a decision must give its status a
     )
 }
 
+Test 'an owner is one person: an owner that names two people as alternatives is refused, in a created record or in an update' {
+    $ws = New-TestWorkspaceWithSubject
+    Set-Proposal $ws @{ operations = @(
+            (New-RecordOperation commitment @{ owner = 'the head of cards and payments' }),
+            (New-RecordOperation risk @{ owner = 'the tech lead' })
+        )
+    }
+    $run = Invoke-Register $ws preview
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+
+    Set-Proposal $ws @{ operations = @(
+            (New-RecordOperation commitment @{ owner = 'the tech lead or the architect' }),
+            (New-RecordOperation risk @{ owner = "le tech lead ou l'architecte" }),
+            (New-UpdateOperation 'mobile-onboarding' @{ next_step = 'Write the security file' }),
+            (New-UpdateOperation 'line 1' @{ owner = 'The architect OR the tech lead' })
+        )
+    }
+    Assert-Refused $ws @(
+        "Line 1: field 'owner' is 'the tech lead or the architect': an owner is one person the source names; when it names none, leave the owner out and keep an open question",
+        "Line 2: field 'owner' is 'le tech lead ou l'architecte': an owner is one person",
+        "Line 4: field 'owner' is 'The architect OR the tech lead': an owner is one person"
+    )
+}
+
 Test 'a blank text is refused where only listed values are allowed, in a created record or in an update' {
     $ws = New-TestWorkspaceWithSubject
     Set-Proposal $ws @{ operations = @(

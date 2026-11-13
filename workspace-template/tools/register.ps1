@@ -457,6 +457,14 @@ function Test-ProposalResult($Operations, [int[]]$Lines) {
     foreach ($found in $updated.Values) { Test-RecordRules $found.type $found.record | ForEach-Object { "Line $($found.line): $($_.reason)" } }
 }
 
+function Test-Owner($Fields) {
+    # An owner is one person the source names: two people given as alternatives are no owner.
+    $owner = $Fields.owner
+    if ($owner -is [string] -and $owner -match '\s(or|ou)\s') {
+        "field 'owner' is '$owner': an owner is one person the source names; when it names none, leave the owner out and keep an open question"
+    }
+}
+
 function Get-PendingProposal {
     # The operations of the pending proposal, validated in full. Any problem refuses the proposal
     # whole: the run ends with the reasons and a failure code, and nothing is written.
@@ -488,6 +496,7 @@ function Get-PendingProposal {
                 if ($record.fields.subject -and $subject -is [string] -and $subject.Trim()) { Test-Subject $subject $line $operations }
                 Test-Superseding $operation $line $superseded
             }
+            if ($operation.fields -is [System.Management.Automation.PSCustomObject]) { Test-Owner $operation.fields }
         )
         foreach ($problem in $problems) { $reasons += "Line ${line}: $problem." }
     }
