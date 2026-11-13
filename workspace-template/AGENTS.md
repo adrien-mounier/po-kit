@@ -26,9 +26,21 @@ Written with a forward slash, the command runs the same in every shell.
 - `brief` prints the brief of a meeting of the calendar snapshot: `brief 14:00` for today's, `brief 2026-03-04 14:00` for another day's, `brief` alone for every meeting of today, `brief 2026-03-03` for every meeting of that day. It lists the subjects the meeting concerns, their open commitments, the decisions awaited and your notes on it. It writes nothing.
 - `check` verifies the whole register and what has gone stale, and writes the check report, `views/check-report.md`. It fails on an error, not on a warning. `apply` runs it after every write and prints its summary, `Check: 0 error(s), 2 warning(s).`: when it counts anything, read the check report and tell the PO what it lists.
 
+- `view intake <subject>` writes the intake card of a subject, `views/intake/<subject>.md`, replacing the last one: see "Requests for AI use cases" below. `view intake <subject> fr` writes it in another language.
+
 A refused proposal lists its reasons and writes nothing: correct the proposal and preview again.
 
 Each command is one file under `tools/commands`; its first line says what it does.
+
+## Requests for AI use cases
+
+A request for an AI use case, someone asking for one in a mail, a chat message, a note or to the PO, becomes a subject at once: horizon `later`, clearance `pending`, kind `product` unless the request says otherwise. Its intake parts are fields of the subject: `problem`, the client bank in `banks`, `requested_by` (who asks), `data_needed` and `expected_gain`. A part the request does not give is left out, with an open question about the subject once it is recorded. `check` warns of a subject under Later, pending, whose intake parts are incomplete.
+
+**For every new subject, a request or not, ask whether the way people work changes or only a tool is added**, with your recommended answer. The answer is `work_changes`: `yes`, `no` or `unknown`, with one sentence in `work_changes_reason`. What you cannot settle is an open question.
+
+A refused request is closed with its reason: an update that gives `status` `closed` and `notes` that end with `Refused on <date>: <reason>`. Its history keeps the reason, and the portfolio view no longer shows it.
+
+The intake card, `view intake <subject>`, shows the five parts, the work changes answer and the clearance; a part not given is shown as not given. It is a draft: it counts for nothing until the PO uses it. It is written from a template: the kit's is `tools/templates/intake-<language>.md`. **A template of the organisation goes in `templates/intake-<language>.md` in this workspace**, never under `tools/`, which every update replaces: it then replaces the kit's for this workspace only. It holds each of `{title}`, `{id}`, `{stamp}`, `{problem}`, `{banks}`, `{requested_by}`, `{data_needed}`, `{expected_gain}`, `{work_changes}` and `{clearance}`; the register tool refuses one that leaves any out.
 
 ## The settings
 

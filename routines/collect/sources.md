@@ -45,7 +45,7 @@ Done when you hold the matches of the source, and have opened nothing else in it
 
 The routine goes on with what you read as it does with a note, in the order read. Four things differ:
 
-- **What it is about.** The watch list says why you read it. Its content says what it is about: maybe another subject than the one whose watch list matched. When it matters to the PO's work and is about no subject, it goes to `unclassified`.
+- **What it is about.** The watch list says why you read it. Its content says what it is about: maybe another subject than the one whose watch list matched. When it matters to the PO's work and is about no subject, it goes to `unclassified`, unless it asks for an AI use case: that is a new subject, as "A request for an AI use case" says in the routine.
 - **Who "I" is.** In a mail, the person who sent it: the PO in a sent mail. In a chat message, the person who wrote it. A promise the PO makes there is a commitment whose `owner` is `the PO`.
 - **Its source.** `where`, in the `source` of a record, names it so that the PO finds it again, and so does the `source` of an unclassified item. The `mode` of the source in `connections.json` decides how, never the kind of item: a mail, a ticket and a chat message alike.
   - `folder`: the path of the file, as you opened it, and nothing else: `exports/mail/sent/rate table.txt`, `exports/tracker/LOAN-12.txt`, `exports/chat/channels/lending squad/2026-02-27 1015 the lending analyst.txt`, `exports/chat/one-to-one/the lending analyst/2026-02-27 1130 the lending analyst.txt`. A chat message read from a folder is a file as a mail or a ticket is: its `where` is that path, even when the file names its channel, its author and its date.

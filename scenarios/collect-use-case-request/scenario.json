@@ -1,0 +1,19 @@
+{
+  "routine": "collect",
+  "prompt": "Collect. I accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "record": "payment-dispute-triage", "field": "status", "is": "active" },
+    { "record": "payment-dispute-triage", "field": "horizon", "is": "later" },
+    { "record": "payment-dispute-triage", "field": "clearance", "is": "pending" },
+    { "record": "payment-dispute-triage", "field": "banks", "is": ["North Bank"] },
+    { "record": "payment-dispute-triage", "field": "requested_by", "is": "the head of payments" },
+    { "records": "subjects", "count": 4 },
+    { "file": "views/portfolio.md", "line": "Payment dispute triage [payment-dispute-triage]" },
+    { "file": "views/intake/payment-dispute-triage.md", "lines": ["## Problem", "dispute", "## Client bank", "North Bank", "## Who asks", "head of payments",
+        "## Data needed", "two years", "## Expected gain", "day", "## Does the way people work change?", "## Clearance", "Pending"] },
+    { "verified": "views/intake/payment-dispute-triage.md" },
+    { "file": "state/questions.json", "line": "payment-dispute-triage" },
+    { "file": "state/unclassified.md", "absent": true },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

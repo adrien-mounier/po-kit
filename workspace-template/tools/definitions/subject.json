@@ -34,6 +34,12 @@
         "chat_channels": { "type": "list", "items": { "type": "text" } }
       }
     },
-    "links": { "type": "list", "items": { "type": "text" } }
+    "links": { "type": "list", "items": { "type": "text" } },
+    "work_changes": { "type": "text", "allowed": ["yes", "no", "unknown"] },
+    "work_changes_reason": { "type": "text" },
+    "problem": { "type": "text" },
+    "requested_by": { "type": "text" },
+    "data_needed": { "type": "text" },
+    "expected_gain": { "type": "text" }
   }
 }

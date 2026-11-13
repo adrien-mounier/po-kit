@@ -31,7 +31,8 @@
       "subject_stale": "Sujet sous Maintenant sans mise à jour depuis plus de {0} jour(s)",
       "inbox_note_old": "Note déposée depuis plus de {0} jour(s)",
       "source_stale": "Source non lue depuis plus de {0} jour(s)",
-      "unclassified_old": "Éléments non classés depuis plus de {0} jour(s)"
+      "unclassified_old": "Éléments non classés depuis plus de {0} jour(s)",
+      "intake_incomplete": "Sujet sous Plus tard, en attente de feu vert, dont la demande est incomplète"
     },
     "details": {
       "owner": "responsable : {0}",
@@ -41,7 +42,8 @@
       "updated": "dernière mise à jour : {0}",
       "dated": "datée du {0}",
       "read": "dernière lecture : {0}",
-      "never_read": "jamais lue"
+      "never_read": "jamais lue",
+      "missing": "manque : {0}"
     }
   },
   "portfolio": {
@@ -57,6 +59,11 @@
     "clearances": { "cleared": "Accordé", "pending": "En attente", "out of frame": "**Hors cadre**", "none": "Aucun" },
     "cleared_by": "par {0}",
     "cleared_on": "le {0}"
+  },
+  "intake": {
+    "not_given": "non renseigné",
+    "parts": { "problem": "problème", "banks": "banque cliente", "requested_by": "demandeur", "data_needed": "données nécessaires", "expected_gain": "gain attendu" },
+    "work_changes": { "yes": "Oui", "no": "Non", "unknown": "Inconnu" }
   },
   "effort": {
     "adjusted": "estim. {0} j, ajustée x{1} d'après les tâches passées « {2} » : {3} j",

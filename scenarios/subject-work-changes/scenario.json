@@ -1,0 +1,20 @@
+{
+  "routine": "subject",
+  "collected": { "operations": [ {
+    "op": "create", "type": "subject", "interpreted": true,
+    "fields": {
+      "title": "Credit memo drafting", "kind": "product", "horizon": "later", "clearance": "pending", "banks": ["Harbour Bank"],
+      "problem": "Each credit memo takes a day to write.", "requested_by": "the credit risk lead of Harbour Bank",
+      "data_needed": "The credit memos of the last three years.", "expected_gain": "A credit memo ready in two hours.",
+      "evidence_level": "reported",
+      "source": { "where": "exports/mail/received/credit memo drafting.txt", "read_on": "{today}" }
+    } } ] },
+  "prompt": "About Credit memo drafting, your question on the way people work: yes, it changes: the credit analysts stop writing memos from scratch and review a draft instead. Record my answer; I accept the change in advance: apply it.",
+  "expect": [
+    { "record": "credit-memo-drafting", "field": "work_changes", "is": "yes" },
+    { "file": "register/subjects/credit-memo-drafting.json", "line": "analysts" },
+    { "file": "state/questions.json", "line": "credit-memo-drafting", "absent": true },
+    { "file": "state/questions.json", "line": "card tokens" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

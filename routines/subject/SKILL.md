@@ -42,6 +42,12 @@ Every answer comes from the PO's own words. "None", "not yet" and "nobody knows"
 
 Record these too when the PO mentions them: `owning_entity`, `sponsor`, `decider`, `links`, `notes`, `objectives` (the numbers of the objectives the subject serves), and in the watch list `chat_channels` (the chat channels and group chats to read; the one-to-one chat with a person of the watch list, and a one-to-one message that holds one of its keywords, are read without being named here).
 
+**A request for an AI use case.** When the PO describes a request for one, the new subject takes it in: `horizon` `later`, `clearance` `pending`, `kind` `product` unless the PO says otherwise; the gates, the watch list and the next step are not asked. Ask instead for its intake parts, in the PO's words: the problem (`problem`), the client bank (`banks`), who asks (`requested_by`), the data needed (`data_needed`) and the expected gain (`expected_gain`). A part the PO does not give does not hold the subject back: record it without that part, and keep a question for it, with your recommended answer.
+
+**Whether the work changes.** For every subject you create, ask the PO whether the way people work changes or only a tool is added, with your recommended answer and why, as `Yes: the analysts would review a draft instead of writing the memo.`: in the same message as the missing answers, or with the preview table when none is missing. The answer is `work_changes`, `yes`, `no` or `unknown`, with one sentence in `work_changes_reason`. It does not hold the subject back either.
+
+A question the PO leaves unanswered goes to your open questions once the subject is recorded, about it.
+
 Done when each answer needed is one the PO gave.
 
 ## 3. Write the proposal
@@ -78,7 +84,7 @@ To modify or close:
 ```
 
 - `fields` of an update holds only the fields that change, each with its whole new value: a list is given whole.
-- To close: `"fields": { "status": "closed" }`.
+- To close: `"fields": { "status": "closed" }`. A refused request is closed with its reason, after the notes it already holds: `"fields": { "status": "closed", "notes": "Refused on 2026-03-09: the data cannot leave the bank." }`.
 - `read_on` is today's date, read from the machine.
 - What the PO tells you is a plain fact: `"interpreted": false` and `"evidence_level": "fact"`.
 - The register tool sets the identifier, the dates and the history.
@@ -88,5 +94,7 @@ To modify or close:
 1. Run the register tool's `preview`. When it refuses the proposal, it lists its reasons. Correct the proposal when the reason is its form. Ask the PO when the reason is an answer: a gate, an objective or a client bank that `settings.json` does not list is the PO's to add there.
 2. Show the PO the table that `preview` printed.
 3. Run `apply` once the PO accepts. An acceptance given ahead, with the request, counts. When the PO wants a change, correct the proposal and preview again. When the PO wants nothing recorded, delete `state/proposal.json`.
+
+For a subject a request created, run the register tool's `view intake <identifier>` once it is recorded, and tell the PO where the intake card is: a draft, to review before using it.
 
 Done when the register tool has answered `Applied and committed`, and you have told the PO which subject was recorded, with its identifier.

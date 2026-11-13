@@ -456,6 +456,52 @@ Test 'the scenario "subject open question" passes when the agent asks the open q
     Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "card tokens"' 'the question of another subject'
     Assert-Equal 1 $run.ExitCode 'exit code when the agent asks the question of another subject'
 }
+Test 'the scenario "collect a request for an AI use case" passes when the mail becomes a subject under Later, pending, with an intake card holding its five parts and the work changes question kept, and fails without the card' {
+    $mail = 'exports/mail/received/request for an AI use case.txt'
+    $request = New-SubjectOperation @{
+        title = 'Payment dispute triage'; horizon = 'later'; clearance = 'pending'; banks = @('North Bank'); evidence_level = 'reported'
+        problem = 'Every payment dispute is read and sorted by hand.'; requested_by = 'the head of payments'
+        data_needed = 'The payment dispute files of the last two years.'; expected_gain = 'Every dispute sorted on the day it arrives.'
+        source = @{ where = $mail; read_on = $Day }
+    }
+    $request.interpreted = $true
+    New-Item -ItemType Directory -Path $TestRoot -Force | Out-Null
+    $questions = Join-Path $TestRoot 'use-case-questions.json'
+    Write-Json $questions @{ questions = @(@{ about = 'payment-dispute-triage'; question = 'Does Payment dispute triage change the way people work, or only add a tool?'; recommended = 'Yes: the disputes are sorted before anyone reads them.'; added = '{today}' }) }
+    $collect = @{ sources_read = @(@{ source = 'notes'; cutoff = '2026-03-12T08:30:00+01:00'; items = 0 }, @{ source = 'mail'; cutoff = '2026-03-12T08:30:00+01:00'; items = 1 }); sources_not_covered = @('tracker'); notes_processed = @() }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() @($request) -Do "-Questions `"$questions`" -Intake payment-dispute-triage" -Collect $collect) collect-use-case-request
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    the register tool verifies views/intake/payment-dispute-triage\.md' 'the card is stamped'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() @($request) -Do "-Questions `"$questions`"" -Collect $collect) collect-use-case-request
+
+    Assert-Match $run.Output '  FAIL  file views/intake/payment-dispute-triage\.md has lines containing' 'no intake card'
+    Assert-Equal 1 $run.ExitCode 'exit code without the card'
+}
+
+Test 'the scenario "subject work changes" passes when the PO''s answer is recorded on the new subject and its question leaves the list, and fails when the answer is not recorded' {
+    New-Item -ItemType Directory -Path $TestRoot -Force | Out-Null
+    $answer = Join-Path $TestRoot 'work-changes.proposal.json'
+    Write-Json $answer @{ operations = @(@{ op = 'update'; id = 'credit-memo-drafting'; interpreted = $false; source = @{ where = 'conversation with the PO'; read_on = $Day }
+                fields = @{ work_changes = 'yes'; work_changes_reason = 'The credit analysts review a draft instead of writing the memo.' } })
+    }
+    $left = Join-Path $TestRoot 'work-changes-questions.json'
+    Write-Json $left @{ questions = @(@{ about = 'payments-api-contribution'; question = 'Does the payments API need card tokens?'; recommended = 'No: card tokens stay out.'; added = '{workday-2}' }) }
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Proposal `"$answer`" -Questions `"$left`"" subject-work-changes
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    record credit-memo-drafting: work_changes is "yes"' 'the answer recorded'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Questions `"$left`"" subject-work-changes
+
+    Assert-Match $run.Output '  FAIL  record credit-memo-drafting: work_changes is "yes"' 'the answer not recorded'
+    Assert-Equal 1 $run.ExitCode 'exit code when the answer is not recorded'
+}
+
 Test 'the scenario "collect and drop a line" passes when the line kept is recorded alone and the note is filed, and fails when the line dropped is recorded too' {
     $note = 'pilot-preparation.md'
     $kept = New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }

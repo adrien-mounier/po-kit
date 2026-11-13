@@ -78,6 +78,10 @@ _Avoid_: manager, boss, stakeholder
 Where a subject sits in time: now, next or later.
 _Avoid_: phase, priority, status
 
+**Work changes**:
+Whether a subject changes the way people work, or only adds a tool: yes, no or unknown, with one sentence. The agent asks it for every new subject.
+_Avoid_: transformation, impact, change management
+
 **Clearance**:
 Whether someone with authority has approved work on a subject: cleared, pending, out of frame, or none, which is what a subject carries until a clearance is stated. It is independent of the horizon. (French: pastille « feu vert ».)
 _Avoid_: approval status, validation, sign-off
@@ -185,6 +189,10 @@ _Avoid_: header, metadata, footer
 **Portfolio view**:
 The view listing every active subject by horizon, with its clearance and its client banks. Asked for one client bank, it keeps to that bank's subjects and those that name no bank.
 _Avoid_: roadmap, board, portfolio overview
+
+**Intake card**:
+The view of a subject taken in from a request for an AI use case, written from a template: the problem, the client bank, who asks, the data needed and the expected gain, whether the work changes, and the clearance. A part not given is shown as such. A request taken in is a subject under Later, pending; a refused one is closed with its reason. (French: demande de cas d'usage.)
+_Avoid_: intake form, request form, use case sheet
 
 **Check report**:
 The view the check writes, errors first, then warnings grouped by rule: the one view named a report.

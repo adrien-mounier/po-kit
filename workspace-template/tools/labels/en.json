@@ -31,7 +31,8 @@
       "subject_stale": "Subject under Now not updated for more than {0} day(s)",
       "inbox_note_old": "Inbox note older than {0} day(s)",
       "source_stale": "Source not read for more than {0} day(s)",
-      "unclassified_old": "Unclassified items older than {0} day(s)"
+      "unclassified_old": "Unclassified items older than {0} day(s)",
+      "intake_incomplete": "Subject under Later, pending, with an incomplete intake"
     },
     "details": {
       "owner": "owner: {0}",
@@ -41,7 +42,8 @@
       "updated": "last updated: {0}",
       "dated": "dated {0}",
       "read": "last read: {0}",
-      "never_read": "never read"
+      "never_read": "never read",
+      "missing": "missing: {0}"
     }
   },
   "portfolio": {
@@ -57,6 +59,11 @@
     "clearances": { "cleared": "Cleared", "pending": "Pending", "out of frame": "**Out of frame**", "none": "None" },
     "cleared_by": "by {0}",
     "cleared_on": "on {0}"
+  },
+  "intake": {
+    "not_given": "not given",
+    "parts": { "problem": "problem", "banks": "client bank", "requested_by": "who asks", "data_needed": "data needed", "expected_gain": "expected gain" },
+    "work_changes": { "yes": "Yes", "no": "No", "unknown": "Unknown" }
   },
   "effort": {
     "adjusted": "est. {0} d, adjusted x{1} from past {2}: {3} d",
