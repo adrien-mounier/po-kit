@@ -1,6 +1,6 @@
 ---
 name: backlog
-description: Propose changes to tickets of the tracker - create a ticket, or reword the title, the description or the acceptance criteria of one - and apply each one only after the PO said yes and approved the exact text, one change at a time, logging each. Use when the PO asks to reword a ticket, to create a ticket they describe, to draft the tickets a meeting note calls for, to split a ticket too large, or how to order the top of the backlog, approves or refuses a change you proposed, or says a change they pasted is done.
+description: Propose changes to tickets of the tracker - create a ticket, or reword the title, the description or the acceptance criteria of one - and apply each one only after the PO said yes and approved the exact text, one change at a time, logging each. Use when the PO asks to reword a ticket, to create a ticket they describe, to draft the tickets a meeting note calls for, to split a ticket too large, or how to order the top of the backlog, approves or refuses a change you proposed, or says a change they pasted is done. Also checks the backlog's health - tickets not ready for a refinement session near, duplicates, stale tickets, tickets still open for work a decision dropped - for the morning page, or when the PO asks.
 ---
 
 # Backlog
@@ -116,3 +116,24 @@ When the PO asks how to order the backlog, or what the team should take next. Re
 Then tell the PO: the order, one line per ticket with its reason; the view to open; the tickets left out and why; and that nothing was moved in the tracker: reordering the backlog is theirs, there. You never move a ticket, nor change its rank, priority or sprint, whoever asks.
 
 Done when the view is written and the PO has the order, or knows why there is none.
+
+## Backlog health
+
+When the morning routine sends you here, or the PO asks you to check the backlog (a refinement to prepare, duplicates, stale tickets, tickets against a decision). **You flag; the PO decides.** You never close, merge, move or re-estimate a ticket, and you propose none of that: what to do with a ticket flagged stays the PO's, in the tracker. Your write here is `state/backlog-alerts.json`, your backlog alerts, in the format `AGENTS.md` gives in its section "Backlog alerts".
+
+1. **Know what to prepare.** Run the register tool's `backlog alerts`. It checks the alerts kept, and names each refinement session of the calendar snapshot within five working days: `Refinement session to prepare: <title> on <date>`.
+2. **Read the tickets.** For each tracker project of the watch lists of the active subjects, search the tracker as the collect's `sources.md` says in its step 2, the project's key as the word, whatever the tickets' dates, and open what the search returns, nothing else. A ticket whose status says done, closed or cancelled is not open: leave it out. A ticket another one waits for is found by searching its key.
+3. **Flag**, writing `state/backlog-alerts.json` whole, each list present even when it holds nothing (`[]`), each alert with the ticket's key in `ticket` and its title in `title`:
+   - `contradictions`: an open ticket for work a decision of the register dropped or ruled out. Read the decisions in the register: `decision` is the identifier of one taken and not superseded, and `why` says in a few words what it dropped.
+   - `duplicates`: two open tickets that describe the same need, in the same words or not. One alert per pair: the ticket with the higher number in `ticket`, the other in `same_as`, and in `why` the need they share.
+   - `not_ready`: only when step 1 named a refinement session; `[]` otherwise. Each open ticket that lacks one of these: acceptance criteria (its text gives none), an estimate (it gives none), or a dependency cleared (it waits for a ticket that is not done). `missing` lists what it lacks, from `acceptance criteria`, `estimate` and `dependency`; `waits_for` names the ticket it waits for.
+   - `stale`: each open ticket whose last update, as the ticket gives it, is older than `delays_in_days.ticket` of `settings.json`, 60 days when it gives none. `updated` is that date, as `2025-12-15`.
+
+   **An alert is about the ticket, never about a person.** No alert names who works on a ticket, reported it or let it wait, in any word.
+4. Run `backlog alerts` again. When it refuses the file, correct it as it says and run it again.
+5. **Acceptance criteria, when the PO asks.** For a ticket not ready for lack of acceptance criteria, you may propose criteria as a change to the tracker, as "2. Propose a change the PO asks for" says: an `edit` of its field `acceptance criteria`, the text before as the ticket holds it (`""` when it has none), the criteria after drawn from the ticket and the register. You never set or propose an estimate: it is the team's.
+6. **Tell the PO**, one line per alert: the ticket, what is wrong, and the decision it goes against, by its identifier; then, for a refinement session near, its tickets not ready with what each lacks. Say that what to merge, close or keep is theirs to decide.
+
+When the morning routine sent you, stop after step 4: the morning page shows the alerts.
+
+Done when `backlog alerts` accepts the file, and every ticket flagged is in it under each thing wrong with it.

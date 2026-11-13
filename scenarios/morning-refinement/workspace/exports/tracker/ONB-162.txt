@@ -1,0 +1,12 @@
+Key: ONB-162
+Project: ONB
+Title: Selfie check
+Status: Open
+Estimate: none
+Updated: {today}T06:50:00+01:00
+
+The customer takes a selfie that is matched with the identity document.
+
+Acceptance criteria:
+- Given a selfie that matches the document, the check passes.
+- Given a selfie that does not match, the customer is told to visit a branch.

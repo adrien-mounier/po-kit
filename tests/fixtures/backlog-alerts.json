@@ -1,0 +1,3 @@
+{ "contradictions": [ { "ticket": "ONB-150", "title": "Paper form fallback for the onboarding journey",
+                        "decision": "D-{year}-001", "why": "the paper form was dropped" } ],
+  "duplicates": [], "not_ready": [], "stale": [] }

@@ -496,8 +496,8 @@ Test 'the scenario "morning reminders" passes when the late commitment owed to t
     Assert-Equal 1 $run.ExitCode 'exit code when nothing is offered'
 }
 
-Test 'the scenario "morning backlog" passes when the ticket still open for the plan a decision dropped is a contradiction, and fails when the agent finds none' {
-    $run = Invoke-Scenarios -Agent "$FakeAgent -MeetingNotes `"$Fixtures\backlog-notes.json`" -Morning" morning-backlog
+Test 'the scenario "morning backlog" passes when the ticket still open for the plan a decision dropped is a contradiction that cites the decision, and fails when the agent finds none' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Alerts `"$Fixtures\backlog-alerts.json`" -Morning" morning-backlog
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output "  ok    file views/morning\.html has lines containing, in this order: .*against D-$Year-001" 'the contradiction'
@@ -1282,6 +1282,30 @@ Test 'the scenario "backlog paste" passes when, with a tracker that may not writ
 
     Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has a line containing "Identity document scan screen"' 'no text given'
     Assert-Equal 1 $run.ExitCode 'exit code when no text is given'
+}
+
+Test 'the scenario "morning refinement" passes when the tickets not ready for the refinement session near are listed with what each lacks, and the ready one is not, and fails when the agent lists none' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Snapshot `"$Fixtures\refinement-calendar.json`" -Alerts `"$Fixtures\refinement-alerts.json`" -Morning" morning-refinement
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file views/morning\.html has lines containing, in this order: "<b>ONB-161</b>"' 'the tickets not ready'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Snapshot `"$Fixtures\refinement-calendar.json`" -Morning" morning-refinement
+
+    Assert-Match $run.Output '  FAIL  file views/morning\.html has a line containing "not ready for Onboarding refinement"' 'no list'
+    Assert-Equal 1 $run.ExitCode 'exit code when no ticket is listed'
+}
+
+Test 'the scenario "backlog duplicates" passes when the two tickets for the same need are flagged as duplicates and the old one as stale, naming no one, and fails when the agent flags nothing' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Alerts `"$Fixtures\duplicate-alerts.json`" -Say `"ONB-171 describes the same need as ONB-170: which do you keep?`"" backlog-duplicates
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    what the register tool prints for backlog alerts has a line containing "describes the same need as ONB-17"' 'the duplicates'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Say `"All is well.`"" backlog-duplicates
+
+    Assert-Match $run.Output '  FAIL  what the register tool prints for backlog alerts has a line containing "describes the same need as ONB-17"' 'no duplicate'
+    Assert-Equal 1 $run.ExitCode 'exit code when nothing is flagged'
 }
 
 Test 'the scenario "backlog split" passes when the ticket too large is split into proposed tickets and an edit of its text, none applied, and fails when nothing is proposed' {

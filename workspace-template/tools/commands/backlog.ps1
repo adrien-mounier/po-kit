@@ -4,6 +4,8 @@
 #   backlog check          validates the change proposal and lists its changes
 #   backlog show <id>      one change as the exact text before and after, for the PO to review
 #   backlog apply <id>     applies one approved change, once (see Invoke-Apply below)
+#   backlog alerts         checks the backlog alerts, state\backlog-alerts.json, and names the
+#                          refinement sessions near
 #   backlog order          writes the order the agent proposes for the top of the backlog as a view
 #   backlog template [fr]  the ticket template a ticket draft is written from (see below)
 #
@@ -98,6 +100,28 @@ function Get-BacklogChanges {
 $words = @($Arguments | Where-Object { $_ })
 $action = if ($words) { $words[0] }
 
+if ($action -ceq 'alerts') {
+    # backlog alerts: checks the backlog alerts of state\backlog-alerts.json (see Read-BacklogAlerts)
+    # and lists them, then names each refinement session near, whose tickets not ready to list.
+    $read = Read-BacklogAlerts
+    if ($read.problems) { Stop-Run (@('Backlog alerts refused: state\backlog-alerts.json is left off the morning page.') + @($read.problems | ForEach-Object { "- $_" }) + 'Correct it, then run backlog alerts again.') }
+    $alerts = $read.alerts
+    if (-not $alerts) { 'No backlog alerts: state\backlog-alerts.json does not exist.' }
+    else {
+        $kinds = 'contradictions', 'duplicates', 'not_ready', 'stale' | ForEach-Object { @($alerts.$_ | Where-Object { $_ }).Count }
+        "Backlog alerts: $($kinds[0]) contradiction(s), $($kinds[1]) duplicate(s), $($kinds[2]) not ready, $($kinds[3]) stale; valid."
+        foreach ($alert in @($alerts.contradictions | Where-Object { $_ })) { "- $($alert.ticket) is open for work $($alert.decision) dropped: $($alert.why)" }
+        foreach ($alert in @($alerts.duplicates | Where-Object { $_ })) { "- $($alert.ticket) describes the same need as $($alert.same_as): $($alert.why)" }
+        foreach ($alert in @($alerts.not_ready | Where-Object { $_ })) {
+            "- $($alert.ticket) is not ready: " + (@($alert.missing | ForEach-Object { if ($_ -ceq 'dependency') { "waits for $($alert.waits_for)" } else { "no $_" } }) -join ', ')
+        }
+        foreach ($alert in @($alerts.stale | Where-Object { $_ })) { "- $($alert.ticket) is stale: no update for $(Get-DaysSince $alert.updated) days" }
+    }
+    $sessions = @(Get-RefinementSessions)
+    foreach ($session in $sessions) { "Refinement session to prepare: $($session.title) on $($session.date). List under not_ready the tickets not ready for it." }
+    if (-not $sessions) { 'No refinement session within five working days in the calendar snapshot of today: not_ready stays empty, and the morning page shows none.' }
+    return
+}
 if ($action -ceq 'order') {
     # The order the agent proposes for the top of the backlog, state\backlog-order.json, written as
     # a view, views\backlog-order.md. It moves nothing in the tracker: reordering is the PO's.
@@ -135,7 +159,7 @@ if ($action -ceq 'order') {
     return
 }
 
-if ('check', 'show', 'apply', 'template' -cnotcontains $action) { Stop-Run 'backlog takes check, show <id>, apply <id>, order or template.' }
+if ('check', 'show', 'apply', 'template' -cnotcontains $action) { Stop-Run 'backlog takes check, show <id>, apply <id>, order, alerts or template.' }
 
 if ($action -ceq 'template') {
     # The ticket template, for a ticket draft: templates\ticket-<language>.md in the workspace when the

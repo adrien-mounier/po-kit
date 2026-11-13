@@ -1,0 +1,12 @@
+Key: ONB-160
+Project: ONB
+Title: Identity document scan screen
+Status: Open
+Estimate: 5 points
+Updated: {today}T06:30:00+01:00
+
+The customer scans an identity document during onboarding.
+
+Acceptance criteria:
+- Given a valid passport, the scan is accepted within ten seconds.
+- Given a blurred image, the customer is asked to scan again.

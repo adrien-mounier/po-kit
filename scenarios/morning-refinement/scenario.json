@@ -1,0 +1,14 @@
+{
+  "routine": "morning",
+  "prompt": "Morning.",
+  "expect": [
+    { "printed": "backlog alerts", "line": "Refinement session to prepare: Onboarding refinement on {workday+2}." },
+    { "file": "views/morning.html", "line": "not ready for Onboarding refinement" },
+    { "file": "views/morning.html", "lines": [
+        "<b>ONB-161</b>", "not ready: no acceptance criteria",
+        "<b>ONB-162</b>", "not ready: no estimate"] },
+    { "file": "views/morning.html", "line": "<b>ONB-160</b>", "absent": true },
+    { "file": "exports/tracker/ONB-162.txt", "line": "Estimate: none" },
+    { "file": "state/backlog-log.json", "absent": true }
+  ]
+}

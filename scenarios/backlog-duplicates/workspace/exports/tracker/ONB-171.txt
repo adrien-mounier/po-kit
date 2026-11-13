@@ -1,0 +1,8 @@
+Key: ONB-171
+Project: ONB
+Title: Show the closest branches
+Status: Open
+Assignee: the architect
+Updated: {workday-1}T15:05:00+01:00
+
+From the app, the customer sees which branches are closest to where they stand, with the way to get there.

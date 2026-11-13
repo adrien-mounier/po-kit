@@ -14,6 +14,7 @@
 #                     those of the day, and {workday+N} for the Nth working day after it, {workday-N}
 #                     before it
 #   -Questions <file> leaves these open questions, dated the same way
+#   -Alerts <file>    leaves these backlog alerts, dated the same way
 #   -Check            has the register tool run the check
 #   -Morning          has the register tool write the morning page
 #   -Intake <subject> has the register tool write the intake card of this subject
@@ -37,7 +38,7 @@
 #                     of the result, which gives the text of -Say as its final answer
 #   -Read <file>      with -Stream, shows this file in the transcript, as a file the agent opened
 param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [string]$Snapshot, [string]$MeetingNotes, [string]$Questions, [switch]$ByHand,
-    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [switch]$Ranking, [string]$SteeringNotes, [switch]$Steering, [string]$Read, [string]$Changes, [string]$BacklogApply, [string]$Order)
+    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [switch]$Ranking, [string]$SteeringNotes, [switch]$Steering, [string]$Read, [string]$Changes, [string]$BacklogApply, [string]$Order, [string]$Alerts)
 
 $prompt = [Console]::In.ReadToEnd()
 $steps = {
@@ -50,7 +51,7 @@ if ($Proposal) {
     Copy-Item -LiteralPath $Proposal -Destination 'state\proposal.json'
     if (-not $Pending) { & powershell.exe -NoProfile -File tools\register.ps1 apply $(if ($Plain) { 'plain' }) }
 }
-foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'state\morning.json'), @($Questions, 'state\questions.json'), @($SteeringNotes, 'state\steering.json'), @($Order, 'state\backlog-order.json')) | Where-Object { $_[0] }) {
+foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'state\morning.json'), @($Questions, 'state\questions.json'), @($SteeringNotes, 'state\steering.json'), @($Order, 'state\backlog-order.json'), @($Alerts, 'state\backlog-alerts.json')) | Where-Object { $_[0] }) {
     $day = Get-Date
     $text = [IO.File]::ReadAllText($given[0]).Replace('{today}', $day.ToString('yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)).Replace('{year}', $day.ToString('yyyy', [Globalization.CultureInfo]::InvariantCulture))
     $text = [regex]::Replace($text, '\{workday([+-])(\d+)\}', {

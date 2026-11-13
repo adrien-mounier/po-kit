@@ -22,6 +22,7 @@
   "banks": ["Harbour Bank", "North Bank", "Alpine Bank"],
   "task_kinds": ["steering pack", "intake review", "ticket refinement", "client meeting preparation"],
   "steering_words": ["steering committee"],
+  "refinement_words": ["refinement", "backlog grooming"],
   "backlog_top": 10,
   "split_estimate_above": 8,
   "sponsor": {

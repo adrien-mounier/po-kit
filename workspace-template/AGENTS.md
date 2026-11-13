@@ -32,6 +32,7 @@ Written with a forward slash, the command runs the same in every shell.
 - `steering 2026-03-09` writes the steering pack of the committee of that date, `views/steering/2026-03-09.html`, replacing the last one; `steering` alone names the committees whose pack to offer and writes nothing: see "The steering pack" below.
 - `backlog check` validates the change proposal, `state/backlog-changes.json`; `backlog show 2` shows change 2 as the exact text before and after; `backlog apply 2` applies change 2 once it is approved; `backlog order` writes the order you propose for the top of the backlog, `views/backlog-order.md`, replacing the last one: see "Changes to the tracker" below.
 - `backlog template` gives the ticket template a ticket draft is written from, `backlog template fr` in another language: see "Ticket drafts" below.
+- `backlog alerts` checks your backlog alerts, `state/backlog-alerts.json`, and names each refinement session near: see "Backlog alerts" below.
 
 A refused proposal lists its reasons and writes nothing: correct the proposal and preview again.
 
@@ -115,6 +116,25 @@ A ticket draft is a `create` change written from a ticket template, from a note 
 
 `backlog template` gives the template, each text of a ticket under the name it has in `after`. The kit's is `tools/templates/ticket-<language>.md`. **A template of the organisation goes in `templates/ticket-<language>.md` in this workspace**, never under `tools/`, which every update replaces: it then replaces the kit's for this workspace only. It holds one section per text of a ticket, headed as the labels of its language name them (`## Title`, `## Description`, `## Acceptance criteria` in English), and no other; the register tool refuses one that lacks a section or holds another.
 
+## Backlog alerts
+
+The tickets of the watched projects that need the PO's eye are your backlog alerts, `state/backlog-alerts.json`, written as UTF-8 without a byte order mark and rewritten whole each time, every list present even when it holds nothing. The backlog routine says how you find them; the morning page counts them.
+
+    { "contradictions": [ { "ticket": "ONB-150", "title": "Build the paper form fallback", "decision": "D-2026-002", "why": "the paper form was dropped" } ],
+      "duplicates": [ { "ticket": "ONB-163", "title": "Find the nearest branch", "same_as": "ONB-151", "why": "both let the customer find the branch nearest to them" } ],
+      "not_ready": [ { "ticket": "ONB-151", "title": "Branch finder", "missing": ["acceptance criteria", "estimate"] },
+                     { "ticket": "ONB-152", "title": "Selfie check", "missing": ["dependency"], "waits_for": "ONB-140" } ],
+      "stale": [ { "ticket": "ONB-120", "title": "Language switch", "updated": "2025-12-15" } ] }
+
+- `contradictions`: an open ticket for work a decision of the register dropped or ruled out, with that decision's identifier and, in a few words, what it dropped.
+- `duplicates`: an open ticket that describes the same need as another, `same_as`, and the need they share. The PO decides which to keep.
+- `not_ready`: before a refinement session, a meeting of the calendar snapshot whose title holds a word of `refinement_words` in the settings, each open ticket not ready for it, with what it lacks: `acceptance criteria`, `estimate`, or `dependency`, a ticket it waits for that is not done, named in `waits_for`. The morning page shows them from five working days before the session.
+- `stale`: an open ticket not updated for longer than `delays_in_days.ticket` in the settings, 60 days by default, with the date of its last update as the tracker gives it.
+
+**An alert is about the ticket, never about a person**: it names no one who works on the ticket or let it wait, and holds no field but these. You flag; the PO decides: you never close, merge or move a ticket, and you never set an estimate. A fix you propose is a change to the tracker, as above.
+
+The register tool checks the file as it checks your notes: a decision cited that is missing, superseded or no decision, a ticket said stale that was updated within the delay, any field not of the format, and the file is left off the morning page, which says so.
+
 ## The settings
 
 `settings.json` is the PO's, edited by hand. Four of its lists bound what a record may say:
@@ -132,6 +152,8 @@ When the PO names a gate, an objective, a client bank or a kind of task that is 
 `start_soon`: as `{ "margin": 1, "lead": 2 }`, in working days. The latest start of a commitment the PO owns is its due date minus its adjusted effort, in working days, minus the margin; the morning page lists it under "Start soon" once its latest start falls within the lead. Its workload view sets the work of the PO's open commitments against the free time of the next ten working days: the working hours less the accepted meetings and half the tentative ones, none on a day of absence, times the share of it really usable for tasks. That share starts at 70%; the register tool learns it from the real efforts of the PO's done tasks and the free time it keeps of each morning, in `state/free-time.json`, which is its own. A commitment the PO says is optional carries `"optional": true`: the page may then propose to drop or hand it over when a day does not fit.
 
 `steering_words`: as `["steering committee"]`, the words that show a steering committee in a meeting's title: see "The steering pack" above.
+
+`refinement_words`: as `["refinement", "backlog grooming"]`, the words that show a refinement session in a meeting's title; and `delays_in_days.ticket`, as `60`, the days after which a ticket not updated is stale: see "Backlog alerts" above.
 
 `backlog_top`: as `10`, how many tickets the order you propose for the top of the backlog holds at most. `split_estimate_above`: as `8`, the estimate, in the tracker's own unit, above which a ticket is too large for one sprint and you propose to split it. See "Changes to the tracker" above.
 
@@ -193,19 +215,16 @@ The parts of the morning page that need judgement are yours, in `state/morning.j
                    "button": "Brief me", "ask": "Brief me for the 14:00 with Harbour Bank" } ],
       "messages": [ { "source": "chat", "from": "the tech lead", "where": "onboarding squad",
                       "sent": "2026-03-02T09:15:00+01:00", "text": "Can you confirm the pilot branches by Friday?" } ],
-      "progress": { "C-2026-006": "The architect shared a first draft on Friday" },
-      "backlog": { "contradictions": [ { "ticket": "ONB-150", "title": "Build the paper form fallback",
-                                         "decision": "D-2026-002", "why": "the paper form was dropped" } ],
-                   "not_ready": [ { "ticket": "ONB-151", "title": "Branch finder", "why": "no acceptance criteria" } ],
-                   "stale": [ { "ticket": "ONB-120", "title": "Language switch", "why": "no update for 34 days" } ] } }
+      "progress": { "C-2026-006": "The architect shared a first draft on Friday" } }
 
 - `meetings`: a note goes with the meeting of the same `start` and `title` in the snapshot. `key` is one sentence on what matters in the meeting; `lacks` says, for a decision awaited that `brief` lists, what it still lacks.
 - `first`: the three actions you recommend the PO do first, the most important first, each with one line of why. `record` names the record an action is about: while that record is awaited (an open commitment, a pending decision), the page gives the action that record's button. An action about no record, or about a record no longer awaited (a decision taken, a commitment done), gives its own `button` and `ask`, the request the button copies; without them, the page gives a neutral button that asks to show the record. The page always puts first, in its own words, a commitment of the PO to start today or late to start that your actions leave out.
 - `messages`: each mail or chat message within the watch lists that asks the PO something and has no answer from the PO: its source (`mail` or `chat`), who sent it, where (the channel or group chat, `one-to-one chat`, or the mail's subject), when it was sent, and the question as it was asked, on one line.
 - `progress`: for a commitment owed to the PO, the sign that it is moving. One due within three working days with no sign here is offered a nudge.
-- `backlog`: the tickets of the watched projects that contradict a recorded decision, with that decision; those not ready for the next refinement; and the stale ones, each with why.
 
-Cite a record as a view does, `[identifier]`. The register tool checks every record the file cites, and every `record`, `decision` and key of `lacks` and `progress`, as `verify` does: when one is missing or superseded, it leaves the whole file off the page, which says so.
+The backlog alerts of the page are in their own file: see "Backlog alerts" above.
+
+Cite a record as a view does, `[identifier]`. The register tool checks every record the file cites, and every `record` and key of `lacks` and `progress`, as `verify` does: when one is missing or superseded, it leaves the whole file off the page, which says so.
 
 ## Your open questions
 

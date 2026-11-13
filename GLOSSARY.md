@@ -164,6 +164,14 @@ _Avoid_: sync state, cursor file, collect log
 What the morning routine read of the PO's calendar, the working day before today, today and the next ten working days: each meeting with its start, end, title, attendees and status, and the all-day absences. The calendar is only ever read, never written.
 _Avoid_: agenda, schedule, calendar sync
 
+**Backlog alert**:
+A ticket of a watched project the agent flags, kept in the workspace state and counted on the morning page: open for work a recorded decision dropped (citing that decision), describing the same need as another ticket, not ready for a refinement session near (no acceptance criteria, no estimate, a dependency not cleared), or stale. It is about the ticket, never about who works on it; the PO decides what to do, and the agent never closes or merges a ticket.
+_Avoid_: backlog issue, ticket warning, hygiene report
+
+**Refinement session**:
+A meeting of the calendar snapshot whose title holds one of the words of the setting `refinement_words`. From five working days before it, the agent lists the tickets not ready for it.
+_Avoid_: grooming (except as a word of the setting), backlog review
+
 **Proposal**:
 The list of register changes a routine has prepared and that awaits validation. Nothing reaches the register except through an applied proposal.
 _Avoid_: draft, patch, changeset

@@ -1,0 +1,8 @@
+Key: ONB-170
+Project: ONB
+Title: Branch finder
+Status: Open
+Assignee: the tech lead
+Updated: {workday-3}T10:20:00+01:00
+
+The customer finds the branch nearest to them on a map in the app.

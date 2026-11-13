@@ -885,10 +885,10 @@ function Test-View([string]$Text, [switch]$Html) {
 #
 # The agent leaves the parts of the morning page that need judgement in state\morning.json, in the
 # format the workspace rules give: its notes on the meetings, the actions to do first, the messages
-# awaiting the PO's reply, the signs of progress of what others owe the PO and the backlog alerts:
+# awaiting the PO's reply and the signs of progress of what others owe the PO:
 #   { "meetings": [ { "start": "2026-03-02T14:00:00+01:00", "title": "...", "key": "...",
 #                     "lacks": { "D-2026-004": "..." } } ], "first": [...], "messages": [...],
-#     "progress": { "C-2026-006": "..." }, "backlog": { "contradictions": [...], ... } }
+#     "progress": { "C-2026-006": "..." } }
 # key is one sentence on what matters in the meeting, and lacks what each decision awaited still
 # lacks. A note goes with the meeting of the same start and title.
 
@@ -903,12 +903,31 @@ function Get-DayMeetings($Snapshot, [string]$Date) {
     @($Snapshot.meetings | Where-Object { (Read-Timestamp $_.start) -and (Read-Timestamp $_.end) -and $_.start.Substring(0, 10) -eq $Date } | Sort-Object start, title)
 }
 
+function Test-TitleWords([string]$Title, $Words, [string[]]$Default) {
+    # Whether a meeting's title holds one of the words of a setting, whatever the case, or one of
+    # the default words when the setting lists none.
+    $listed = @($Words | Where-Object { "$_".Trim() })
+    if (-not $listed) { $listed = $Default }
+    @($listed | Where-Object { $Title.IndexOf("$_".Trim(), [StringComparison]::OrdinalIgnoreCase) -ge 0 }).Count -gt 0
+}
+
 function Test-SteeringTitle([string]$Title) {
     # Whether a meeting's title shows a steering committee: it holds one of the words of
     # steering_words in settings.json, whatever the case, or "steering committee" without them.
-    $listed = @($Settings.steering_words | Where-Object { "$_".Trim() })
-    if (-not $listed) { $listed = @('steering committee') }
-    @($listed | Where-Object { $Title.IndexOf("$_".Trim(), [StringComparison]::OrdinalIgnoreCase) -ge 0 }).Count -gt 0
+    Test-TitleWords $Title $Settings.steering_words 'steering committee'
+}
+
+function Get-RefinementSessions {
+    # The refinement sessions near: in the calendar snapshot read today, the meetings from today to
+    # five working days on whose title holds a word of refinement_words in settings.json, whatever
+    # the case, or "refinement" or "backlog grooming" without them. Each with its date and its
+    # title, the earliest first.
+    $snapshot = Read-CalendarSnapshot
+    if (-not $snapshot -or -not "$($snapshot.read_at)".StartsWith($Today)) { return }
+    $last = Add-WorkingDays $Today 5
+    @($snapshot.meetings | Where-Object { (Read-Timestamp $_.start) -and $_.start.Substring(0, 10) -ge $Today -and $_.start.Substring(0, 10) -le $last -and
+            (Test-TitleWords "$($_.title)" $Settings.refinement_words 'refinement', 'backlog grooming') } | Sort-Object start, title |
+            ForEach-Object { @{ date = $_.start.Substring(0, 10); title = "$($_.title)" } })
 }
 
 function Get-SteeringCommittees {
@@ -941,10 +960,9 @@ function Read-MorningNotes {
     $file = try { Read-JsonFile $path } catch { return @{ notes = @(); problems = @('state\morning.json cannot be read: it must hold JSON, saved as UTF-8.') } }
     $notes = @($file.meetings | Where-Object { $null -ne $_ })
     # A record is cited in a text between square brackets, and by its identifier alone where the
-    # file names one: the decisions of lacks, the record of an action, the commitments of progress,
-    # the decision a ticket contradicts.
+    # file names one: the decisions of lacks, the record of an action, the commitments of progress.
     $named = @(foreach ($note in $notes) { $note.lacks.PSObject.Properties | ForEach-Object { $_.Name } }) + @($file.progress.PSObject.Properties | ForEach-Object { $_.Name }) +
-        @($file.first | ForEach-Object { $_.record }) + @($file.backlog.contradictions | ForEach-Object { $_.decision })
+        @($file.first | ForEach-Object { $_.record })
     $texts = @(Get-Texts $file) + @($named | Where-Object { "$_".Trim() } | ForEach-Object { "[$_]" })
     $problems = @(Test-Cited @(Get-Cited ($texts -join "`n"))) + @(
         $number = 0
@@ -983,6 +1001,64 @@ function Read-OpenQuestions {
         })
     if ($problems) { return @{ questions = @(); problems = $problems } }
     @{ questions = $questions; problems = @() }
+}
+
+# The backlog alerts the agent keeps in state\backlog-alerts.json, in the format the workspace rules
+# give: the open tickets of the watched projects that are open for work a decision dropped, that
+# describe the same need as another, that are not ready for a refinement session near, and that
+# nobody updated for longer than delays_in_days.ticket of settings.json, 60 days without it. No
+# alert names who works on a ticket: it is about the ticket.
+#   { "contradictions": [ { "ticket": "ONB-150", "title": "...", "decision": "D-2026-002", "why": "..." } ],
+#     "duplicates": [ { "ticket": "ONB-163", "title": "...", "same_as": "ONB-151", "why": "..." } ],
+#     "not_ready": [ { "ticket": "ONB-151", "title": "...", "missing": ["acceptance criteria", "estimate", "dependency"], "waits_for": "ONB-140" } ],
+#     "stale": [ { "ticket": "ONB-120", "title": "...", "updated": "2025-12-15" } ] }
+
+function Get-StaleTicketDays {
+    # ponytail: settings written before the ticket delay read as the template's.
+    if ($null -ne $Settings.delays_in_days.ticket) { [int]$Settings.delays_in_days.ticket } else { 60 }
+}
+
+function Read-BacklogAlerts {
+    # The alerts (alerts, nothing without the file) and what is wrong with the file (problems):
+    # a field not of the format, a decision cited that is missing, superseded or no decision, a
+    # ticket said stale that was updated within the delay, and each record a text cites missing or
+    # superseded, as verify checks a view. The file is refused whole when anything is wrong.
+    $path = Join-Path $Workspace 'state\backlog-alerts.json'
+    if (-not (Test-Path -LiteralPath $path)) { return @{ problems = @() } }
+    $file = try { Read-JsonFile $path } catch { return @{ problems = @('state\backlog-alerts.json cannot be read: it must hold JSON, saved as UTF-8.') } }
+    $ticket = '"ticket": { "type": "text", "required": true }, "title": { "type": "text", "required": true }'
+    $definition = @"
+{ "type": "object", "fields": {
+    "contradictions": { "type": "list", "items": { "type": "object", "fields": { $ticket,
+        "decision": { "type": "text", "required": true }, "why": { "type": "text", "required": true } } } },
+    "duplicates": { "type": "list", "items": { "type": "object", "fields": { $ticket,
+        "same_as": { "type": "text", "required": true }, "why": { "type": "text", "required": true } } } },
+    "not_ready": { "type": "list", "items": { "type": "object", "fields": { $ticket,
+        "missing": { "type": "list", "required": true, "items": { "type": "text", "allowed": ["acceptance criteria", "estimate", "dependency"] } },
+        "waits_for": { "type": "text" } } } },
+    "stale": { "type": "list", "items": { "type": "object", "fields": { $ticket, "updated": { "type": "date", "required": true } } } }
+} }
+"@ | ConvertFrom-Json
+    $problems = @(Test-Value $definition $file '' | ForEach-Object { "Alerts: $_." })
+    if ($problems) { return @{ problems = $problems } }
+    $delay = Get-StaleTicketDays
+    $problems = @(
+        foreach ($alert in @($file.contradictions | Where-Object { $_ })) {
+            $found = Find-Record $alert.decision
+            if ($found -and $found.type -cne 'decision') { "$($alert.ticket): $($alert.decision) is no decision." }
+        }
+        Test-Cited @(@(@($file.contradictions | Where-Object { $_ } | ForEach-Object { $_.decision }) + @(Get-Cited ((Get-Texts $file) -join "`n"))) | Select-Object -Unique)
+        foreach ($alert in @($file.duplicates | Where-Object { $_ } | Where-Object { $_.same_as -ceq $_.ticket })) { "$($alert.ticket): a ticket is no duplicate of itself." }
+        foreach ($alert in @($file.not_ready | Where-Object { $_ })) {
+            if (-not @($alert.missing).Count) { "$($alert.ticket): a ticket not ready names what it lacks in missing." }
+            if (@($alert.missing) -ccontains 'dependency' -and -not "$($alert.waits_for)".Trim()) { "$($alert.ticket): a dependency not cleared names the ticket it waits for in waits_for." }
+        }
+        foreach ($alert in @($file.stale | Where-Object { $_ })) {
+            $days = Get-DaysSince $alert.updated
+            if ($days -le $delay) { "$($alert.ticket): updated $days day(s) ago, it is not stale: a ticket is stale after $delay days without an update." }
+        })
+    if ($problems) { return @{ problems = $problems } }
+    @{ alerts = $file; problems = @() }
 }
 
 function Get-WorkingDaysSince([string]$Date) {

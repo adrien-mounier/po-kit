@@ -1,0 +1,9 @@
+{
+  "read_at": "{today}T07:05:00+01:00",
+  "from": "{workday-1}",
+  "to": "{workday+10}",
+  "meetings": [
+    { "start": "{workday+2}T10:00:00+01:00", "end": "{workday+2}T11:00:00+01:00", "title": "Onboarding refinement", "attendees": ["the tech lead", "the architect"], "status": "accepted" }
+  ],
+  "absences": []
+}
