@@ -19,7 +19,7 @@ The morning always collects, so that the page shows what arrived overnight, even
 - **Lines that still wait are carried over.** When `state/proposal.json` exists, its lines still wait for the PO, and your proposal keeps every one of them. In step 5, its operations are the first operations of yours, in their order, each as it is but with `"interpreted": true`, so that it keeps waiting; your own operations follow them. Your "line N" counts the lines carried over: with two of them, the record your first operation creates is "line 3". The lines carried over may name each other as "line 1", "line 2": leave them as they are.
 - In step 6, do what point 2 says for the validation mode, then go to step 2 of this routine instead of showing a table and waiting for an answer. Under `Validation mode: interpreted.` that is `apply plain`: the plain facts are recorded, and the interpreted lines, those carried over among them, stay pending. Under `Validation mode: all.` every line stays pending, and nothing is applied.
 - When the collect finds nothing new and no line is carried over, it applies its empty proposal as it says, and the morning goes on. With lines carried over, its proposal holds them and no line of its own: go through step 6 as for any proposal.
-- A question the notes cannot settle goes to your open questions, as `AGENTS.md` says: the briefing asks it.
+- A question the notes cannot settle, a real effort you could not infer among them, goes to your open questions, as `AGENTS.md` says: the briefing asks it, and you do not ask it in the chat.
 
 Done when the plain facts are recorded under `interpreted`, every other line of the collect is pending, every line that waited before still waits, and every note read is filed or still in a pending proposal.
 
@@ -63,13 +63,11 @@ Your answer is short:
 1. What the collect did, in one sentence: each record written with its identifier, the notes filed, how many lines wait for the PO, what went to unclassified, what the check found.
 2. Then what the page holds, in two lines, from the counts that `morning` printed: first what is late, due today, and each task to start today by its title as `morning` printed it, and a day that does not fit with the suggestion `morning` printed; then the rest, ending with where the page is, `views/morning.html`, to open in a browser.
 3. Then each reminder and nudge `morning` printed to offer, one line each, as a question: `Shall I draft the reminder to the tech lead for C-2026-005, "Deliver the test accounts", 3 days late?` You draft one only once the PO says yes, as a mail draft when the connections allow it or in the chat otherwise, and you never send it.
-4. Then each question on a real effort that the collect kept, one line each, as step 4 of the collect writes it: `Real effort of C-2026-004, "Build the steering pack": how many days did it take you? My guess: 2 d.` A real effort the collect could infer is in its line, and asks nothing.
-
-5. Last, offer the briefing, in one line: how many questions it holds and how long it should take, as `Shall we do the briefing now? 9 questions, about 20 minutes.` Count the questions of step 6 that you would ask, at about two minutes each; when they take longer than `briefing_minutes` in `settings.json`, count those that fit and say how many wait for the next briefing. The PO says yes, or later: then the page and the open questions wait for them.
+4. Last, offer the briefing, in one line: how many questions it holds and how long it should take, as `Shall we do the briefing now? 9 questions, about 20 minutes.` Count the questions of step 6 that you would ask, at about two minutes each; when they take longer than `briefing_minutes` in `settings.json`, count those that fit and say how many wait for the next briefing. The PO says yes, or later: then the page and the open questions wait for them.
 
 Copy no table: the lines that wait are on the page, under "To sort", and the PO answers them when they choose.
 
-Done when the PO knows what the collect recorded, what waits for them, what the page holds, each reminder and nudge offered, each real effort the agent asks, and has been offered the briefing.
+Done when the PO knows what the collect recorded, what waits for them, what the page holds, each reminder and nudge offered, and has been offered the briefing. A question on a real effort the collect could not infer is not asked here: it is in your open questions, asked at the briefing or as soon as the PO talks about its subject.
 
 ## 6. The briefing
 

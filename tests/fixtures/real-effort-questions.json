@@ -1,0 +1,2 @@
+{ "last_briefing": "{workday-1}",
+  "questions": [ { "about": "C-{year}-002", "question": "Real effort of C-{year}-002, \"Prepare the March steering pack\": how many days did it take you?", "recommended": "2 d, its estimate.", "added": "{today}" } ] }
