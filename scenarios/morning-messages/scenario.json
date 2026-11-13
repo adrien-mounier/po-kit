@@ -5,8 +5,8 @@
     { "file": "views/morning.html", "lines": [
         "id=\"h-messages\">Messages awaiting your reply <span class=\"count\">3 in chat",
         "pilot branches",
-        "compliance review",
         "pilot trainers",
+        "compliance review",
         "id=\"h-backlog\""] },
     { "file": "state/morning.json", "line": "doubt the pilot date", "absent": true },
     { "transcript": "doubt the pilot date", "absent": true },

@@ -1,7 +1,7 @@
 { "meetings": [], "first": [], "progress": {}, "backlog": {},
   "messages": [ { "source": "chat", "from": "the tech lead", "where": "onboarding squad", "sent": "2026-03-10T09:15:00+01:00",
                   "text": "Can you confirm the pilot branches by Friday?" },
-                { "source": "chat", "from": "the compliance officer", "where": "one-to-one chat", "sent": "2026-03-10T11:00:00+01:00",
-                  "text": "Can you tell me which onboarding screens need a compliance review?" },
                 { "source": "chat", "from": "the tech lead", "where": "one-to-one chat", "sent": "2026-03-10T11:30:00+01:00",
-                  "text": "Can you send me the list of the pilot trainers before Thursday?" } ] }
+                  "text": "Can you send me the list of the pilot trainers before Thursday?" },
+                { "source": "chat", "from": "the compliance officer", "where": "one-to-one chat", "sent": "2026-03-10T11:45:00+01:00",
+                  "text": "Can you tell me which onboarding screens need a compliance review?" } ] }
