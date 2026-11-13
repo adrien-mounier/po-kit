@@ -136,6 +136,28 @@ Test 'a plain update waits with the interpreted update of the same record, so th
     Assert-Equal 'taken' (Read-Json (Join-Path $ws 'register\decisions\2026\D-2026-001.json')).status 'status of the decision once the PO accepts'
 }
 
+Test 'the PO''s own change to a subject is recorded and the scores proposed for it wait, though both update the same subject, when the change holds on its own' {
+    $ws = New-TestWorkspaceWithSubject
+    $scores = New-UpdateOperation 'mobile-onboarding' @{ value_score = 4; value_reason = 'It halves the time to open an account.'; feasibility_score = 3; feasibility_reason = 'The data is at hand.' }
+    $scores.interpreted = $true
+    Set-Proposal $ws @{ operations = @((New-UpdateOperation 'mobile-onboarding' @{ horizon = 'next' }), $scores) }
+
+    $run = Invoke-Register $ws apply plain -Today 2026-03-03
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $subject = Read-Json (Join-Path $ws 'register\subjects\mobile-onboarding.json')
+    Assert-Equal 'next' $subject.horizon 'horizon of the subject, the PO''s change'
+    Assert-True ($null -eq $subject.value_score) "the scores are recorded without the PO's yes: $($subject.value_score)"
+    Assert-Match $run.Output '(?m)^Waiting for the PO: 1 line\(s\), still pending\.' 'what waits'
+    $pending = @((Read-Json (Join-Path $ws 'state\proposal.json')).operations)
+    Assert-Equal 'update mobile-onboarding 4' "$($pending[0].op) $($pending[0].id) $($pending[0].fields.value_score)" 'the scores still pending'
+
+    $run = Invoke-Register $ws apply -Today 2026-03-04
+
+    Assert-Equal 0 $run.ExitCode "exit code of the later apply, with output: $($run.Output)"
+    Assert-Equal '4 next' "$((Read-Json (Join-Path $ws 'register\subjects\mobile-onboarding.json')).value_score) next" 'the scores once the PO accepts'
+}
+
 Test 'a plain fact that updates or supersedes a record waits when a line that waits does so too, whatever their order' {
     $ws = New-WorkspaceWithRecords
     Set-Proposal $ws @{ operations = @(

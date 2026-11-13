@@ -336,17 +336,25 @@ function Get-WaitingLines($Operations) {
     #   that a waiting line creates;
     # - a line that updates or supersedes a record of the register which a waiting line also updates
     #   or supersedes: what the lines of a proposal leave of a record is judged together
-    #   (Test-ProposalResult), so they are applied together.
+    #   (Test-ProposalResult), so they are applied together. Except an update whose record a waiting
+    #   line only updates too, when the updates that do not wait leave that record holding the rules
+    #   on their own: the PO's change to a subject is recorded, and the scores proposed for it wait.
     $changed = { param($Operation) if ($Operation.op -ceq 'update') { $Operation.id } else { $Operation.fields.supersedes } }
     $waiting = @()
     do {
         $found = $waiting.Count
         $records = @($waiting | ForEach-Object { & $changed $Operations[$_ - 1] } | Where-Object { $_ })
+        $superseded = @($waiting | ForEach-Object { $Operations[$_ - 1] } | Where-Object { $_.op -ceq 'create' } | ForEach-Object { $_.fields.supersedes } | Where-Object { $_ })
         for ($line = 1; $line -le $Operations.Count; $line++) {
             $operation = $Operations[$line - 1]
-            if ($waiting -notcontains $line -and ($operation.interpreted -or $waiting -contains (Get-LineNamed $operation.fields.subject) -or
-                    ($operation.op -ceq 'update' -and $waiting -contains (Get-LineNamed $operation.id)) -or
-                    $records -ccontains (& $changed $operation))) { $waiting += $line }
+            if ($waiting -contains $line) { continue }
+            $waits = $operation.interpreted -or $waiting -contains (Get-LineNamed $operation.fields.subject) -or
+                ($operation.op -ceq 'update' -and $waiting -contains (Get-LineNamed $operation.id))
+            if (-not $waits -and $records -ccontains (& $changed $operation)) {
+                $alone = @(for ($other = 1; $other -le $Operations.Count; $other++) { if ($waiting -notcontains $other -and $Operations[$other - 1].op -ceq 'update' -and $Operations[$other - 1].id -ceq $operation.id) { $other } })
+                $waits = $operation.op -cne 'update' -or $superseded -ccontains $operation.id -or @(Test-ProposalResult $Operations $alone).Count -gt 0
+            }
+            if ($waits) { $waiting += $line }
         }
     } while ($waiting.Count -ne $found)
     $waiting | Sort-Object
