@@ -1,0 +1,14 @@
+{
+  "routine": "morning",
+  "prompt": "Morning.",
+  "expect": [
+    { "record": "C-{year}-002", "field": "owner", "is": "the PO" },
+    { "record": "C-{year}-002", "field": "due_date", "is": "2026-03-06" },
+    { "record": "C-{year}-002", "field": "source.where", "is": "inbox/pilot-follow-up.md" },
+    { "file": "inbox/pilot-follow-up.md", "absent": true },
+    { "file": "inbox/done/{month}/pilot-follow-up.md" },
+    { "file": "state/last-collect.json", "field": "sources.notes.items", "is": 1 },
+    { "file": "views/morning.html" },
+    { "file": "views/morning.html", "lines": ["id=\"h-owe\"", "<li class=\"row is-late\">", "&middot; C-{year}-002</span>", "id=\"h-owed\""] }
+  ]
+}

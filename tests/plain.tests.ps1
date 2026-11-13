@@ -352,14 +352,14 @@ Test 'preview states the validation mode of the settings, and a mode other than 
 
     $run = Invoke-Register $ws preview
 
-    Assert-Match $run.Output '(?m)^Validation mode: all\.' 'output of preview in the default mode'
+    Assert-Match $run.Output '(?m)^Validation mode: interpreted\.' 'output of preview in the default mode'
 
-    $settings.validation_mode = 'interpreted'
+    $settings.validation_mode = 'all'
     Write-Json (Join-Path $ws 'settings.json') $settings
     $run = Invoke-Register $ws preview
 
     Assert-Equal 0 $run.ExitCode "exit code of preview, with output: $($run.Output)"
-    Assert-Match $run.Output '(?m)^Validation mode: interpreted\.' 'output of preview in the lighter mode'
+    Assert-Match $run.Output '(?m)^Validation mode: all\.' 'output of preview in the stricter mode'
 
     foreach ($mode in 'none', 'Interpreted', '', $null) {
         $settings.validation_mode = $mode

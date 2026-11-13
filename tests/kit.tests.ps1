@@ -27,7 +27,7 @@ Test 'the default settings hold the delays, the validation mode, the languages, 
     Assert-Equal 7 $settings.delays_in_days.subject 'delay for subjects'
     Assert-Equal 2 $settings.delays_in_days.inbox_note 'delay for inbox notes'
     Assert-Equal 3 $settings.delays_in_days.source 'delay for sources'
-    Assert-Equal 'all' $settings.validation_mode 'validation mode'
+    Assert-Equal 'interpreted' $settings.validation_mode 'validation mode'
     Assert-Equal 'en' $settings.languages.default 'default language'
     Assert-Equal 'en' $settings.languages.sponsor "sponsor's language"
     Assert-True ($settings.per_source_cap -is [int] -and $settings.per_source_cap -gt 0) 'the per-source cap is not a positive number'

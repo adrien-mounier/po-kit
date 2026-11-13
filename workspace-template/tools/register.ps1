@@ -863,12 +863,15 @@ function Get-CheckFindings($Labels) {
         }
         if ($record.subject -and $record.date_updated -gt $touched[$record.subject]) { $touched[$record.subject] = $record.date_updated }
         if ($file.type -eq 'subject' -and $record.status -ceq 'active' -and $record.horizon -ceq 'now') {
-            $underNow += @{ id = $file.id; about = $about; updated = $record.date_updated }
+            $underNow += @{ id = $file.id; title = (Format-Value $record.title); about = $about; updated = $record.date_updated }
         }
     }
     foreach ($subject in $underNow) {
         $updated = if ($touched[$subject.id] -gt $subject.updated) { $touched[$subject.id] } else { $subject.updated }
-        if ((Get-DaysSince $updated) -gt $delays.subject_stale) { @{ rule = 'subject_stale'; about = $subject.about; detail = $details.updated -f $updated } }
+        # The morning page lists a stale subject too, from its identifier, title and date updated.
+        if ((Get-DaysSince $updated) -gt $delays.subject_stale) {
+            @{ rule = 'subject_stale'; about = $subject.about; detail = $details.updated -f $updated; id = $subject.id; title = $subject.title; updated = $updated }
+        }
     }
 
     # A note waits in the inbox itself: the notes filed under inbox\done are processed.
