@@ -105,7 +105,7 @@ Test 'the value slide sets each benefit in play against its target: baseline, la
     Invoke-Register $ws steering $Committee -Now $SteeringNow | Out-Null
 
     $slide = Get-Slide (Read-Deck $ws) 'value'
-    Assert-Match $slide '^Value delivered against target Benefit Baseline Latest value Target Measured by Halve the time to open an account \[B-2026-001\] Mobile onboarding . Time a customer takes to open an account 40 minutes 31 minutes measured 27 Feb 2026 20 minutes the head of retail operations' 'the benefit against its target'
+    Assert-Match $slide '^Value delivered Benefit Baseline Latest value Target Measured by Halve the time to open an account \[B-2026-001\] Mobile onboarding . Time a customer takes to open an account 40 minutes 31 minutes measured 27 Feb 2026 20 minutes the head of retail operations' 'the benefit against its target'
 }
 
 Test 'the decisions slide lists those taken since the last committee and those awaited, from the committee first; a superseded decision is never shown' {
