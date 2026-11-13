@@ -273,7 +273,7 @@ $values = @{ language = $Settings.languages.sponsor; title = (Html ($words.title
 $page = [regex]::Replace($page, '\{\{(language|title|slides)\}\}', { param($Found) $values[$Found.Groups[1].Value] })
 # A deck that verify would fail is never written: the morning page offers the pack until one is.
 $problems = @(Test-View $page -Html)
-if ($problems) { Stop-Run (@("Not verified: views\steering\$date.html. Nothing was written; correct what it names, then run steering again.") + @($problems | ForEach-Object { "- $_" })) }
+if ($problems) { Stop-Run (@("Not verified: views\steering\$date.html. Nothing was written: the deck would fail verify, for what follows. A record whose text names another is corrected through a proposal, then steering runs again.") + @($problems | ForEach-Object { "- $_" })) }
 $folder = Join-Path $Workspace 'views\steering'
 New-Item -ItemType Directory -Path $folder -Force | Out-Null
 Write-TextFile (Join-Path $folder "$date.html") $page
