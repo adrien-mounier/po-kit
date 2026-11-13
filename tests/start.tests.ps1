@@ -121,6 +121,7 @@ Test 'the free time of a day is its working hours minus its meetings, a tentativ
     Assert-Equal 10 @([regex]::Matches($block, 'data-day="')).Count 'days of the workload'
     Assert-Equal '0.00 0.70 0.30 0.00' (@('10', '11', '12', '13') | ForEach-Object { Get-DayValue $block "2026-03-$_" 'work' }) 'work planned per day, from the latest start to the day before the due date'
     Assert-Match (Get-Day $block '2026-03-02') '<span class="d">Today</span><span class="sq" aria-hidden="true"><i class="o"></i></span><span class="sr">: 1 half-day\(s\) free, 0 planned</span>' 'a day: one square per half-day of usable free time'
+    Assert-Match (Get-Day $block '2026-03-03') '<span class="sq" aria-hidden="true"><i class="o"></i></span>' 'a day with less than a quarter of a day free shows one square all the same'
     Assert-Match (Get-Day $block '2026-03-05') '<span class="d">Thu 5</span><span class="sq"><span class="none">day off</span></span>' 'a day of absence'
     Assert-Match (Get-Day $block '2026-03-04') '<span class="d">Wed 4</span><span class="sq"><span class="none">none</span></span>' 'a day without free time'
     Assert-Match (Get-Day $block '2026-03-11') '<i class="p"></i></span>' 'a day with work planned'

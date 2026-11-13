@@ -408,8 +408,9 @@ function Get-Workload($Days, [hashtable]$Room, $Plan, $Share) {
         "<p class=`"week-cap`">$sentence</p>"
         '<ol class="days">'
         foreach ($date in $week.Group) {
-            $squares = & $count $Room[$date]
-            $planned = [Math]::Min($squares, (& $count $Plan.work[$date]))
+            # A day with some free time, or some work planned, shows at least one square of it.
+            $squares = if ($Room[$date] -gt 0) { [Math]::Max(1, (& $count $Room[$date])) } else { 0 }
+            $planned = if ($Plan.work[$date] -gt 0) { [Math]::Min($squares, [Math]::Max(1, (& $count $Plan.work[$date]))) } else { 0 }
             $beyond = if ($Plan.over[$date] -gt 0) { [Math]::Max(1, (& $count $Plan.over[$date])) } else { 0 }
             $class = @(if ($date -eq $Today) { 'is-today' }; if ($beyond) { 'over' }) -join ' '
             $cell = if (@($calendar.absences | Where-Object { $_.date -eq $date }).Count -and -not $beyond) { "<span class=`"sq`"><span class=`"none`">$(Html $said.day_off)</span></span>" }
