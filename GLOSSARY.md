@@ -176,7 +176,7 @@ _Avoid_: lint, audit, validation
 
 **View**:
 A document generated from the register for reading. It is never edited and always carries a stamp.
-_Avoid_: report (except the check report), page, dashboard
+_Avoid_: report (except the check report), page (except the morning page), dashboard
 
 **Stamp**:
 The header of a view stating when it was generated, which register state it reflects and which sources were not covered.
@@ -189,6 +189,10 @@ _Avoid_: roadmap, board, portfolio overview
 **Check report**:
 The view the check writes, errors first, then warnings grouped by rule: the one view named a report.
 _Avoid_: check results, audit report, lint output
+
+**Morning page**:
+The view the register tool writes each morning for the PO to read in a browser, from the register, the calendar snapshot and the agent's notes: Do first, today's meetings, Start soon with the workload, what the PO owes and is owed, decisions, messages awaiting a reply, backlog alerts and To sort. The one view named a page.
+_Avoid_: dashboard, daily report, morning view
 
 **Weekly synthesis**:
 The view written each week for the sponsor.
