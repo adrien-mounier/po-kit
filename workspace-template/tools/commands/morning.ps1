@@ -491,9 +491,9 @@ function Format-WayOut($Way) {
 }
 
 function Format-HalfDays([double]$Days) {
-    # An amount of days rounded to the half-day, in words.
+    # An amount of days rounded to the half-day, in words. Some time never reads as nothing.
     $said = $words.start
-    $half = [Math]::Round($Days * 2, [MidpointRounding]::AwayFromZero) / 2
+    $half = [Math]::Max([Math]::Round($Days * 2, [MidpointRounding]::AwayFromZero) / 2, $(if ($Days -gt 0) { 0.5 } else { 0 }))
     if ($half -eq 0) { $said.nothing } elseif ($half -eq 0.5) { $said.half_day } elseif ($half -eq 1) { $said.one_day } else { $said.many_days -f $half.ToString('0.#', $culture) }
 }
 
@@ -513,9 +513,11 @@ function Get-Workload($Days, [hashtable]$Room, $Plan, $Share) {
         $free = [double]($week.Group | ForEach-Object { $Room[$_] } | Measure-Object -Sum).Sum
         $work = [double]($week.Group | ForEach-Object { $Plan.work[$_] } | Measure-Object -Sum).Sum
         $over = [double]($week.Group | ForEach-Object { $Plan.over[$_] } | Measure-Object -Sum).Sum
+        $overDays = @($week.Group | Where-Object { $Plan.over[$_] -gt 0 })
         $sentence = [string]::Format((Html $said.week), "<b>$(Html $label)</b>", (Html $(if ($work + $over -gt 0) { $said.work -f (Format-HalfDays ($work + $over)) } else { $said.no_work })), (Html (Format-HalfDays $free)))
-        $fits = if ((& $count $over) -le 2) { $said.over_one } else { $said.over_many }
-        if ($over -gt 0) { $sentence += " <span class=`"late`">$(Icon alert) $(Html ($fits -f (Format-HalfDays $over)))</span>" }
+        # A week with a day that does not fit says how many days do not fit, and which.
+        $fits = if ($overDays.Count -eq 1) { $said.over_one } else { $said.over_many }
+        if ($overDays) { $sentence += " <span class=`"late`">$(Icon alert) $(Html ($fits -f $overDays.Count, (@($overDays | ForEach-Object { Format-Day $_ }) -join ', ')))</span>" }
         elseif (& $count ($free - $work)) { $sentence += ' ' + (Html ($said.open -f (Format-HalfDays ($free - $work)))) }
         '<div>'
         "<p class=`"week-cap`">$sentence</p>"

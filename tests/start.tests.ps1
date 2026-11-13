@@ -146,8 +146,23 @@ Test 'a day that does not fit is marked in words, an icon and red, and so are it
     Assert-Equal '0.44 0.23 0.00' (@('02', '03', '04') | ForEach-Object { Get-DayValue $block "2026-03-$_" 'work' }) 'work planned'
     Assert-Equal '1.33' (Get-DayValue $block '2026-03-04' 'over') 'work that does not fit on Wed 4'
     Assert-Match (Get-Day $block '2026-03-04') '^<li class="over" [^>]*><span class="d">Wed 4</span><span class="late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> Does not fit</span><span class="sq" aria-hidden="true"><i class="x"></i><i class="x"></i><i class="x"></i></span><span class="sr">: 0 half-day\(s\) free, 0 planned, 3 half-day\(s\) of work that do not fit</span></li>$' 'the day that does not fit'
-    Assert-Match $block '<p class="week-cap"><b>This week</b>: 2 days of work, 1\.5 days free\. <span class="late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> 1\.5 days do not fit\.</span></p>' 'the sentence of the week'
+    Assert-Match $block '<p class="week-cap"><b>This week</b>: 2 days of work, 1\.5 days free\. <span class="late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> 1 day does not fit: Wed 4\.</span></p>' 'the sentence of the week'
     Assert-Match $run.Output '(?m)^Start soon 1 to start today, Does not fit: Wed 4, not read: notes$' 'the counts of the block'
+}
+
+Test 'a week with a day that does not fit by less than a quarter of a day says so in red, and never that nothing does not fit' {
+    # C-2026-001, due Wed 4 with 0.7 d, starts today: 0.44 d on Mon 2 and 0.23 d on Tue 3, its last
+    # day, leave 0.03 d that do not fit on Tue 3.
+    $ws = New-StartWorkspace @(@{ title = 'Steering committee deck'; owner = 'the PO'; owed_to = 'the sponsor'; due_date = '2026-03-04'; estimated_effort = 0.7 })
+    Set-StartCalendar $ws $SteeringWeek '2026-03-05'
+
+    $run = Invoke-Register $ws morning -Now $StartMorning
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $block = Read-StartBlock $ws
+    Assert-Equal '0.03' (Get-DayValue $block '2026-03-03' 'over') 'work that does not fit on Tue 3'
+    Assert-Match $block '<p class="week-cap"><b>This week</b>: half a day of work, 1\.5 days free\. <span class="late"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> 1 day does not fit: Tue 3\.</span></p>' 'the sentence of the week'
+    Assert-True ($block -notmatch 'nothing') "the workload says nothing: $block"
 }
 
 Test 'the free time of a day goes first to the task due first' {
