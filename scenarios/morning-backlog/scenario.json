@@ -14,6 +14,9 @@
         "id=\"h-backlog\">Backlog alerts <span class=\"count\"><span class=\"late\">1 contradict(s) a decision</span>",
         "<b>ONB-150</b>",
         "against D-{year}-001",
-        "id=\"h-sort\""] }
+        "id=\"h-sort\""] },
+    { "file": "state/backlog-alerts.json", "field": "contradictions[0].ticket", "is": "ONB-150" },
+    { "file": "state/backlog-alerts.json", "field": "contradictions[0].decision", "is": "D-{year}-001" },
+    { "file": "exports/tracker/ONB-150.txt", "line": "Status: Open" }
   ]
 }

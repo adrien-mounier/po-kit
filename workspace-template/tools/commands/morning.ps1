@@ -28,8 +28,9 @@
 #              progress in state\morning.json
 #   decisions  Decisions: the pending decisions awaited from the PO, then those awaited from others
 #   messages   Messages awaiting your reply: those the agent found in mail and chat
-#   backlog    Backlog alerts: the tickets the agent found contradicting a decision, in red, then
-#              those not ready for the next refinement and the stale ones, folded
+#   backlog    Backlog alerts, from the agent's state\backlog-alerts.json: the tickets open for work
+#              a decision dropped, in red, then the duplicates, those not ready for the refinement
+#              session near, while one is, and the stale ones, folded
 #   sort       To sort: the pending proposal, the unclassified items, the stale subjects and the
 #              agent's open questions of state\questions.json, each with its age in working days,
 #              as one count line that opens in place
@@ -193,6 +194,8 @@ $notes = Read-MorningNotes
 $items = $notes.items
 # The agent's open questions, state\questions.json: none when there is none or it is refused.
 $asked = Read-OpenQuestions
+# The agent's backlog alerts, state\backlog-alerts.json: none when there is none or it is refused.
+$Backlog = Read-BacklogAlerts
 # A commitment of the PO enters Start soon when its latest start falls within the lead; one owed
 # to the PO is nudged when it is due within three working days.
 $leadBy = Add-WorkingDays $Today (Get-StartSoon).lead
@@ -757,15 +760,20 @@ function Get-MessagesBlock {
 }
 
 function Get-BacklogBlock {
-    # The tickets of the watched projects that the agent found contradicting a recorded decision, a
-    # line each in red, then those not ready for the next refinement and the stale ones, folded. The
-    # tracker not read by the last collect, off included, is said not read.
+    # The backlog alerts of state\backlog-alerts.json: the tickets open for work a recorded decision
+    # dropped, a line each in red, then the duplicates, the tickets not ready for the refinement
+    # session near, shown only while one is near, and the stale ones, folded. The tracker not read
+    # by the last collect, off included, is said not read.
     $said = $words.backlog
-    $against = @($items.backlog.contradictions | Where-Object { $null -ne $_ })
-    $notReady = @($items.backlog.not_ready | Where-Object { $null -ne $_ })
-    $stale = @($items.backlog.stale | Where-Object { $null -ne $_ })
-    # The date of a line sorts it: the contradictions first, then the tickets not ready, then the
-    # stale ones.
+    $alerts = $Backlog.alerts
+    $session = @(Get-RefinementSessions)[0]
+    $against = @($alerts.contradictions | Where-Object { $null -ne $_ })
+    $twins = @($alerts.duplicates | Where-Object { $null -ne $_ })
+    $notReady = @(if ($session) { $alerts.not_ready | Where-Object { $null -ne $_ } })
+    $stale = @($alerts.stale | Where-Object { $null -ne $_ })
+    $row = { param($Ticket, $Why, $Button, $Ask) New-Row '' "<b>$(Html $Ticket.ticket)</b>" $Ticket.title $Why '' $Button $Ask }
+    # The date of a line sorts it: the contradictions first, then the duplicates, the tickets not
+    # ready and the stale ones.
     $lines = @(
         foreach ($ticket in $against) {
             $decision = Find-Record "$($ticket.decision)".Trim()
@@ -774,16 +782,19 @@ function Get-BacklogBlock {
                 html = New-Row ' is-late' "$(Icon alert)<b>$(Html $ticket.ticket)</b>" $ticket.title ($said.against -f $ticket.decision, (Format-Value $ticket.why)) (Html $decision.record.subject) $said.show ($said.ask_show -f $ticket.ticket, $ticket.decision)
             }
         }
-        foreach ($group in @(@('1', $notReady, $said.not_ready, $said.need, $said.ask_need), @('2', $stale, $said.stale, $said.close, $said.ask_close))) {
-            foreach ($ticket in $group[1]) {
-                @{ date = $group[0]; id = "$($ticket.ticket)"; dated = 'none'; html = New-Row '' "<b>$(Html $ticket.ticket)</b>" $ticket.title ($group[2] -f (Format-Value $ticket.why)) '' $group[3] ($group[4] -f $ticket.ticket) }
-            }
-        })
+        foreach ($ticket in $twins) { @{ date = '1'; id = "$($ticket.ticket)"; dated = 'none'; html = & $row $ticket ($said.duplicate -f $ticket.same_as, (Format-Value $ticket.why)) $said.compare ($said.ask_compare -f $ticket.ticket, $ticket.same_as) } }
+        foreach ($ticket in $notReady) {
+            $lacks = @($ticket.missing | ForEach-Object { $said.missing.$_ -f $ticket.waits_for }) -join ', '
+            @{ date = '2'; id = "$($ticket.ticket)"; dated = 'none'; html = & $row $ticket ($said.not_ready -f $lacks) $said.need ($said.ask_need -f $ticket.ticket) }
+        }
+        foreach ($ticket in $stale) { @{ date = '3'; id = "$($ticket.ticket)"; dated = 'none'; html = & $row $ticket ($said.stale -f ($said.no_update -f (Get-DaysSince $ticket.updated))) $said.close ($said.ask_close -f $ticket.ticket) } })
     $counts = @(
         if ($against) { "<span class=`"late`">$(Html ($said.count_against -f $against.Count))</span>" }
-        if ($notReady) { Html ($said.count_not_ready -f $notReady.Count) }
+        if ($twins) { Html ($said.count_duplicates -f $twins.Count) }
+        if ($notReady) { Html ($said.count_not_ready -f $notReady.Count, $session.title, (Format-Day $session.date)) }
         if ($stale) { Html ($said.count_stale -f $stale.Count) }
-        Format-Unwritten 'backlog'
+        if ($Backlog.problems) { "<span class=`"warn`">$(Icon warn) $(Html $words.refused_block)</span>" }
+        elseif ($null -eq $alerts) { Html $words.not_written }
     )
     Format-Block 'backlog' $said.heading (Format-Count $counts @() @('tracker' | Where-Object { -not (Test-Read $_) })) $(if ($lines) { Format-Lines $lines 0 })
 }
@@ -895,3 +906,4 @@ foreach ($question in @($asked.questions | Sort-Object { "$($_.added)" })) {
 }
 if ($asked.problems) { @('Not verified: state\questions.json. Your open questions are left off the page; correct them, then run morning again.') + @($asked.problems | ForEach-Object { "- $_" }) }
 if ($notes.problems) { @('Not verified: state\morning.json. Your notes are left off the page; correct them, then run morning again.') + @($notes.problems | ForEach-Object { "- $_" }) }
+if ($Backlog.problems) { @('Not verified: state\backlog-alerts.json. Your backlog alerts are left off the page; correct them, then run morning again.') + @($Backlog.problems | ForEach-Object { "- $_" }) }

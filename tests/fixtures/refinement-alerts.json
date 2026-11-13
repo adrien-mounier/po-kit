@@ -1,0 +1,3 @@
+{ "contradictions": [], "duplicates": [], "stale": [],
+  "not_ready": [ { "ticket": "ONB-161", "title": "Branch finder", "missing": ["acceptance criteria"] },
+                 { "ticket": "ONB-162", "title": "Selfie check", "missing": ["estimate"] } ] }

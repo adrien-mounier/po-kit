@@ -3,7 +3,8 @@
   "delays_in_days": {
     "subject": 7,
     "inbox_note": 2,
-    "source": 3
+    "source": 3,
+    "ticket": 60
   },
   "validation_mode": "all",
   "languages": {
@@ -22,6 +23,7 @@
   "banks": ["Harbour Bank", "North Bank", "Alpine Bank"],
   "task_kinds": ["steering pack", "intake review", "ticket refinement", "client meeting preparation"],
   "steering_words": ["steering committee"],
+  "refinement_words": ["refinement", "backlog grooming"],
   "sponsor": {
     "name": "The sponsor",
     "email": "sponsor@example.com"

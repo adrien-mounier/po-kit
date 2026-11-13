@@ -1,0 +1,15 @@
+{
+  "routine": "backlog",
+  "prompt": "Check the health of the backlog: duplicates and stale tickets.",
+  "expect": [
+    { "printed": "backlog alerts", "line": "describes the same need as ONB-17" },
+    { "file": "state/backlog-alerts.json", "line": "ONB-170" },
+    { "file": "state/backlog-alerts.json", "line": "ONB-171" },
+    { "printed": "backlog alerts", "line": "- ONB-172 is stale: no update for" },
+    { "file": "state/backlog-alerts.json", "line": "the tech lead", "absent": true },
+    { "file": "exports/tracker/ONB-170.txt", "line": "Status: Open" },
+    { "file": "exports/tracker/ONB-171.txt", "line": "Status: Open" },
+    { "file": "state/backlog-log.json", "absent": true },
+    { "file": "../agent-output.txt", "line": "ONB-17" }
+  ]
+}

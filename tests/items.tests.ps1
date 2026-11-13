@@ -1,6 +1,6 @@
-# The blocks of the morning page that need the agent's judgement: Do first, the messages awaiting
-# the PO's reply and the backlog alerts, which the agent leaves in state\morning.json beside its
-# notes on the meetings, and the reminders and nudges for what others owe the PO.
+# The blocks of the morning page that need the agent's judgement: Do first and the messages awaiting
+# the PO's reply, which the agent leaves in state\morning.json beside its notes on the meetings, and
+# the reminders and nudges for what others owe the PO. The backlog alerts are in alerts.tests.ps1.
 
 # Monday 2 March 2026.
 $ItemsMorning = '2026-03-02T07:12:00+01:00'
@@ -183,9 +183,9 @@ Test 'a commitment under Start soon and not in Do first keeps its button there, 
     Assert-Match (Get-ItemsRow (Get-ItemsBlock $page 'owe') 'C-2026-002') '<a class="up" href="#start-C-2026-002"><span>In Start soon</span>' 'What you owe points to Start soon'
 }
 
-Test 'a file of items that cites a missing or superseded record is refused: Do first, the messages and the backlog alerts say they could not be written, and morning prints why' {
+Test 'a file of items that cites a missing or superseded record is refused: Do first and the messages say they could not be written, and morning prints why' {
     $ws = New-ItemsWorkspace
-    Set-Items $ws @{ first = @(@{ record = 'C-2026-099'; title = 'Chase'; why = 'Late.' }); messages = @(); backlog = @{ contradictions = @(@{ ticket = 'ONB-150'; title = 'Paper form'; decision = 'D-2026-007'; why = 'dropped' }) } }
+    Set-Items $ws @{ first = @(@{ record = 'C-2026-099'; title = 'Chase'; why = 'Late.' }); messages = @() }
 
     $run = Invoke-Register $ws morning -Now $ItemsMorning
 
@@ -194,13 +194,11 @@ Test 'a file of items that cites a missing or superseded record is refused: Do f
     $first = Get-ItemsBlock $page 'first'
     Assert-Equal '1 action(s), could not be written, not read: notes' (Get-ItemsCount $first) 'counts of Do first'
     Assert-Match $first 'Review the target journey' 'the action to start today stays'
-    Assert-Match $first '<p class="refused warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg> The agent&#39;s notes are not shown: C-2026-099 is not in the register\. D-2026-007 is not in the register\.</p>' 'why, as a warning, not in red'
+    Assert-Match $first '<p class="refused warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg> The agent&#39;s notes are not shown: C-2026-099 is not in the register\.</p>' 'why, as a warning, not in red'
     Assert-Match $first '<span class="warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg> could not be written</span>' 'the count says it could not be written, as a warning, not in red'
     Assert-True ($page -notmatch 'class="late">[^<]*(<svg[^>]*><use[^>]*/></svg>)? ?(could not be written|not read)') 'a block not written or a source not read is said in red'
     Assert-Equal 'could not be written, not read: mail, chat' (Get-ItemsCount (Get-ItemsBlock $page 'messages')) 'counts of the messages'
-    Assert-Equal 'could not be written, not read: tracker' (Get-ItemsCount (Get-ItemsBlock $page 'backlog')) 'counts of the backlog alerts'
-    Assert-True ($page -notmatch 'ONB-150') 'a line of the refused file is shown'
-    Assert-Match $run.Output '(?m)^Not verified: state\\morning\.json\..*\n- C-2026-099 is not in the register\.\n- D-2026-007 is not in the register\.$' 'what morning prints'
+    Assert-Match $run.Output '(?m)^Not verified: state\\morning\.json\..*\n- C-2026-099 is not in the register\.$' 'what morning prints'
 }
 
 Test 'an action that names no record and gives no button and request is refused' {
@@ -257,31 +255,6 @@ Test 'the messages awaiting the PO''s reply are a line each, the oldest first, w
     Invoke-Register $ws apply -Today 2026-03-02 | Out-Null
     Invoke-Register $ws morning -Now $ItemsMorning | Out-Null
     Assert-Equal 'none, not read: chat' (Get-ItemsCount (Get-ItemsBlock (Read-ItemsPage $ws) 'messages')) 'counts with chat off'
-}
-
-Test 'the backlog alerts are one count line, a red line per ticket that contradicts a recorded decision, and the tickets not ready or stale folded' {
-    $ws = New-ItemsWorkspace
-    Set-ItemsSources $ws 'mail', 'chat', 'tracker'
-    Set-Items $ws @{ backlog = @{
-            contradictions = @(@{ ticket = 'ONB-150'; title = 'Build the paper form fallback'; decision = 'D-2026-002'; why = 'the paper form is dropped' })
-            not_ready      = @(@{ ticket = 'ONB-151'; title = 'Branch finder'; why = 'no acceptance criteria' }, @{ ticket = 'ONB-152'; title = 'Selfie check'; why = 'no estimate' })
-            stale          = @(@{ ticket = 'ONB-120'; title = 'Language switch'; why = 'no update for 34 days' })
-        }
-    }
-
-    $run = Invoke-Register $ws morning -Now $ItemsMorning
-
-    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    $block = Get-ItemsBlock (Read-ItemsPage $ws) 'backlog'
-    Assert-Equal '1 contradict(s) a decision, 2 not ready for the next refinement, 1 stale' (Get-ItemsCount $block) 'counts of the backlog alerts'
-    Assert-Match $block '<span class="count"><span class="late">1 contradict\(s\) a decision</span>' 'the contradiction counted in red'
-    Assert-True ($block -match '(?s)^(.*)<details class="more">(.*)$') 'nothing folds'
-    $shown, $folded = $Matches[1], $Matches[2]
-    Assert-Match $shown '<li class="row is-late">\s*<span class="when"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg><b>ONB-150</b></span>\s*<span class="what"><span class="t">Build the paper form fallback</span> <span class="who">against D-2026-002: the paper form is dropped</span></span>\s*<span class="ref">mobile-onboarding</span>' 'the line of the contradiction'
-    Assert-Equal 'Show conflict | Show me how ONB-150 contradicts D-2026-002' (Get-ItemsButton $shown) 'its button'
-    Assert-Equal 'ONB-151 ONB-152 ONB-120' (@([regex]::Matches($folded, '<b>([A-Z]+-\d+)</b>') | ForEach-Object { $_.Groups[1].Value }) -join ' ') 'the tickets folded'
-    Assert-Match $folded '<span class="who">not ready: no acceptance criteria</span>' 'a ticket not ready'
-    Assert-Match $run.Output '(?m)^Backlog alerts 1 contradict\(s\) a decision, 2 not ready for the next refinement, 1 stale$' 'what morning prints'
 }
 
 Test 'a reminder is offered for what is owed late, a nudge for what is due within three working days with no sign of progress; morning prints them' {

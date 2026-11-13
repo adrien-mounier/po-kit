@@ -1,0 +1,8 @@
+Key: ONB-172
+Project: ONB
+Title: Language switch
+Status: Open
+Assignee: the tech lead
+Updated: {workday-70}T09:00:00+01:00
+
+The customer switches the onboarding journey between English and French.

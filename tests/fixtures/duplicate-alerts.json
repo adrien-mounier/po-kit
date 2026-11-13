@@ -1,0 +1,3 @@
+{ "contradictions": [], "not_ready": [],
+  "duplicates": [ { "ticket": "ONB-171", "title": "Show the closest branches", "same_as": "ONB-170", "why": "both show the customer the branches nearest to them" } ],
+  "stale": [ { "ticket": "ONB-172", "title": "Language switch", "updated": "{workday-70}" } ] }

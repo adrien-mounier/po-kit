@@ -1,0 +1,6 @@
+Title: Onboarding refinement
+Start: {workday+2}T10:00:00+01:00
+End: {workday+2}T11:00:00+01:00
+Organizer: the PO
+Attendees: the tech lead; the architect
+Your response: accepted
