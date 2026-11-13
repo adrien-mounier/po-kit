@@ -8,6 +8,12 @@
     "date_of_fact": { "type": "date", "required": true },
     "owner": { "type": "text" },
     "owed_to": { "type": "text" },
-    "due_date": { "type": "date" }
+    "due_date": { "type": "date" },
+    "estimated_effort": { "type": "days" },
+    "task_kind": { "type": "text", "allowed_from": "task_kinds" },
+    "estimate_reason": { "type": "text" },
+    "started_on": { "type": "date" },
+    "started_sign": { "type": "text" },
+    "real_effort": { "type": "days" }
   }
 }

@@ -135,7 +135,8 @@ function Format-Timestamp([DateTimeOffset]$Moment) {
 # --- Record definitions -------------------------------------------------------------------------
 # tools\definitions holds one data file per record type, plus common.json for the fields every
 # record carries. A field is defined by:
-#   type          text, date, timestamp, boolean, integer, list or object; any for a value of any kind
+#   type          text, date, timestamp, boolean, integer, list or object; any for a value of any kind;
+#                 days for an effort: a number of days above zero, as 1.5
 #   required      true when a record must hold it: a proposal gives it, unless the register tool sets it
 #   allowed       the values accepted
 #   allowed_from  the list in settings.json that holds the values accepted: its name, or
@@ -154,7 +155,7 @@ function Format-Timestamp([DateTimeOffset]$Moment) {
 
 $KindsOfValue = @{
     text = 'text'; date = 'an ISO date (yyyy-mm-dd)'; boolean = 'true or false'; integer = 'a whole number'
-    list = 'a list'; object = 'a group of fields'
+    list = 'a list'; object = 'a group of fields'; days = 'a number of days above zero (as 1.5)'
     timestamp = 'a date and time with its UTC offset (as 2026-03-02T08:30:00+01:00)'
 }
 
@@ -190,6 +191,8 @@ function Test-Value($Definition, $Value, [string]$Name, [switch]$Partial, [switc
         'timestamp' { $Value -is [string] -and (Read-Timestamp $Value) }
         'boolean' { $Value -is [bool] }
         'integer' { $Value -is [int] -or $Value -is [long] }
+        # A number in JSON reads as a whole number, a decimal or, written with an exponent, a double.
+        'days' { ($Value -is [int] -or $Value -is [long] -or $Value -is [decimal] -or $Value -is [double]) -and $Value -gt 0 }
         'list' { $Value -is [array] }
         'object' { $Value -is [System.Management.Automation.PSCustomObject] }
         'any' { $true }
@@ -320,7 +323,8 @@ function Get-WaitingLines($Operations) {
     # The lines of a valid proposal that wait for the PO when the plain facts are applied without
     # asking ("apply plain"), in the order of the proposal:
     # - an interpreted line;
-    # - a record attached to the subject that a waiting line creates;
+    # - a record attached to the subject that a waiting line creates, or an update of the record
+    #   that a waiting line creates;
     # - a line that updates or supersedes a record of the register which a waiting line also updates
     #   or supersedes: what the lines of a proposal leave of a record is judged together
     #   (Test-ProposalResult), so they are applied together.
@@ -332,6 +336,7 @@ function Get-WaitingLines($Operations) {
         for ($line = 1; $line -le $Operations.Count; $line++) {
             $operation = $Operations[$line - 1]
             if ($waiting -notcontains $line -and ($operation.interpreted -or $waiting -contains (Get-LineNamed $operation.fields.subject) -or
+                    ($operation.op -ceq 'update' -and $waiting -contains (Get-LineNamed $operation.id)) -or
                     $records -ccontains (& $changed $operation))) { $waiting += $line }
         }
     } while ($waiting.Count -ne $found)
@@ -341,6 +346,9 @@ function Get-WaitingLines($Operations) {
 # An update changes fields of one record of the register, named by its identifier:
 #   { "op": "update", "id": "C-2026-001", "interpreted": true,
 #     "source": { "where": "...", "read_on": "yyyy-mm-dd" }, "fields": { "due_date": "2026-04-10" } }
+# or of the record that line N, an earlier line of the same proposal, creates, named "line N": the
+# estimate the agent proposes for a commitment it records, which waits for the PO when the
+# commitment itself is a plain fact. apply updates the identifier that record received.
 # "fields" gives each field to change with its whole new value, and "source" the source of the
 # change, written as the source of a record. For each field whose value changes, apply adds an
 # entry to the history of the record, and it moves the date updated:
@@ -392,11 +400,23 @@ function Test-Superseding($Operation, [int]$Line, [hashtable]$Superseded) {
     else { $Superseded[$old] = $Line }
 }
 
-function Test-Update($Operation, [hashtable]$Superseded) {
+function Find-ProposedRecord($Id, [int]$Line, $Operations) {
+    # The record that the update of a line names, as Find-Record finds it: a record of the register,
+    # or the record that an earlier line of the proposal creates, as it would be recorded.
+    $named = Get-LineNamed $Id
+    if (-not $named) { if ($Id -is [string]) { return Find-Record $Id } else { return } }
+    $created = if ($named -lt $Line) { $Operations[$named - 1] }
+    if ($created.op -ceq 'create' -and "$($created.type)" -cmatch '^[a-z]+$' -and $created.type -ne 'common' -and
+        $created.fields -is [System.Management.Automation.PSCustomObject] -and (Test-Path -LiteralPath (Join-Path $Tools "definitions\$($created.type).json"))) {
+        @{ type = $created.type; record = [pscustomobject](Complete-Value (Get-Definition $created.type).record $created.fields) }
+    }
+}
+
+function Test-Update($Operation, [hashtable]$Superseded, [int]$Line, $Operations) {
     # What is wrong with an update: nothing when it can be applied. $Superseded holds the records
     # that earlier lines of the proposal supersede.
-    $found = if ($Operation.id -is [string]) { Find-Record $Operation.id }
-    if (-not $found) { "record '$($Operation.id)' does not exist in the register (an update names its record in 'id')"; return }
+    $found = Find-ProposedRecord $Operation.id $Line $Operations
+    if (-not $found) { "record '$($Operation.id)' does not exist in the register nor earlier in this proposal (an update names its record in 'id': its identifier, or 'line N' for the record that line N creates)"; return }
     $by = if ($found.record.status -ceq 'superseded') { "'$($found.record.superseded_by)'" } elseif ($Superseded[$Operation.id]) { "line $($Superseded[$Operation.id])" }
     if ($by) { "record '$($Operation.id)' is superseded by ${by}: it is no longer updated"; return }
     $record = (Get-Definition $found.type).record
@@ -429,7 +449,7 @@ function Test-ProposalResult($Operations, [int[]]$Lines) {
             Test-RecordRules $operation.type $record | ForEach-Object { "Line ${line}: $($_.reason)" }
             continue
         }
-        if (-not $updated[$operation.id]) { $updated[$operation.id] = Find-Record $operation.id }
+        if (-not $updated[$operation.id]) { $updated[$operation.id] = Find-ProposedRecord $operation.id $line $Operations }
         $found = $updated[$operation.id]
         foreach ($change in @(Get-Changes $found $operation.fields)) { $found.record.($change.field) = $change.new }
         $found.line = $line
@@ -454,7 +474,7 @@ function Get-PendingProposal {
         $line++
         $problems = @(
             if ($operation.interpreted -isnot [bool]) { 'the operation must state "interpreted": true when it is interpreted, false when it is a plain fact' }
-            if ($operation.op -ceq 'update') { Test-Update $operation $superseded }
+            if ($operation.op -ceq 'update') { Test-Update $operation $superseded $line $operations }
             elseif ($operation.op -cne 'create') { "unknown operation '$($operation.op)'; allowed: create, update" }
             elseif ("$($operation.type)" -cnotmatch '^[a-z]+$' -or $operation.type -eq 'common' -or
                 -not (Test-Path -LiteralPath (Join-Path $Tools "definitions\$($operation.type).json"))) {
@@ -752,7 +772,7 @@ function Write-PortfolioView($Labels, [string]$Bank) {
 
 $CheckRules = @{
     error   = 'unreadable_record', 'unknown_field_or_value', 'missing_required_field', 'identifier_differs_from_file_name', 'reference_to_missing_record',
-        'cleared_without_name_and_date', 'missing_gate_not_out_of_frame', 'taken_decision_without_author'
+        'cleared_without_name_and_date', 'missing_gate_not_out_of_frame', 'taken_decision_without_author', 'effort_of_another_person'
     warning = 'commitment_without_owner', 'commitment_without_due_date', 'commitment_overdue', 'decision_past_its_date', 'subject_stale',
         'inbox_note_old', 'source_stale', 'unclassified_old'
 }
@@ -774,6 +794,55 @@ function Test-RecordRules([string]$Type, $Record) {
     if ($Type -eq 'decision' -and $Record.status -ceq 'taken' -and -not "$($Record.decided_by)".Trim()) {
         @{ rule = 'taken_decision_without_author'; reason = "taken decision without its author: a taken decision gives 'decided_by'" }
     }
+    # No record measures another person: effort and start are the PO's own.
+    if ($Type -eq 'commitment' -and -not (Test-IsPo $Record.owner) -and @('estimated_effort', 'real_effort', 'started_on' | Where-Object { "$($Record.$_)".Trim() })) {
+        $owner = (Format-Value $Record.owner).Trim()
+        @{ rule = 'effort_of_another_person'; detail = $owner
+            reason = "effort or start recorded on a commitment the PO does not own (owner: $(if ($owner) { $owner } else { 'none' })): the register holds the PO's own effort only" }
+    }
+}
+
+function Test-IsPo($Name) {
+    # A record names the PO "the PO", as the routines write it.
+    (Format-Value $Name).Trim() -eq 'the PO'
+}
+
+# --- Effort -------------------------------------------------------------------------------------
+# The learning is computed here, never by a model, from the PO's own tasks only: per kind of task,
+# the ratio of the real to the estimated effort, summed over the done commitments of the PO that
+# give both, rounded to one decimal so that the PO can redo the sum. A kind without one has no
+# past data, and its estimates stay as they are.
+
+function Get-AdjustedEffort($Commitment) {
+    # The effort of a commitment of the PO, as the views state it and as its latest start counts it:
+    # its estimate, its kind of task, the ratio learned for that kind (nothing without past data)
+    # and the estimate adjusted by it. Nothing when the commitment has no estimate.
+    if ($null -eq $Commitment.estimated_effort) { return }
+    if ($null -eq $script:EffortRatios) {
+        $script:EffortRatios = @{}
+        $done = @(Get-RecordFiles | Where-Object { $_.type -eq 'commitment' } | ForEach-Object { Read-JsonFile $_.path } |
+                Where-Object { $_.status -ceq 'done' -and (Test-IsPo $_.owner) -and $_.task_kind -and $_.estimated_effort -gt 0 -and $_.real_effort -gt 0 })
+        foreach ($kind in $done | Group-Object task_kind) {
+            $real = ($kind.Group | Measure-Object real_effort -Sum).Sum
+            $estimated = ($kind.Group | Measure-Object estimated_effort -Sum).Sum
+            $script:EffortRatios[$kind.Name] = [Math]::Round([decimal]$real / [decimal]$estimated, 1, [MidpointRounding]::AwayFromZero)
+        }
+    }
+    $estimate = [decimal]$Commitment.estimated_effort
+    $ratio = if ($Commitment.task_kind) { $script:EffortRatios[$Commitment.task_kind] }
+    @{ estimate = $estimate; kind = $Commitment.task_kind; ratio = $ratio
+        adjusted = $(if ($ratio) { [Math]::Round($estimate * $ratio, 1, [MidpointRounding]::AwayFromZero) } else { $estimate }) }
+}
+
+function Format-Effort($Commitment, $Words, [Globalization.CultureInfo]$Culture) {
+    # The effort of a commitment in words, with the ratio it was adjusted by or why it was not:
+    # "est. 2 d, adjusted x1.4 from past steering pack: 2.8 d". $Words is the effort group of labels.
+    $effort = Get-AdjustedEffort $Commitment
+    if (-not $effort) { return }
+    $number = { param($Value) ([decimal]$Value).ToString('0.##', $Culture) }
+    if ($effort.ratio) { $Words.adjusted -f (& $number $effort.estimate), ([decimal]$effort.ratio).ToString('0.0', $Culture), $effort.kind, (& $number $effort.adjusted) }
+    elseif ($effort.kind) { $Words.not_adjusted -f (& $number $effort.estimate), $effort.kind }
+    else { $Words.no_kind -f (& $number $effort.estimate) }
 }
 
 function Get-CheckDelays {

@@ -23,6 +23,7 @@
       "cleared_without_name_and_date": "Sujet au feu vert accordé sans nom ni date",
       "missing_gate_not_out_of_frame": "Sujet sous Maintenant avec un jalon obligatoire manquant et un feu vert autre que hors cadre",
       "taken_decision_without_author": "Décision prise sans son auteur",
+      "effort_of_another_person": "Effort ou démarrage noté sur un engagement dont le PO n'est pas responsable",
       "commitment_without_owner": "Engagement ouvert sans responsable",
       "commitment_without_due_date": "Engagement ouvert sans échéance",
       "commitment_overdue": "Engagement en retard",
@@ -56,6 +57,11 @@
     "clearances": { "cleared": "Accordé", "pending": "En attente", "out of frame": "**Hors cadre**", "none": "Aucun" },
     "cleared_by": "par {0}",
     "cleared_on": "le {0}"
+  },
+  "effort": {
+    "adjusted": "estim. {0} j, ajustée x{1} d'après les tâches passées « {2} » : {3} j",
+    "not_adjusted": "estim. {0} j, non ajustée : aucune tâche passée « {1} »",
+    "no_kind": "estim. {0} j, non ajustée : aucun type de tâche"
   },
   "morning": {
     "culture": "fr-FR",

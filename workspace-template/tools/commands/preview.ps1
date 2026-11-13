@@ -9,7 +9,7 @@ $rows = @(foreach ($operation in $operations) {
         $fields = $operation.fields
         if ($operation.op -ceq 'update') {
             # An update shows the record as it is, then each field that changes.
-            $found = Find-Record $operation.id
+            $found = Find-ProposedRecord $operation.id $number $operations
             $type = $found.type
             $fields = $found.record
             $details = @("record: $($operation.id)") + @(Get-Changes $found $operation.fields | ForEach-Object { Format-Change $_ }) +

@@ -1,0 +1,21 @@
+{
+  "routine": "morning",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "commitment", "interpreted": false,
+        "fields": { "title": "Prepare the March steering pack", "subject": "mobile-onboarding", "date_of_fact": "2026-02-27",
+          "owner": "the PO", "owed_to": "the retail steering committee", "due_date": "2026-03-13",
+          "estimated_effort": 2, "task_kind": "steering pack", "started_on": "2026-03-02", "started_sign": "the PO said so",
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "2026-03-02" } } }
+    ]
+  },
+  "prompt": "Morning.",
+  "expect": [
+    { "record": "C-{year}-002", "field": "status", "is": "open" },
+    { "file": "state/proposal.json", "field": "operations[0].id", "is": "C-{year}-002" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.status", "is": "done" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.real_effort", "is": null },
+    { "file": "views/morning.html" },
+    { "file": "../agent-output.txt", "line": "Real effort of C-{year}-002" }
+  ]
+}

@@ -40,6 +40,14 @@ _Avoid_: affiliate, subsidiary, customer bank
 Something one named person owes another, with or without a due date. Actions are commitments.
 _Avoid_: task, action item, todo
 
+**Effort**:
+The days of work a commitment of the PO takes: estimated when it is recorded, real once it is done. Only the PO's own commitments carry one.
+_Avoid_: workload (except the workload view), time spent, charge
+
+**Kind of task**:
+One of the short list of kinds in the settings that a commitment of the PO names, such as steering pack. The register tool learns, per kind, the ratio of real to estimated effort, and adjusts each estimate by it.
+_Avoid_: category, task type, label
+
 **Decision**:
 A choice that has been taken, or that is awaited from a named person.
 _Avoid_: resolution, agreement

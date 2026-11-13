@@ -45,6 +45,8 @@
 #   { "verified": "<path>" }                                        the register tool's verify passes on this stored view
 #   { "exported": "<path>", "since": "<date>" }                     every record this stored view cites is in what the
 #                                                                   register tool's export prints for the period since that date
+#   { "printed": "<command>", "line": "<text>" }                    a line of what the register tool prints for this command,
+#                                                                   as "export {today}", contains the text
 # A file is named from the workspace: the pending proposal is state/proposal.json, the portfolio
 # view is views/portfolio.md. What the agent printed is ../agent-output.txt, beside the workspace:
 # its answer, and all that it opened when its command prints that too (for Claude Code,
@@ -176,6 +178,14 @@ function Test-Fact($Fact, [string]$Workspace) {
                 ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $run.Output.Contains("[$_]") } | Select-Object -Unique)
         return @{ What = $what; Holds = (-not $outside); Found = "not in the export: $($outside -join ', ')" }
     }
+    if ($Fact.printed) {
+        $run = Invoke-Script (Join-Path $Workspace 'tools\register.ps1') @($Fact.printed -split ' ')
+        $lines = @($run.Output -split "`n" | Where-Object { $_.Contains($Fact.line) })
+        return @{
+            What = "what the register tool prints for $($Fact.printed) has a line containing `"$($Fact.line)`""; Holds = ($run.ExitCode -eq 0 -and $lines.Count -gt 0)
+            Found = $(if ($run.ExitCode -eq 0) { 'no such line' } else { $run.Output })
+        }
+    }
     if ($Fact.record) {
         # An identifier is the file name of its record, wherever the register files it.
         $name = "record $($Fact.record)"
@@ -187,7 +197,7 @@ function Test-Fact($Fact, [string]$Workspace) {
         $path = Join-Path $Workspace $Fact.file
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { $path = $null }
     }
-    else { throw "an expected fact names a record, a file, records, a view to verify or a view against the export: $(ConvertTo-FactJson $Fact)" }
+    else { throw "an expected fact names a record, a file, records, a view to verify, a view against the export or a command whose output to read: $(ConvertTo-FactJson $Fact)" }
 
     if ($Fact.PSObject.Properties['field']) {
         $expected = ConvertTo-FactJson $Fact.is

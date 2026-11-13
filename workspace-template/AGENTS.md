@@ -29,13 +29,15 @@ Each command is one file under `tools/commands`; its first line says what it doe
 
 ## The settings
 
-`settings.json` is the PO's, edited by hand. Three of its lists bound what a record may say:
+`settings.json` is the PO's, edited by hand. Four of its lists bound what a record may say:
 
 - `gates`: the names of the organisation's gates, as `["architecture review", "security review"]`. A subject states a gate under one of these names.
 - `objectives`: the PO's objectives, each as `{ "number": 1, "title": "Halve the time to open an account" }`. A record names an objective by its number.
 - `banks`: the client banks, as `["Harbour Bank", "North Bank"]`. A subject names in `banks` the client banks it concerns; an empty list means it concerns them all. `view bank Harbour Bank` writes the portfolio view of that bank's subjects and of those that name no bank; the next `apply` writes it whole again.
 
-When the PO names a gate, an objective or a client bank that is not listed, the PO adds it there first.
+- `task_kinds`: the kinds of task, kept short, as `["steering pack", "intake review"]`. A commitment the PO owns names its kind in `task_kind`, beside its `estimated_effort` and, once done, its `real_effort`, in days. From the done ones the register tool learns, per kind, the ratio of real to estimated effort, and `export` and the morning page show each estimate with the ratio it was adjusted by. Effort is recorded for the PO's own commitments only.
+
+When the PO names a gate, an objective, a client bank or a kind of task that is not listed, the PO adds it there first.
 
 `validation_mode` says what a collect records without asking the PO: `all`, nothing; `interpreted`, the plain facts, while the interpreted lines wait for the PO.
 

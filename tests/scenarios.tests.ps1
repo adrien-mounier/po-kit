@@ -241,6 +241,63 @@ Test 'the scenario "morning" passes when the note is collected and the page writ
     Assert-Equal 1 $run.ExitCode 'exit code when no page is written'
 }
 
+function New-EstimateUpdate([string]$Id, [string]$Note) {
+    # The estimate an agent proposes for a commitment of the PO: an interpreted update.
+    @{ op = 'update'; id = $Id; interpreted = $true; source = @{ where = "inbox/$Note"; read_on = '2026-03-12' }
+        fields = @{ estimated_effort = 2; task_kind = 'steering pack'; estimate_reason = 'A steering pack takes about two days.' } }
+}
+
+Test 'the scenario "an estimate adjusted by past efforts" passes when the commitment of the PO gets its kind and estimate, which export shows with the ratio of past steering packs, and fails without an estimate' {
+    $note = 'april steering committee.md'
+    $commitment = New-NoteOperation commitment $note @{ title = 'Prepare the April steering pack'; owner = 'the PO'; owed_to = 'the retail steering committee'; due_date = '2026-04-10'; date_of_fact = '2026-03-02' }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note $commitment, (New-EstimateUpdate 'line 1' $note)) effort-estimate-adjusted
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    record C-$Year-005: task_kind is `"steering pack`"" 'the kind of task'
+    Assert-Match $run.Output "  ok    what the register tool prints for export $Day has a line containing `"adjusted x1\.4 from past steering pack`"" 'the adjusted estimate'
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($commitment)) effort-estimate-adjusted
+
+    Assert-Match $run.Output "  FAIL  what the register tool prints for export $Day has a line containing `"adjusted x1\.4 from past steering pack`"\n        found: no such line" 'no estimate'
+    Assert-Equal 1 $run.ExitCode 'exit code without an estimate'
+}
+
+function New-DoneUpdate([string]$Note, [hashtable]$Fields) {
+    # The update an agent proposes when the PO says the March steering pack is done.
+    @{ op = 'update'; id = "C-$Year-002"; interpreted = $true; source = @{ where = "inbox/$Note"; read_on = '2026-03-12' }; fields = $Fields }
+}
+
+Test 'the scenario "a clear real effort" passes when the done update carries the real effort the note gives and nothing is asked, and fails when the agent asks' {
+    $note = 'march steering pack.md'
+    $done = New-DoneUpdate $note @{ status = 'done'; real_effort = 3 }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($done) -Do '-Plain -Morning') effort-real-clear
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[0\]\.fields\.real_effort is 3' 'the real effort waits for the PO'
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($done) -Do '-Plain -Morning -Say "Real effort of C-2026-002: how many days did it take you? My guess: 2 d."') effort-real-clear
+
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "how many days"' 'the question asked all the same'
+    Assert-Equal 1 $run.ExitCode 'exit code when the agent asks'
+}
+
+Test 'the scenario "an unclear real effort" passes when the done update leaves the real effort out and the agent asks it, and fails when it asks nothing' {
+    $note = 'march steering pack.md'
+    $done = New-DoneUpdate $note @{ status = 'done' }
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($done) -Do "-Plain -Morning -Say `"Real effort of C-$Year-002, Prepare the March steering pack: how many days did it take you? My guess: 2 d.`"") effort-real-unclear
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    file \.\./agent-output\.txt has a line containing `"Real effort of C-$Year-002`"" 'the question'
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($done) -Do '-Plain -Morning') effort-real-unclear
+
+    Assert-Match $run.Output "  FAIL  file \.\./agent-output\.txt has a line containing `"Real effort of C-$Year-002`"" 'no question'
+    Assert-Equal 1 $run.ExitCode 'exit code when the agent asks nothing'
+}
+
 Test 'the scenario "collect and drop a line" passes when the line kept is recorded alone and the note is filed, and fails when the line dropped is recorded too' {
     $note = 'pilot-preparation.md'
     $kept = New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }

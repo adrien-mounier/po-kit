@@ -1,0 +1,31 @@
+{
+  "routine": "collect",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "commitment", "interpreted": false,
+        "fields": { "title": "Prepare the January steering pack", "subject": "mobile-onboarding", "date_of_fact": "2026-01-05", "status": "done",
+          "owner": "the PO", "owed_to": "the retail steering committee", "due_date": "2026-01-16",
+          "estimated_effort": 2, "task_kind": "steering pack", "real_effort": 3,
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "2026-03-02" } } },
+      { "op": "create", "type": "commitment", "interpreted": false,
+        "fields": { "title": "Prepare the February steering pack", "subject": "mobile-onboarding", "date_of_fact": "2026-02-02", "status": "done",
+          "owner": "the PO", "owed_to": "the retail steering committee", "due_date": "2026-02-13",
+          "estimated_effort": 1, "task_kind": "steering pack", "real_effort": 1.5,
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "2026-03-02" } } },
+      { "op": "create", "type": "commitment", "interpreted": false,
+        "fields": { "title": "Prepare the pilot steering pack", "subject": "mobile-onboarding", "date_of_fact": "2026-02-16", "status": "done",
+          "owner": "the PO", "owed_to": "the retail steering committee", "due_date": "2026-02-27",
+          "estimated_effort": 2, "task_kind": "steering pack", "real_effort": 2.5,
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "2026-03-02" } } }
+    ]
+  },
+  "prompt": "Collect. I accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "record": "C-{year}-005", "field": "owner", "is": "the PO" },
+    { "record": "C-{year}-005", "field": "due_date", "is": "2026-04-10" },
+    { "record": "C-{year}-005", "field": "task_kind", "is": "steering pack" },
+    { "records": "commitments", "count": 5 },
+    { "printed": "export {today}", "line": "adjusted x1.4 from past steering pack" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

@@ -23,6 +23,7 @@
       "cleared_without_name_and_date": "Cleared subject without a name and a date",
       "missing_gate_not_out_of_frame": "Subject under Now with a missing gate and a clearance other than out of frame",
       "taken_decision_without_author": "Taken decision without its author",
+      "effort_of_another_person": "Effort or start recorded on a commitment the PO does not own",
       "commitment_without_owner": "Open commitment without owner",
       "commitment_without_due_date": "Open commitment without due date",
       "commitment_overdue": "Overdue commitment",
@@ -56,6 +57,11 @@
     "clearances": { "cleared": "Cleared", "pending": "Pending", "out of frame": "**Out of frame**", "none": "None" },
     "cleared_by": "by {0}",
     "cleared_on": "on {0}"
+  },
+  "effort": {
+    "adjusted": "est. {0} d, adjusted x{1} from past {2}: {3} d",
+    "not_adjusted": "est. {0} d, not adjusted: no past {1}",
+    "no_kind": "est. {0} d, not adjusted: no kind of task"
   },
   "morning": {
     "culture": "en-GB",

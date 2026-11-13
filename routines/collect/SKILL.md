@@ -52,6 +52,7 @@ Take each note from top to bottom: the operations follow the order in which the 
 | A threat to a subject or to a commitment: a danger, a blocking decision that cannot wait, a person who stands against the plan | create a `risk`: `severity` `urgent` when the note says it cannot wait, `watch` otherwise |
 | A change of a subject itself: its horizon, its clearance, a gate, its next step | update the subject |
 | A change of a commitment, a decision or a risk of the register: done, dropped, closed, a new due date | update that record |
+| A sign that the PO has started a commitment the PO owns: a ticket of it moved to in progress, a mail or a document the PO wrote about it | update that commitment: see "A start" below |
 
 A person or a date that the note does not give is left out: an action without a due date is a commitment all the same, and the check will list it. What fits no row is not recorded.
 
@@ -87,6 +88,24 @@ In doubt, `true`.
 **A next step that no longer holds.** When a note cancels, suspends or completes what a subject gives as its `next_step`, update the subject too: `next_step` becomes what the note says comes next, or an empty text when it says nothing.
 
 **A gate that did not take place.** When a note says that a gate of a subject never took place, update the subject: `gates` given whole, with that gate `missing`, and `clearance` `out of frame`.
+
+**The effort of what the PO owes.** Each commitment you create whose `owner` is `the PO` is followed, on the next line, by one update that proposes its effort. It names the commitment by its line, `"id": "line 3"` for the commitment that line 3 creates, is `"interpreted": true`, carries the source of the commitment, and gives:
+
+- `estimated_effort`: the days of work you expect the task to take the PO, as `2` or `0.5`;
+- `task_kind`: the kind of task, one of `task_kinds` in `settings.json`, word for word;
+- `estimate_reason`: your one reason, in one short sentence.
+
+```json
+{ "op": "update", "id": "line 3", "interpreted": true,
+  "source": { "where": "inbox/steering follow-up.md", "read_on": "2026-03-02" },
+  "fields": { "estimated_effort": 2, "task_kind": "steering pack", "estimate_reason": "A steering pack takes about two days." } }
+```
+
+When no kind of `task_kinds` fits, leave `task_kind` out, and tell the PO the kind you would add: the PO adds it to the settings. Never propose an effort for what another person owes: the register tool refuses it.
+
+**A start.** A commitment of the PO that is open and not started, without `started` in the export, is started when a source within the watch lists shows it: a ticket of it moved to in progress, a mail or a document the PO wrote about it. Update it, `"interpreted": true`: `started_on` the date of the sign, `started_sign` the sign in a few words, as `ticket ONB-12 moved to in progress`. What the PO says overrides every sign: when the PO says they started, `started_on` is the day they say and `started_sign` is `the PO said so`; when the PO says they have not started, both are given as an empty text. A start the PO stated is never changed by a sign.
+
+**The real effort of what the PO has done.** When you update a commitment of the PO to `done`, give in that same update `real_effort`, the days the task really took the PO, when it is clear: a note, a mail or the PO says how long it took, or the calendar, when this workspace reads one, shows the time the PO blocked for that task. The days between its start and its end are not its effort: a task shares them with others. When it is not clear, leave `real_effort` out and keep one question for the PO, with your guess, its estimate when it has one: `Real effort of C-2026-004, "Build the steering pack": how many days did it take you? My guess: 2 d.` The PO's answer is an update of that record that gives `real_effort`, with the source `{ "where": "the PO, in conversation", "read_on": "<today's date>" }`.
 
 **What fits no subject.** A passage that matters to the PO's work and is about no subject of the register becomes no record. It goes to `unclassified`, with the note as its source, and you tell the PO.
 
@@ -152,4 +171,6 @@ Done when the proposal holds one operation per change found in step 4, and every
 
 **Recommend an objective the note did not name.** The export of step 3 lists the PO's objectives under `Records per objective`, each with its number and its title. When a line seems to serve one of them and its note does not name it, tell the PO in one line, in the same answer as the table or as what was recorded: the number of the line, or the identifier of the record once it is recorded, the objective by its number and its title, word for word, and why. As: `Line 2 seems to serve objective 2, "Answer every loan request within two days": the rate table is what the answer waits for. Shall I attach it?` A recommendation changes nothing and holds nothing back: the line is shown, applied or left waiting as it is, without the objective. Attach the objective only once the PO says yes: to a line still pending, by adding `objectives` to it in the proposal and previewing again; to a record already recorded, by proposing an update of that record that gives `objectives`.
 
-Done when every line is recorded, dropped, or shown to the PO as waiting for them, and you have told the PO each record written with its identifier, the notes filed, what went to unclassified, what the check found, and each objective you recommend.
+**Ask the real effort you could not infer.** Each question on a real effort that you kept in step 4 goes in the same answer, one line each, as step 4 writes it. When the PO answers, propose the update it gives and preview it as any proposal.
+
+Done when every line is recorded, dropped, or shown to the PO as waiting for them, and you have told the PO each record written with its identifier, the notes filed, what went to unclassified, what the check found, each objective you recommend and each real effort you ask.

@@ -20,7 +20,7 @@ Test 'the workspace template has the full layout, and a new workspace starts emp
     Assert-True (-not (Test-Path (Join-Path $ws 'state\proposal.json'))) 'a new workspace has a pending proposal'
 }
 
-Test 'the default settings hold the delays, the validation mode, the languages, the cap and empty gates, objectives, client banks and sponsor' {
+Test 'the default settings hold the delays, the validation mode, the languages, the cap, a short list of kinds of task, and empty gates, objectives, client banks and sponsor' {
     $settings = Read-Json (Join-Path $Template 'settings.json')
 
     Assert-Equal 1 $settings.format_version 'format version'
@@ -34,6 +34,7 @@ Test 'the default settings hold the delays, the validation mode, the languages, 
     Assert-Equal 0 @($settings.gates).Count 'gates'
     Assert-Equal 0 @($settings.objectives).Count 'objectives'
     Assert-True ($null -ne $settings.PSObject.Properties['banks'] -and @($settings.banks).Count -eq 0) 'client banks'
+    Assert-Equal 'steering pack, intake review, ticket refinement, client meeting preparation' (@($settings.task_kinds) -join ', ') 'kinds of task'
     Assert-Equal '' $settings.sponsor.name "sponsor's name"
     Assert-Equal '' $settings.sponsor.email "sponsor's address"
 }

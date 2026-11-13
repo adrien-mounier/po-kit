@@ -34,7 +34,8 @@ Your answer is short:
 
 1. What the collect did, in one sentence: each record written with its identifier, the notes filed, how many lines wait for the PO, what went to unclassified, what the check found. When no collect ran because a proposal is pending, say so.
 2. Then what the page holds, in two lines, from the counts that `morning` printed: first what is late or due today; then the rest, ending with where the page is, `views/morning.html`, to open in a browser.
+3. Then each question on a real effort that the collect kept, one line each, as step 4 of the collect writes it: `Real effort of C-2026-004, "Build the steering pack": how many days did it take you? My guess: 2 d.` A real effort the collect could infer is in its line, and asks nothing.
 
 Copy no table: the lines that wait are on the page, under "To sort", and the PO answers them when they choose.
 
-Done when the PO knows what the collect recorded, what waits for them, and what the page holds.
+Done when the PO knows what the collect recorded, what waits for them, what the page holds, and each real effort the agent asks.

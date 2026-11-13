@@ -10,7 +10,8 @@
 #   ## Stamp                  the stamp of the view to write from this export, ready to copy
 #   ## Active subjects        with horizon, clearance and client banks ("all" when it names none)
 #   ## Changes since <date>   each record recorded since, each field corrected since
-#   ## Open commitments       with owner and due date
+#   ## Open commitments       with owner and due date; one the PO owns also with its effort,
+#                             adjusted as Format-Effort says, and its start with the sign seen
 #   ## Pending decisions      under one "### Awaited from: <person>" per person awaited
 #   ## Open risks             with severity, the urgent ones first
 #   ## Coverage per source    one line per source of connections.json, with the cap when the last
@@ -41,7 +42,14 @@ function Format-Record($Record, [string[]]$More = @()) {
             "banks: $(if ($Record.banks) { Format-Value $Record.banks } else { 'all' })"
         }
         else { "subject: $($Record.subject)$(if ($closed -ccontains $Record.subject) { ' (closed)' })"; "date of fact: $($Record.date_of_fact)"; "status: $($Record.status)" }
-        if ($Record.type -ceq 'commitment') { "owner: $(Get-OrMissing $Record.owner)"; "due date: $(Get-OrMissing $Record.due_date)" }
+        if ($Record.type -ceq 'commitment') {
+            "owner: $(Get-OrMissing $Record.owner)"; "due date: $(Get-OrMissing $Record.due_date)"
+            # Only an open commitment has an estimate to adjust.
+            if ($Record.status -ceq 'open') { $effort = Format-Effort $Record $effortWords $invariant; if ($effort) { "effort: $effort" } }
+            elseif ($null -ne $Record.estimated_effort) { "estimated effort: $(([decimal]$Record.estimated_effort).ToString('0.##', $invariant)) d" }
+            if ($Record.started_on) { "started: $($Record.started_on)$(if ("$($Record.started_sign)".Trim()) { ", $(Format-Value $Record.started_sign)" })" }
+            if ($null -ne $Record.real_effort) { "real effort: $(([decimal]$Record.real_effort).ToString('0.##', $invariant)) d" }
+        }
         if ($Record.type -ceq 'decision') {
             if ($Record.status -ceq 'pending') { "needed from: $(Get-OrMissing $Record.needed_from)"; "needed by: $(Get-OrMissing $Record.needed_by)" }
             else { "decided by: $(Get-OrMissing $Record.decided_by)" }
@@ -63,6 +71,9 @@ if (-not (Test-IsoDate $since)) {
     Stop-Run "export takes the date its period starts on, as an ISO date (yyyy-mm-dd)$(if ($since) { ", not '$since'" }): export 2026-03-03"
 }
 $labels = Get-Labels $Settings.languages.sponsor
+# An effort is stated in English, as the rest that the agent reads.
+$effortWords = (Get-Labels 'en').effort
+$invariant = [Globalization.CultureInfo]::InvariantCulture
 
 # Every record of the register, type after type, in the order of the identifiers.
 $all = @(Get-RecordFiles | ForEach-Object { Read-JsonFile $_.path })

@@ -60,11 +60,9 @@ function Get-Dated([string]$Date) {
     if (-not $Date) { 'none' } elseif ($Date -lt $Today) { 'late' } elseif ($Date -eq $Today) { 'today' } elseif ($Date -le $sunday) { 'week' } else { 'later' }
 }
 
-function Test-IsPo($Name) { (Format-Value $Name).Trim() -eq 'the PO' }
-
-function New-Line([string]$Date, [string]$Id, [string]$Title, [string]$Who, [string]$Subject, [string]$Button, [string]$Ask) {
-    # One dated line of a block: its date, its title and who it concerns, its subject and its
-    # identifier, and its button.
+function New-Line([string]$Date, [string]$Id, [string]$Title, [string]$Who, [string]$Subject, [string]$Button, [string]$Ask, [string]$Effort) {
+    # One dated line of a block: its date, its title, who it concerns and its effort, its subject
+    # and its identifier, and its button.
     $dated = Get-Dated $Date
     $when = switch ($dated) {
         'late' {
@@ -79,15 +77,15 @@ function New-Line([string]$Date, [string]$Id, [string]$Title, [string]$Who, [str
     $class = @{ late = ' is-late'; today = ' is-soon'; week = ' is-soon' }[$dated]
     @{
         date = $Date; id = $Id; dated = $dated
-        html = New-Row $class $when $Title $Who "$(Html $Subject) &middot; $(Html $Id)" $Button $Ask
+        html = New-Row $class $when $Title $Who "$(Html $Subject) &middot; $(Html $Id)" $Button $Ask $Effort
     }
 }
 
-function New-Row([string]$Class, [string]$When, [string]$Title, [string]$Who, [string]$Ref, [string]$Button, [string]$Ask) {
+function New-Row([string]$Class, [string]$When, [string]$Title, [string]$Who, [string]$Ref, [string]$Button, [string]$Ask, [string]$Effort) {
     # A line of a block, as HTML lines: one for the line, one per column.
     "<li class=`"row$Class`">"
     "<span class=`"when`">$When</span>"
-    $who = if ($Who) { ' <span class="who">' + (Html $Who) + '</span>' }
+    $who = -join @($Who, $Effort | Where-Object { $_ } | ForEach-Object { ' <span class="who">' + (Html $_) + '</span>' })
     "<span class=`"what`"><span class=`"t`">$(Html $Title)</span>$who</span>"
     "<span class=`"ref`">$Ref</span>"
     "<span class=`"act`"><button class=`"ask`" type=`"button`" data-ask=`"$(Html $Ask)`">$(Icon copy)<span class=`"lbl`">$(Html $Button)</span></button></span>"
@@ -144,7 +142,7 @@ function Get-OweBlock {
     $owe = $words.owe
     $lines = @(foreach ($commitment in $commitments | Where-Object { Test-IsPo $_.owner }) {
             $to = if ("$($commitment.owed_to)".Trim()) { $owe.to -f (Format-Value $commitment.owed_to) }
-            New-Line $commitment.due_date $commitment.id $commitment.title $to $commitment.subject $owe.button ($owe.ask -f $commitment.id, (Format-Value $commitment.title))
+            New-Line $commitment.due_date $commitment.id $commitment.title $to $commitment.subject $owe.button ($owe.ask -f $commitment.id, (Format-Value $commitment.title)) (Format-Effort $commitment $labels.effort $culture)
         })
     Format-Block 'owe' $owe.heading (Format-Count @() $lines) $(if ($lines) { Format-Lines $lines })
 }

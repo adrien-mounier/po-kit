@@ -83,6 +83,9 @@ $wrong = @(
     foreach ($line in $lines | Where-Object { $dropped -notcontains $_ }) {
         $named = Get-LineNamed ($operations[$line - 1].fields.subject)
         if ($dropped -contains $named) { "Line $line is attached to the subject that line $named creates, and the selection drops line $named" }
+        # So does an update of the record a line creates.
+        $named = if ($operations[$line - 1].op -ceq 'update') { Get-LineNamed $operations[$line - 1].id }
+        if ($dropped -contains $named) { "Line $line updates the record that line $named creates, and the selection drops line $named" }
     }
 )
 # The proposal was validated with every line: what the lines applied leave must hold on its own.
@@ -122,9 +125,11 @@ try {
             $line++
             if ($left -contains $line) { continue }
             if ($operation.op -ceq 'update') {
-                $found = Find-Record $operation.id
+                $named = Get-LineNamed $operation.id
+                $id = if ($named) { $identifiers[$named] } else { $operation.id }
+                $found = Find-Record $id
                 Update-Record $found $operation.fields $operation.source
-                "update $($found.type) $($operation.id)"
+                "update $($found.type) $id"
                 continue
             }
             $definition = Get-Definition $operation.type
@@ -183,12 +188,15 @@ finally {
 }
 if ($waiting) {
     # The lines that wait become the pending proposal, numbered again from 1. Each one still names
-    # its subject: by the identifier the subject received, or by the new number of the line that
-    # creates it. The collect is settled, so the proposal no longer holds it.
+    # its subject, and an update its record: by the identifier it received, or by the new number of
+    # the line that creates it. The collect is settled, so the proposal no longer holds it.
+    $renamed = { param($Named) if ($identifiers[$Named]) { $identifiers[$Named] } else { "line $($waiting.IndexOf($Named) + 1)" } }
     foreach ($line in $waiting) {
-        $fields = $operations[$line - 1].fields
-        $named = Get-LineNamed $fields.subject
-        if ($named) { $fields.subject = if ($identifiers[$named]) { $identifiers[$named] } else { "line $($waiting.IndexOf($named) + 1)" } }
+        $operation = $operations[$line - 1]
+        $named = Get-LineNamed $operation.fields.subject
+        if ($named) { $operation.fields.subject = & $renamed $named }
+        $named = if ($operation.op -ceq 'update') { Get-LineNamed $operation.id }
+        if ($named) { $operation.id = & $renamed $named }
     }
     Write-JsonFile $ProposalPath @{ operations = @($waiting | ForEach-Object { $operations[$_ - 1] }) }
 }
