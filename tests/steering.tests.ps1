@@ -271,6 +271,34 @@ Test 'a deck template of the organisation in the workspace replaces the kit''s f
     Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
 }
 
+Test 'a meeting title holding a place to fill is written as it is, never filled' {
+    $ws = New-SteeringWorkspace
+    Set-SteeringCalendar $ws @(@{ start = "${Committee}T10:00:00+01:00"; end = "${Committee}T12:00:00+01:00"; title = 'Retail steering committee {{slides}} {{language}}'; attendees = @('the sponsor'); status = 'accepted' })
+
+    $run = Invoke-Register $ws steering $Committee -Now $SteeringNow
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $deck = Read-Deck $ws
+    Assert-Match $deck '<title>Steering pack, Retail steering committee \{\{slides\}\} \{\{language\}\}, Monday 9 March 2026</title>' 'the title as the calendar gives it'
+    Assert-Equal 6 ([regex]::Matches($deck, '<section class="slide').Count) 'the slides, written once'
+}
+
+Test 'a deck template of the organisation that holds a script or calls the network is refused and writes nothing' {
+    $ws = New-SteeringWorkspace
+    New-Item -ItemType Directory -Path (Join-Path $ws 'templates') | Out-Null
+    $before = Get-WorkspaceSnapshot $ws
+    foreach ($added in '<script>alert(1)</script>', '<link rel="stylesheet" href="https://fonts.example.com/brand.css">', '<style>body { background: url(http://cdn.example.com/logo.png); }</style>', '<img src="https://cdn.example.com/logo.png">') {
+        [IO.File]::WriteAllText((Join-Path $ws 'templates\steering.html'), "<!doctype html><html lang=`"{{language}}`"><head><title>{{title}}</title>$added</head><body>{{slides}}</body></html>", $Utf8)
+
+        $run = Invoke-Register $ws steering $Committee -Now $SteeringNow
+
+        Assert-Equal 1 $run.ExitCode "exit code with $added, with output: $($run.Output)"
+        Assert-Match $run.Output 'The template templates\\steering\.html holds a script or calls the network\. Nothing was written\.' "the reason, with $added"
+        Remove-Item (Join-Path $ws 'templates\steering.html')
+        Assert-Equal $before (Get-WorkspaceSnapshot $ws) "files of the workspace, with $added"
+    }
+}
+
 Test 'steering alone names the committee whose pack to offer and the day its decisions are taken since, and writes nothing; a date that is not one is refused' {
     $ws = New-SteeringWorkspace
     $before = Get-WorkspaceSnapshot $ws

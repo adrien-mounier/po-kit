@@ -25,7 +25,8 @@
 #
 # The deck is written from a template: templates\steering.html in the workspace when the
 # organisation has its own, otherwise the kit's, tools\templates\steering.html. Its {{language}},
-# {{title}} and {{slides}} are replaced; a template that leaves one out is refused.
+# {{title}} and {{slides}} are replaced, in one pass; a template that leaves one out is refused, and
+# so is one that holds a script or calls the network.
 
 # The stamp of the deck names a committed register.
 Assert-RegisterCommitted
@@ -267,8 +268,11 @@ if (-not (Test-Path -LiteralPath $template)) { $name = "tools\$name"; $template 
 $page = [IO.File]::ReadAllText($template, $Utf8)
 $lacking = @('{{language}}', '{{title}}', '{{slides}}' | Where-Object { -not $page.Contains($_) })
 if ($lacking) { Stop-Run "The template $name lacks $($lacking -join ', '). Nothing was written. A deck template holds each of {{language}}, {{title}} and {{slides}}." }
-# What a record says goes in last, so that no text of a record is read as a place to fill.
-$page = $page.Replace('{{language}}', $Settings.languages.sponsor).Replace('{{title}}', (Html ($words.title -f $meeting, $when))).Replace('{{slides}}', ($slides -join [Environment]::NewLine))
+# The deck holds no script and calls no network, whoever wrote its template.
+if ($page -imatch '<script|(?:\b(?:src|href)\s*=\s*["'']?|url\(\s*["'']?)\s*https?:') { Stop-Run "The template $name holds a script or calls the network. Nothing was written. A deck template holds no <script> and no http:// or https:// address in a src, an href or a url(): the deck is read with no script and no network." }
+# In one pass, so that a text of a record or of the calendar holding a place to fill is left as it is.
+$values = @{ language = $Settings.languages.sponsor; title = (Html ($words.title -f $meeting, $when)); slides = ($slides -join [Environment]::NewLine) }
+$page = [regex]::Replace($page, '\{\{(language|title|slides)\}\}', { param($Found) $values[$Found.Groups[1].Value] })
 # A deck that verify would fail is never written: the morning page offers the pack until one is.
 $problems = @(Test-View $page -Html)
 if ($problems) { Stop-Run (@("Not verified: views\steering\$date.html. Nothing was written; correct what it names, then run steering again.") + @($problems | ForEach-Object { "- $_" })) }

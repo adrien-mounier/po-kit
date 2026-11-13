@@ -65,7 +65,7 @@ The deck is a view the register tool writes, `views/steering/<date>.html`: six s
 
 Cite a record as a view does, `[identifier]`. The register tool checks every record it cites, as `verify` does: when one is missing or superseded, it writes no deck, nor one that `verify` would fail. `verify` checks the deck as it checks the weekly synthesis. A deck that fails is never offered, and you never edit or delete one. The deck is a draft: it counts for nothing until the PO uses it, and sharing it is the PO's.
 
-It is written from a template: the kit's is `tools/templates/steering.html`. **A template of the organisation goes in `templates/steering.html` in this workspace**, never under `tools/`: it then replaces the kit's for this workspace only. It holds each of `{{language}}`, `{{title}}` and `{{slides}}`; the register tool refuses one that leaves any out.
+It is written from a template: the kit's is `tools/templates/steering.html`. **A template of the organisation goes in `templates/steering.html` in this workspace**, never under `tools/`: it then replaces the kit's for this workspace only. It holds each of `{{language}}`, `{{title}}` and `{{slides}}`, no `<script>` and no `http://` or `https://` address in a `src`, an `href` or a `url(`; the register tool refuses one that leaves a place out, holds a script or calls the network.
 
 ## The settings
 
