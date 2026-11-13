@@ -25,6 +25,7 @@
       "taken_decision_without_author": "Taken decision without its author",
       "effort_of_another_person": "Effort or start recorded on a commitment the PO does not own",
       "score_without_reason": "Score without its reason",
+      "value_without_date": "Measured value without its date",
       "commitment_without_owner": "Open commitment without owner",
       "commitment_without_due_date": "Open commitment without due date",
       "commitment_overdue": "Overdue commitment",
@@ -33,7 +34,8 @@
       "inbox_note_old": "Inbox note older than {0} day(s)",
       "source_stale": "Source not read for more than {0} day(s)",
       "unclassified_old": "Unclassified items older than {0} day(s)",
-      "intake_incomplete": "Subject under Later, pending, with an incomplete intake"
+      "intake_incomplete": "Subject under Later, pending, with an incomplete intake",
+      "benefit_stale": "Open benefit without a measured value for more than {0} day(s)"
     },
     "details": {
       "owner": "owner: {0}",
@@ -44,7 +46,9 @@
       "dated": "dated {0}",
       "read": "last read: {0}",
       "never_read": "never read",
-      "missing": "missing: {0}"
+      "missing": "missing: {0}",
+      "measured": "last measured: {0}",
+      "never_measured": "never measured, recorded {0}"
     }
   },
   "portfolio": {
@@ -59,7 +63,8 @@
     "kinds": { "product": "Product", "contribution": "Contribution", "service": "Service" },
     "clearances": { "cleared": "Cleared", "pending": "Pending", "out of frame": "**Out of frame**", "none": "None" },
     "cleared_by": "by {0}",
-    "cleared_on": "on {0}"
+    "cleared_on": "on {0}",
+    "benefits": "{0} benefit(s)"
   },
   "intake": {
     "not_given": "not given",

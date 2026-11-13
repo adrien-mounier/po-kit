@@ -25,6 +25,7 @@
       "taken_decision_without_author": "Décision prise sans son auteur",
       "effort_of_another_person": "Effort ou démarrage noté sur un engagement dont le PO n'est pas responsable",
       "score_without_reason": "Note sans sa justification",
+      "value_without_date": "Valeur mesurée sans sa date",
       "commitment_without_owner": "Engagement ouvert sans responsable",
       "commitment_without_due_date": "Engagement ouvert sans échéance",
       "commitment_overdue": "Engagement en retard",
@@ -33,7 +34,8 @@
       "inbox_note_old": "Note déposée depuis plus de {0} jour(s)",
       "source_stale": "Source non lue depuis plus de {0} jour(s)",
       "unclassified_old": "Éléments non classés depuis plus de {0} jour(s)",
-      "intake_incomplete": "Sujet sous Plus tard, en attente de feu vert, dont la demande est incomplète"
+      "intake_incomplete": "Sujet sous Plus tard, en attente de feu vert, dont la demande est incomplète",
+      "benefit_stale": "Bénéfice ouvert sans valeur mesurée depuis plus de {0} jour(s)"
     },
     "details": {
       "owner": "responsable : {0}",
@@ -44,7 +46,9 @@
       "dated": "datée du {0}",
       "read": "dernière lecture : {0}",
       "never_read": "jamais lue",
-      "missing": "manque : {0}"
+      "missing": "manque : {0}",
+      "measured": "dernière mesure : {0}",
+      "never_measured": "jamais mesuré, noté le {0}"
     }
   },
   "portfolio": {
@@ -59,7 +63,8 @@
     "kinds": { "product": "Produit", "contribution": "Contribution", "service": "Service" },
     "clearances": { "cleared": "Accordé", "pending": "En attente", "out of frame": "**Hors cadre**", "none": "Aucun" },
     "cleared_by": "par {0}",
-    "cleared_on": "le {0}"
+    "cleared_on": "le {0}",
+    "benefits": "{0} bénéfice(s)"
   },
   "intake": {
     "not_given": "non renseigné",

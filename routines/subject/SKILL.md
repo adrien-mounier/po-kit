@@ -1,6 +1,6 @@
 ---
 name: subject
-description: Create, modify, score or close a subject of the PO's register by asking the PO a few questions. Use when the PO wants to add a subject, change one (horizon, client banks, clearance, gates, watch list, next step), have one scored, see the ranked portfolio, or close one.
+description: Create, modify, score or close a subject of the PO's register by asking the PO a few questions, and brainstorm with the PO the benefits it promises. Use when the PO wants to add a subject, change one (horizon, client banks, clearance, gates, watch list, next step), have one scored, see the ranked portfolio, close one, or define its benefits, gains or metrics.
 ---
 
 # Create, modify or close a subject
@@ -120,4 +120,38 @@ For a subject a request created, run the register tool's `view intake <identifie
 
 When the PO asks for the ranked portfolio, run the register tool's `view ranking` once the scores are applied (`view ranking bank <client bank>` for one client bank) and tell the PO where it is: `views/ranking.md`.
 
-Done when the register tool has answered `Applied and committed`, and you have told the PO which subject was recorded, with its identifier.
+Done when the register tool has answered `Applied and committed`, and you have told the PO which subject was recorded, with its identifier. Once a new subject is recorded, offer in one line to brainstorm its benefits: step 5.
+
+## 5. Brainstorm the benefits of a subject
+
+A benefit is a gain the subject promises: a metric, its unit, its baseline, its target and who measures it. A subject may hold several. Do this step when the PO asks what a subject should deliver, its benefits, gains or metrics, or accepts your offer.
+
+1. Read the benefits the subject already holds: the files under `register/benefits/` whose `subject` is its identifier.
+2. Propose two to four measurable metrics that fit its use case: time saved, errors avoided, cost, satisfaction. For each, on one line: the metric, its unit, how it is measured (where the figure comes from), and who could measure it. As:
+
+       1. Time a customer takes to open an account - minutes - timed from the first screen to the account opened, in the onboarding logs - the head of retail operations could measure it.
+
+   These are proposals: nothing is recorded yet. A metric never measures how a person works.
+3. Record only the metrics the PO picks, one benefit each. Its baseline and its target are the PO's numbers, as the PO gives them: never propose, estimate or compute one. Ask in one message for a baseline, a target or who measures it that the PO has not given; "not known yet" is an answer: leave the field out.
+
+```json
+{ "operations": [ {
+  "op": "create", "type": "benefit", "interpreted": false,
+  "fields": {
+    "title": "Halve the time to open an account",
+    "subject": "mobile-onboarding",
+    "metric": "Time a customer takes to open an account",
+    "unit": "minutes", "baseline": 40, "target": 20,
+    "owner": "the head of retail operations",
+    "evidence_level": "fact",
+    "source": { "where": "conversation with the PO", "read_on": "2026-03-02" }
+  } } ] }
+```
+
+- `subject`: the identifier of the subject, or `line 1` when line 1 of the same proposal creates it.
+- `owner`: the one person who measures the metric. It says who measures it, nothing about how they work.
+- `baseline`, `target` and `current_value` are numbers, in `unit`.
+- A value is stated by a person, with its source: never measure or compute one yourself. A value the PO gives is an update of the benefit that gives `current_value` and `measured_on`, the date it was measured, together, with the source `{ "where": "the PO, in conversation", "read_on": "<today's date>" }`. The register tool refuses a value without its date.
+- A new target is an update of `target`. A benefit reached is updated to `status` `achieved`, one given up to `dropped`. A different metric is a new benefit that names the old one in `supersedes`.
+
+Then preview and apply as step 4. Done when each metric the PO picked is a benefit recorded with its identifier, told to the PO.

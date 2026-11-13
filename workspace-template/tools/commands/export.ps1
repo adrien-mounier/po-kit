@@ -15,6 +15,10 @@
 #                             adjusted as Format-Effort says, and its start with the sign seen
 #   ## Pending decisions      under one "### Awaited from: <person>" per person awaited
 #   ## Open risks             with severity, the urgent ones first
+#   ## Benefits               the open ones and those recorded or changed since the date: metric,
+#                             baseline, target, latest value with its date, who measures it, and
+#                             each value recorded since the date with the date it was measured and
+#                             its source
 #   ## Coverage per source    one line per source of connections.json, with the cap when the last
 #                             collect that read the source stopped there
 #   ## Records per objective  one line per objective of settings.json
@@ -45,7 +49,17 @@ function Format-Record($Record, [string[]]$More = @()) {
             foreach ($score in 'value', 'feasibility', 'risk') { if ($null -ne $Record."${score}_score") { "${score}: $($Record."${score}_score"), $(Format-Value $Record."${score}_reason")" } }
             if ($null -ne $Record.ai_act_high_risk) { "AI Act high-risk: $(if ($Record.ai_act_high_risk) { 'yes' } else { 'no' }), $(Format-Value $Record.ai_act_reason)" }
         }
-        else { "subject: $($Record.subject)$(if ($closed -ccontains $Record.subject) { ' (closed)' })"; "date of fact: $($Record.date_of_fact)"; "status: $($Record.status)" }
+        else {
+            "subject: $($Record.subject)$(if ($closed -ccontains $Record.subject) { ' (closed)' })"
+            if ($Record.type -cne 'benefit') { "date of fact: $($Record.date_of_fact)" }
+            "status: $($Record.status)"
+        }
+        if ($Record.type -ceq 'benefit') {
+            "metric: $(Format-Value $Record.metric)"
+            "baseline: $(Get-OrMissing (Format-Measure $Record $Record.baseline))"; "target: $(Get-OrMissing (Format-Measure $Record $Record.target))"
+            "latest value: $(if ($null -ne $Record.current_value) { "$(Format-Measure $Record $Record.current_value), measured $($Record.measured_on)" } else { 'none measured yet' })"
+            "measured by: $(Get-OrMissing $Record.owner)"
+        }
         if ($Record.type -ceq 'commitment') {
             "owner: $(Get-OrMissing $Record.owner)"; "due date: $(Get-OrMissing $Record.due_date)"
             # Only an open commitment has an estimate to adjust.
@@ -61,6 +75,27 @@ function Format-Record($Record, [string[]]$More = @()) {
         if ($Record.type -ceq 'risk') { "severity: $($Record.severity)"; if ($Record.owner) { "owner: $(Format-Value $Record.owner)" } }
     )
     '- ' + ((@("$(Format-Value $Record.title) [$($Record.id)]", $Record.type, $Record.evidence_level) + $says + $More) -join ' | ')
+}
+
+function Format-Measure($Benefit, $Value) {
+    # A value of a benefit with its unit, as 40 minutes; nothing when there is no value.
+    if ($null -ne $Value) { "$(Format-Value $Value) $(Format-Value $Benefit.unit)".Trim() }
+}
+
+function Get-MeasuredValues($Benefit) {
+    # Every value of a benefit, in the order recorded: the value, the date it was measured, its
+    # source and the day it was recorded. The value the benefit was recorded with comes first; then
+    # each update that changed the value or its date, whose history entries share their day and
+    # their source.
+    $history = @($Benefit.history | Where-Object { $_ -and 'current_value', 'measured_on' -ccontains $_.field })
+    $before = { param($Field, $Current) $entry = @($history | Where-Object { $_.field -ceq $Field }) | Select-Object -First 1; if ($entry) { $entry.previous } else { $Current } }
+    $value = & $before 'current_value' $Benefit.current_value
+    $on = & $before 'measured_on' $Benefit.measured_on
+    if ($null -ne $value) { @{ value = $value; on = $on; source = $Benefit.source; recorded = $Benefit.date_recorded } }
+    foreach ($update in $history | Group-Object { "$($_.date) $($_.source.where)" }) {
+        foreach ($entry in $update.Group) { if ($entry.field -ceq 'current_value') { $value = $entry.new } else { $on = $entry.new } }
+        @{ value = $value; on = $on; source = $update.Group[0].source; recorded = $update.Group[0].date }
+    }
 }
 
 function Write-Section([string]$Heading, [string[]]$Lines) {
@@ -125,6 +160,13 @@ Write-Section 'Pending decisions' @($awaited.GetEnumerator() | ForEach-Object { 
 
 $risks = @($records | Where-Object { $_.type -ceq 'risk' -and $_.status -ceq 'open' })
 Write-Section 'Open risks' @(foreach ($urgent in $true, $false) { $risks | Where-Object { ($_.severity -ceq 'urgent') -eq $urgent } | ForEach-Object { Format-Record $_ } })
+
+# The benefits of the period: the open ones, and those recorded or changed since the date.
+Write-Section 'Benefits' @($records | Where-Object { $_.type -ceq 'benefit' -and ($_.status -ceq 'open' -or $_.date_updated -ge $since) } | ForEach-Object {
+        $benefit = $_
+        $values = @(Get-MeasuredValues $benefit | Where-Object { $_.recorded -ge $since } | ForEach-Object { "$(Format-Measure $benefit $_.value) measured $($_.on) ($(Format-Value $_.source.where))" })
+        Format-Record $benefit "values recorded since ${since}: $(if ($values) { $values -join '; ' } else { 'none' })"
+    })
 
 # "covered" is whether the last collect read the source, as the stamp counts it.
 Write-Section 'Coverage per source' @(Get-Coverage | ForEach-Object {

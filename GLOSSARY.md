@@ -25,7 +25,7 @@ The single set of records stating what is true about the PO's subjects. Every vi
 _Avoid_: backlog, database, wiki, tracker
 
 **Record**:
-One entry of the register, of exactly one type: subject, commitment, decision or risk. (French: fiche.)
+One entry of the register, of exactly one type: subject, commitment, decision, risk or benefit. (French: fiche.)
 _Avoid_: card, item, entry, note, ticket
 
 **Subject**:
@@ -63,6 +63,10 @@ _Avoid_: resolution, agreement
 **Risk**:
 A threat to a commitment, a blocking decision that cannot wait, or a significant stakeholder misalignment.
 _Avoid_: issue, blocker (except in the heading "Blockers and decisions expected from the sponsor" of the weekly synthesis), alert
+
+**Benefit**:
+A gain a subject promises: a metric with its unit, its baseline, its target and the one person who measures it, and the values measured over time, each stated by a person with its source and the date it was measured. A subject may hold several. (French: bénéfice.)
+_Avoid_: KPI, outcome, value (except a measured value of a benefit)
 
 **Objective**:
 One of the PO's numbered goals for a review period. Records can be attached to objectives.
@@ -115,7 +119,7 @@ To replace a record by a newer one while keeping both, linked to each other.
 _Avoid_: delete, overwrite, archive
 
 **Stale**:
-Said of a record or a source that has not been updated within its allowed delay. A commitment, decision or risk recorded or updated for a subject counts as an update of that subject.
+Said of a record or a source that has not been updated within its allowed delay. A commitment, decision, risk or benefit recorded or updated for a subject counts as an update of that subject. An open benefit is stale when no value was measured within the delay of a subject.
 _Avoid_: outdated, old (except "older than" its delay for an inbox note or an unclassified item), expired
 
 ### How the register changes

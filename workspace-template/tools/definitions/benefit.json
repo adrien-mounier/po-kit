@@ -1,0 +1,16 @@
+{
+  "folder": "register/benefits",
+  "folder_per_year": true,
+  "identifier_prefix": "B",
+  "fields": {
+    "status": { "type": "text", "allowed": ["open", "achieved", "dropped", "superseded"], "default": "open" },
+    "subject": { "type": "text", "required": true },
+    "metric": { "type": "text", "required": true },
+    "unit": { "type": "text" },
+    "baseline": { "type": "number" },
+    "target": { "type": "number" },
+    "owner": { "type": "text" },
+    "current_value": { "type": "number" },
+    "measured_on": { "type": "date" }
+  }
+}

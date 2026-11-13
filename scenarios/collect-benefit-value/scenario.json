@@ -1,0 +1,22 @@
+{
+  "routine": "collect",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "benefit", "interpreted": false,
+        "fields": { "title": "Halve the time to open an account", "subject": "mobile-onboarding",
+          "metric": "Time a customer takes to open an account", "unit": "minutes", "baseline": 40, "target": 20,
+          "owner": "the head of retail operations", "current_value": 38, "measured_on": "2026-03-02",
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "2026-03-02" } } }
+    ]
+  },
+  "prompt": "Collect. I accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "record": "B-{year}-001", "field": "current_value", "is": 31 },
+    { "record": "B-{year}-001", "field": "measured_on", "is": "2026-03-06" },
+    { "record": "B-{year}-001", "field": "history[-1].source.where", "is": "inbox/pilot review.md" },
+    { "record": "B-{year}-001", "field": "target", "is": 20 },
+    { "records": "benefits", "count": 1 },
+    { "file": "inbox/done/{month}/pilot review.md" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}
