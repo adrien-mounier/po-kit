@@ -15,10 +15,10 @@
 #                             adjusted as Format-Effort says, and its start with the sign seen
 #   ## Pending decisions      under one "### Awaited from: <person>" per person awaited
 #   ## Open risks             with severity, the urgent ones first
-#   ## Benefits               the open ones and those recorded or changed since the date: metric,
-#                             baseline, target, latest value with its date, who measures it, and
-#                             each value recorded since the date with the date it was measured and
-#                             its source
+#   ## Benefits               every open or achieved one, those measured since the date first:
+#                             metric, baseline, target, latest value with its date, who measures
+#                             it, and each value recorded since the date with the date it was
+#                             measured and its source
 #   ## Coverage per source    one line per source of connections.json, with the cap when the last
 #                             collect that read the source stopped there
 #   ## Records per objective  one line per objective of settings.json
@@ -161,8 +161,10 @@ Write-Section 'Pending decisions' @($awaited.GetEnumerator() | ForEach-Object { 
 $risks = @($records | Where-Object { $_.type -ceq 'risk' -and $_.status -ceq 'open' })
 Write-Section 'Open risks' @(foreach ($urgent in $true, $false) { $risks | Where-Object { ($_.severity -ceq 'urgent') -eq $urgent } | ForEach-Object { Format-Record $_ } })
 
-# The benefits of the period: the open ones, and those recorded or changed since the date.
-Write-Section 'Benefits' @($records | Where-Object { $_.type -ceq 'benefit' -and ($_.status -ceq 'open' -or $_.date_updated -ge $since) } | ForEach-Object {
+# Every benefit open or achieved: those measured since the date first, the latest measured first,
+# then the others in the order of their identifiers.
+$measuredSince = @{ Expression = { if ($_.measured_on -ge $since) { $_.measured_on } else { '' } }; Descending = $true }
+Write-Section 'Benefits' @($records | Where-Object { $_.type -ceq 'benefit' -and 'open', 'achieved' -ccontains $_.status } | Sort-Object $measuredSince, @{ Expression = 'id'; Ascending = $true } | ForEach-Object {
         $benefit = $_
         $values = @(Get-MeasuredValues $benefit | Where-Object { $_.recorded -ge $since } | ForEach-Object { "$(Format-Measure $benefit $_.value) measured $($_.on) ($(Format-Value $_.source.where))" })
         Format-Record $benefit "values recorded since ${since}: $(if ($values) { $values -join '; ' } else { 'none' })"

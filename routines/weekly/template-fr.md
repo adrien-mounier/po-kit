@@ -25,7 +25,7 @@ When that section says "None.": Aucun engagement n'est ouvert.>
 Titre du sujet [identifier of the subject] :
 - la métrique : la dernière valeur, mesurée le yyyy-mm-dd, pour une cible de la cible, depuis une valeur de départ de la valeur de départ [identifier of the benefit]
 A benefit with no value yet is written "aucune valeur mesurée pour l'instant" in place of its latest value and its date; a baseline or a target that is missing, "sans valeur de départ" or "sans cible"; an achieved benefit says "atteint" after its metric.
-The benefits with a value recorded in the period come first in their subject, and the subjects that hold one come first. A subject with no benefit is not listed.
+The benefits measured in the period (their latest value measured on or after the date the period starts on) come first in their subject, the latest measured first, as the export lists them, and the subjects that hold one come first. A subject with no benefit is not listed.
 When there is none: Aucun bénéfice n'est enregistré.>
 
 # Priorités proposées

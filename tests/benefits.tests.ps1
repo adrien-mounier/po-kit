@@ -138,8 +138,34 @@ Test 'export lists the benefits of the period with baseline, target, the latest 
     $section = [regex]::Match($run.Output, '(?s)\n## Benefits\n\n(.*?)\n\n## ').Groups[1].Value
     Assert-Equal ((
             '- Halve the time to open an account [B-2026-001] | benefit | fact | subject: mobile-onboarding | status: open | metric: Time a customer takes to open an account | baseline: 40 minutes | target: 20 minutes | latest value: 31 minutes, measured 2026-03-16 | measured by: the head of retail operations | values recorded since 2026-03-10: 35 minutes measured 2026-03-09 (inbox/pilot review.md); 31 minutes measured 2026-03-16 (inbox/pilot figures.md)',
-            '- Fewer onboarding files sent back [B-2026-002] | benefit | fact | subject: mobile-onboarding | status: open | metric: Onboarding files sent back for an error | baseline: missing | target: 5 files per week | latest value: none measured yet | measured by: missing | values recorded since 2026-03-10: none'
-        ) -join "`n") $section 'the benefits of the period: the open ones, not the one achieved before it'
+            '- Fewer onboarding files sent back [B-2026-002] | benefit | fact | subject: mobile-onboarding | status: open | metric: Onboarding files sent back for an error | baseline: missing | target: 5 files per week | latest value: none measured yet | measured by: missing | values recorded since 2026-03-10: none',
+            '- Paper forms retired [B-2026-003] | benefit | fact | subject: mobile-onboarding | status: achieved | metric: Paper forms printed per month | baseline: 40 | target: 20 | latest value: none measured yet | measured by: the head of retail operations | values recorded since 2026-03-10: none'
+        ) -join "`n") $section 'the benefits of the period: every open or achieved one, the one achieved before it too'
+}
+
+Test 'export lists every open or achieved benefit, not a dropped one, those measured in the period first, by the day they were measured, the latest first, not by the day the value was recorded' {
+    $ws = New-TestWorkspaceWithSubject
+    Set-Proposal $ws @{ operations = @(
+            (New-BenefitOperation),
+            (New-BenefitOperation @{ title = 'Fewer onboarding files sent back' }),
+            (New-BenefitOperation @{ title = 'Fewer branch visits' }),
+            (New-BenefitOperation @{ title = 'Paper forms retired'; status = 'dropped' })
+        )
+    }
+    Invoke-Register $ws apply -Today 2026-03-03 | Out-Null
+    $measure = { param($Id, $Value, $On) $update = New-UpdateOperation $Id @{ current_value = $Value; measured_on = $On }; $update.source = @{ where = 'inbox/pilot figures.md'; read_on = $On }; $update }
+    # B-2026-002 is recorded in the period with a value measured before it; B-2026-003 is measured
+    # in the period; B-2026-001 is measured earlier in the period, and recorded last.
+    Set-Proposal $ws @{ operations = @((& $measure 'B-2026-002' 33 '2026-03-05'), (& $measure 'B-2026-003' 12 '2026-03-12')) }
+    Invoke-Register $ws apply -Today 2026-03-12 | Out-Null
+    Set-Proposal $ws @{ operations = @(& $measure 'B-2026-001' 31 '2026-03-11') }
+    Invoke-Register $ws apply -Today 2026-03-13 | Out-Null
+
+    $run = Invoke-Register $ws export 2026-03-10 -Today 2026-03-13
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $section = [regex]::Match($run.Output, '(?s)\n## Benefits\n\n(.*?)\n\n## ').Groups[1].Value
+    Assert-Equal 'B-2026-003 B-2026-001 B-2026-002' "$(@([regex]::Matches($section, '\[(B-2026-\d+)\]') | ForEach-Object { $_.Groups[1].Value }))" 'the order of the benefits'
 }
 
 Test 'verify accepts a view that cites a benefit, and refuses one that cites a superseded or a missing benefit' {
