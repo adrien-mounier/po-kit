@@ -445,7 +445,10 @@ foreach ($added in '<script>alert(1)</script>', '<SCRIPT src="brand.js"></SCRIPT
         '<svg><use href="//cdn.example.com/e.svg#i"/></svg>', '<svg><image xlink:href="brand.svg"/></svg>', '<form action="//forms.example.com/"></form>', '<video poster="cover.png"></video>',
         '<table background="paper.png"></table>', '<a href="#x" ping="https://track.example.com/">Harbour Group</a>', '<link rel="preload" as="image" imagesrcset="//cdn.example.com/x.png 1x">',
         '<img alt=">" onerror="go()" src="data:image/png;base64,iVBORw0KGgo=">', '<img/onerror="go()" src="data:image/png;base64,iVBORw0KGgo=">', '<meta name=">" http-equiv="refresh" content="0; url=brand.html">',
-        '<link rel="stylesheet" href="data:text/css;base64,Ym9keXtiYWNrZ3JvdW5kOnVybChodHRwczovL2Nkbi5leGFtcGxlLmNvbS94LnBuZyl9">') {
+        '<link rel="stylesheet" href="data:text/css;base64,Ym9keXtiYWNrZ3JvdW5kOnVybChodHRwczovL2Nkbi5leGFtcGxlLmNvbS94LnBuZyl9">',
+        # image-set() takes an address from a variable or behind a comment: it is refused whole.
+        '<style>body { --u: "https://cdn.example.com/v.png"; background-image: image-set(var(--u)); }</style>', '<style>body { background-image: -webkit-image-set(var(--u) 1x); }</style>',
+        '<style>body { background-image: image-set(/*"data:image/x*/''https://cdn.example.com/k.png''); }</style><!-- " ) -->', '<style>body { background: IMAGE-SET("data:image/png;base64,iVBORw0KGgo=" 1x); }</style>') {
     Test "a deck template of the organisation that could run a script or call the network is refused and writes nothing: $added" {
         # One workspace for every template of this table: each leaves it as it found it.
         if (-not $script:GuardWorkspace) { $script:GuardWorkspace = New-SteeringWorkspace; New-Item -ItemType Directory -Path (Join-Path $script:GuardWorkspace 'templates') | Out-Null }
@@ -466,7 +469,7 @@ Test 'a deck template of the organisation is accepted when it reaches nothing ou
     $ws = $script:GuardWorkspace
     $kit = [IO.File]::ReadAllText((Join-Path $ws 'tools\templates\steering.html'), $Utf8)
     $logo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-    $rebranded = $kit.Replace('--brand: #0f5661;', '--brand: #aa0000;').Replace('</style>', ".deck { background-image: url(`"$logo`"); } .mark-x { background: image-set(url($logo) 1x, `"$logo`" 2x); }</style>").Replace('<main class="deck">', "<main class=`"deck`" data-org=`"example-bank`"><img class=`"logo`" src=`"$logo`" alt=`"Example Bank &amp; partners`"><a href=`"#slide-title`">Top</a>")
+    $rebranded = $kit.Replace('--brand: #0f5661;', '--brand: #aa0000;').Replace('</style>', ".deck { background-image: url(`"$logo`"); } .mark-x { background: url($logo); }</style>").Replace('<main class="deck">', "<main class=`"deck`" data-org=`"example-bank`"><img class=`"logo`" src=`"$logo`" alt=`"Example Bank &amp; partners`"><a href=`"#slide-title`">Top</a>")
     foreach ($template in $kit, $rebranded) {
         [IO.File]::WriteAllText((Join-Path $ws 'templates\steering.html'), $template, $Utf8)
 
@@ -554,4 +557,9 @@ Test 'the kit ships the steering routine and the deck template, and the workspac
     Assert-Match $routine 'You send nothing' 'the routine sends nothing'
     $template = Join-Path $KitRoot 'workspace-template\tools\templates\steering.html'
     Assert-True ([IO.File]::ReadAllBytes($template)[0] -ne 0xEF) 'the deck template opens with a byte order mark'
+    # A run of letters with no break, as an identifier or a long link, wraps inside its column
+    # rather than widening it past the slide.
+    $page = [IO.File]::ReadAllText($template)
+    Assert-Match $page '\.slide \{[^}]*overflow-wrap: anywhere' 'a long run of letters wraps'
+    Assert-Match $page '\.cols \{[^}]*grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\)' 'the columns keep their width'
 }

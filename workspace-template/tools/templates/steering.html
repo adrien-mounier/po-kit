@@ -72,6 +72,7 @@ svg.i { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; s
   aspect-ratio: 297 / 210;
   padding: 48px 56px 0;
   overflow: hidden;
+  overflow-wrap: anywhere;
   background: var(--surface);
   border: 1px solid var(--rule);
   border-radius: 10px;
@@ -125,7 +126,7 @@ svg.i { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; s
 .done { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; color: var(--brand); }
 
 /* ---------- Two columns of items ---------- */
-.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 48px; }
 .cols h3 { font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); padding-bottom: 8px; border-bottom: 1px solid var(--edge); }
 .cols h3:not(:first-child) { margin-top: 22px; }
 .items li { padding: 9px 0; border-bottom: 1px solid var(--rule); }

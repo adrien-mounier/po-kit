@@ -339,9 +339,10 @@ function Test-ReachesOut([string]$Page) {
     # embedded as data, or a place in the page. Every way of hiding an address is refused outright:
     # a backslash (a CSS escape, a file share) and a character reference other than the six plain
     # ones. The attributes are found anywhere in the text, inside a tag or not, so that no quoting
-    # trick hides one.
+    # trick hides one. image-set() is refused whole: it takes an address as a plain string, which a
+    # variable or a comment hides from any scan; url() embeds a logo as well.
     $embedded = '^(?:data:(?:image|font)/|#)'
-    $refused = '<(?:script|iframe|object|embed)\b|[\s/"''](?:on[a-z]+|http-equiv)\s*=|\\|&(?!(?:amp|lt|gt|quot|apos|nbsp);)[#a-z]|@import|attributename\s*=\s*["'']?\s*(?:xlink:)?href|(?:url|src)\(\s*(?!["'']?\s*(?:data:(?:image|font)/|#))'
+    $refused = '<(?:script|iframe|object|embed)\b|[\s/"''](?:on[a-z]+|http-equiv)\s*=|\\|&(?!(?:amp|lt|gt|quot|apos|nbsp);)[#a-z]|@import|image-set\(|attributename\s*=\s*["'']?\s*(?:xlink:)?href|(?:url|src)\(\s*(?!["'']?\s*(?:data:(?:image|font)/|#))'
     if ($Page -imatch $refused) { return $true }
     $loads = '(?<=[\s/"''])(src|href|srcset|imagesrcset|data|action|formaction|poster|background|xlink:href|ping|cite|manifest)\s*=\s*("[^"]*"|''[^'']*''|[^\s>]*)'
     foreach ($found in [regex]::Matches($Page, $loads, 'IgnoreCase')) {
@@ -350,21 +351,6 @@ function Test-ReachesOut([string]$Page) {
         # srcset, imagesrcset and ping hold a list: each address of it, with its descriptors.
         if ($found.Groups[1].Value -imatch 'srcset|ping') { if (@($value -split '\s+' | Where-Object { $_ -and $_ -inotmatch '^(?:,*data:(?:image|font)/|\d+(?:\.\d+)?[wxh],*$)' })) { return $true } }
         elseif ($value -and $value -inotmatch $embedded) { return $true }
-    }
-    # image-set() takes an address as a string too: each string it holds, at any depth.
-    foreach ($found in [regex]::Matches($Page, 'image-set\(', 'IgnoreCase')) {
-        $depth = 1; $at = $found.Index + $found.Length
-        while ($depth -and $at -lt $Page.Length) {
-            $char = $Page[$at]
-            if ($char -eq '"' -or $char -eq "'") {
-                $end = $Page.IndexOf($char, $at + 1); if ($end -lt 0) { $end = $Page.Length }
-                if ($Page.Substring($at + 1, $end - $at - 1).Trim() -inotmatch $embedded) { return $true }
-                $at = $end
-            }
-            elseif ($char -eq '(') { $depth++ }
-            elseif ($char -eq ')') { $depth-- }
-            $at++
-        }
     }
     $false
 }
@@ -375,7 +361,7 @@ if (-not (Test-Path -LiteralPath $template)) { $name = "tools\$name"; $template 
 $page = [IO.File]::ReadAllText($template, $Utf8)
 $lacking = @('{{language}}', '{{title}}', '{{slides}}' | Where-Object { -not $page.Contains($_) })
 if ($lacking) { Stop-Run "The template $name lacks $($lacking -join ', '). Nothing was written. A deck template holds each of {{language}}, {{title}} and {{slides}}." }
-if (Test-ReachesOut $page) { Stop-Run "The template $name holds a script or calls the network. Nothing was written. A deck template holds no <script>, <iframe>, <object>, <embed> or <meta http-equiv>, no on... attribute, no @import, no backslash, and no character reference but &amp; &lt; &gt; &quot; &apos; and &nbsp;; each address it holds, in src, href, srcset or another attribute that loads something, in url() or in image-set(), is an image or a font embedded as data:image/... or data:font/..., or a place in the page, #...: the deck is read with no script, no network and no file share." }
+if (Test-ReachesOut $page) { Stop-Run "The template $name holds a script or calls the network. Nothing was written. A deck template holds no <script>, <iframe>, <object>, <embed> or <meta http-equiv>, no on... attribute, no @import, no image-set(), no backslash, and no character reference but &amp; &lt; &gt; &quot; &apos; and &nbsp;; each address it holds, in src, href, srcset or another attribute that loads something, or in url(), is an image or a font embedded as data:image/... or data:font/..., or a place in the page, #...: the deck is read with no script, no network and no file share." }
 # In one pass, so that a text of a record or of the calendar holding a place to fill is left as it is.
 $values = @{ language = $Settings.languages.sponsor; title = (Html ($words.title -f $meeting, $when)); slides = ($slides -join [Environment]::NewLine).Replace('<!--slides-->', "$script:number") }
 $page = [regex]::Replace($page, '\{\{(language|title|slides)\}\}', { param($Found) $values[$Found.Groups[1].Value] })
