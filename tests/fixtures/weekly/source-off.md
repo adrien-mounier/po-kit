@@ -14,6 +14,10 @@ Open commitments:
 
 - Present the target journey to the retail steering committee: the PO, due 2026-03-16 [C-{year}-001]
 
+# Value delivered
+
+No benefit is recorded.
+
 # Proposed priorities
 
 - Present the target journey to the retail steering committee, which is overdue [C-{year}-001]

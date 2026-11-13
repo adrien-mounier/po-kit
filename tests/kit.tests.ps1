@@ -119,7 +119,7 @@ Test 'the workspace rules name the weekly synthesis as the one view the agent dr
     Assert-Match $rules '`languages`: .*\{ "default": "en", "sponsor": "fr" \}' 'how the settings give the languages'
 }
 
-Test 'the weekly routine ships a template of the six blocks in every language of the kit, each opening with the title the portfolio view carries in that language' {
+Test 'the weekly routine ships a template of the seven blocks in every language of the kit, each opening with the title the portfolio view carries in that language, with "Value delivered" after "Progress and commitments"' {
     $languages = @(Get-ChildItem (Join-Path $Template 'tools\labels\*.json') | Sort-Object Name)
     Assert-Equal 'en fr' (@($languages | ForEach-Object { $_.BaseName }) -join ' ') 'languages of the kit'
     foreach ($language in $languages) {
@@ -127,10 +127,13 @@ Test 'the weekly routine ships a template of the six blocks in every language of
         Assert-True (Test-Path -LiteralPath $path) "the weekly routine has no template in '$($language.BaseName)'"
         Assert-True ([IO.File]::ReadAllBytes($path)[0] -ne 0xEF) "the template in '$($language.BaseName)' opens with a byte order mark"
         $blocks = @([IO.File]::ReadAllLines($path, $Utf8) | Where-Object { $_ -like '# *' })
-        Assert-Equal 6 $blocks.Count "blocks of the template in '$($language.BaseName)': $($blocks -join ' | ')"
+        Assert-Equal 7 $blocks.Count "blocks of the template in '$($language.BaseName)': $($blocks -join ' | ')"
         Assert-Equal "# $((Read-Json $language.FullName).portfolio.title)" $blocks[0] "first block of the template in '$($language.BaseName)'"
         if ($language.BaseName -eq 'en') {
-            Assert-Equal '# Portfolio view | # Progress and commitments | # Proposed priorities | # Blockers and decisions expected from the sponsor | # Team capacity | # Not covered this week' ($blocks -join ' | ') 'the six blocks, in order'
+            Assert-Equal '# Portfolio view | # Progress and commitments | # Value delivered | # Proposed priorities | # Blockers and decisions expected from the sponsor | # Team capacity | # Not covered this week' ($blocks -join ' | ') 'the seven blocks, in order'
+        }
+        if ($language.BaseName -eq 'fr') {
+            Assert-Equal ('# Avancement et engagements | # Valeur apport' + [char]0xE9 + 'e') ($blocks[1..2] -join ' | ') 'the block on value, after progress and commitments'
         }
     }
 }

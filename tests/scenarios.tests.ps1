@@ -364,6 +364,27 @@ Test 'the scenario "an unclear real effort" passes when the done update leaves t
     Assert-Equal 1 $run.ExitCode 'exit code when the agent asks in the chat'
 }
 
+Test 'when the command prints a transcript, ../agent-output.txt holds the final answer only, so a routine the agent read does not fail a fact on what it said, while a transcript fact still sees what it read' {
+    $note = 'march steering pack.md'
+    $done = New-DoneUpdate $note @{ status = 'done' }
+    # The collect routine holds "My guess", as the agent reads it in every collect.
+    $read = "-Read `"$(Join-Path $KitRoot 'routines\collect\SKILL.md')`""
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($done) -Do "-Plain -Questions `"$Fixtures\real-effort-questions.json`" -Morning -Stream $read -Say `"One question waits for the briefing.`"") effort-real-unclear -Keep
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file \.\./agent-output\.txt has no line containing "My guess"' 'the routine read is not the answer'
+    Assert-True ($run.Output -match '(?m)^Kept: (.+)$') "the run does not say where its folder is kept: $($run.Output)"
+    $folder = Join-Path $Matches[1].Trim() 'effort-real-unclear'
+    Assert-Equal "One question waits for the briefing.`n" ([IO.File]::ReadAllText((Join-Path $folder 'agent-output.txt'))) 'the final answer'
+    Assert-Match ([IO.File]::ReadAllText((Join-Path $folder 'agent-transcript.txt'))) 'My guess' 'the transcript keeps what the agent read'
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($done) -Do "-Plain -Morning -Stream $read -Say `"Real effort of C-$Year-002: how many days did it take you? My guess: 2 d.`"") effort-real-unclear
+
+    Assert-Match $run.Output "  FAIL  file \.\./agent-output\.txt has no line containing `"My guess`"\n        found: Real effort of C-$Year-002" 'the question asked in the final answer'
+    Assert-Equal 1 $run.ExitCode 'exit code when the agent asks in the chat'
+}
+
 Test 'the scenario "morning meeting brief" passes when the meeting with Harbour Bank gets a brief from Harbour Bank''s subjects only, and fails when the calendar is not read' {
     $agent = "$FakeAgent -Snapshot `"$Fixtures\calendar.json`" -MeetingNotes `"$Fixtures\morning-notes.json`" -Morning -Say `"Brief: Send the pilot timeline to Harbour Bank [C-$Year-002]`""
 
@@ -981,7 +1002,7 @@ Test 'the scenario "weekly with a source off" passes when the stamp and the bloc
     Assert-Equal 1 $run.ExitCode 'exit code when the block names no source'
 }
 
-Test 'the scenario "weekly in the language of the sponsor" passes when the six blocks and the labels of the portfolio view are in French, and the portfolio view of the workspace stays in the default language' {
+Test 'the scenario "weekly in the language of the sponsor" passes when the seven blocks and the labels of the portfolio view are in French, and the portfolio view of the workspace stays in the default language' {
     $run = Invoke-Scenarios -Agent (New-WeeklyAgent sponsor-language) weekly-sponsor-language
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
@@ -989,6 +1010,30 @@ Test 'the scenario "weekly in the language of the sponsor" passes when the six b
     Assert-Match $run.Output "  ok    the register tool verifies views/weekly/$Day\.md" 'the verdict of verify'
     Assert-Match $run.Output '  ok    file views/portfolio\.md has lines containing, in this order: "# Portfolio view", "## Now"' 'the portfolio view of the workspace'
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+}
+
+Test 'the scenario "weekly value delivered" passes when the measured value of a benefit stands against its target under "Value delivered", the benefit measured in the period first, and fails when a benefit cited is not in the register or the order is lost' {
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent value-delivered) weekly-value-delivered
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has lines containing, in this order: `"# Progress and commitments`", `"# Value delivered`", `"\[mobile-onboarding\]`", `"\[B-$Year-002\]`", `"\[B-$Year-001\]`", `"# Proposed priorities`"" 'the subject, then its benefit measured in the period first'
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has lines containing, in this order: `"# Value delivered`", `"31 minutes`", `"# Proposed priorities`"" 'the value measured'
+    Assert-Match $run.Output "  ok    file views/weekly/$Day\.md has lines containing, in this order: `"# Value delivered`", `"a target of 20 minutes`", `"# Proposed priorities`"" 'against its target'
+    Assert-Match $run.Output "  ok    the register tool verifies views/weekly/$Day\.md" 'the verdict of verify'
+    Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
+
+    $missing = { $args[0].Replace("[B-$Year-001]", "[B-$Year-009]") }
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent value-delivered $missing) weekly-value-delivered
+
+    Assert-Match $run.Output "  FAIL  the register tool verifies views/weekly/$Day\.md\n        found: Not verified: views/weekly/$Day\.md\n- B-$Year-009 is not in the register\." 'the benefit that is not in the register, named by verify'
+    Assert-Match $run.Output "  FAIL  every record that views/weekly/$Day\.md cites is in the export since 2026-03-09\n        found: not in the export: B-$Year-009" 'nor in the export'
+    Assert-Equal 1 $run.ExitCode 'exit code when a benefit cited is not in the register'
+
+    $unordered = { $args[0].Replace("[B-$Year-002]", '[swap]').Replace("[B-$Year-001]", "[B-$Year-002]").Replace('[swap]', "[B-$Year-001]") }
+    $run = Invoke-Scenarios -Agent (New-WeeklyAgent value-delivered $unordered) weekly-value-delivered
+
+    Assert-Match $run.Output "  FAIL  file views/weekly/$Day\.md has lines containing, in this order: `"# Progress and commitments`", `"# Value delivered`", .*\n        found: no line containing `"\[B-$Year-001\]`" further down" 'the benefit measured in the period not first'
+    Assert-Equal 1 $run.ExitCode 'exit code when the order is lost'
 }
 
 Test 'the scenario "weekly with errors in the check" passes when the agent shows the errors and stores no synthesis, and fails when it stores one' {

@@ -19,7 +19,8 @@
 #   -Agent "claude -p --model haiku --output-format json --no-session-persistence --setting-sources project --strict-mcp-config --allowedTools Read,Write,Edit,Glob,Grep,Bash,PowerShell --max-budget-usd 0.25"
 # A scenario that checks the agent's transcript (a "transcript" fact, below) needs the command to
 # print every step, not only the answer: for Claude Code, --output-format stream-json --verbose in
-# place of --output-format json. Its other facts hold the same with either command.
+# place of --output-format json. A fact on what the agent printed, ../agent-output.txt, reads its
+# final answer only, whichever the command: never a routine or a file the agent read on the way.
 #
 # A scenario is a folder that holds scenario.json:
 #   { "routine": "subject",    the routine to follow: the name of a folder under routines
@@ -54,10 +55,13 @@
 #                                                                   agent never ran, listed, opened or said it
 #   { "transcript": "<text>" }                                      a line of the transcript does
 # A file is named from the workspace: the pending proposal is state/proposal.json, the portfolio
-# view is views/portfolio.md. What the agent printed is ../agent-output.txt, beside the workspace.
-# The transcript is that file when the command prints every step as a line of JSON (for Claude
-# Code, --output-format stream-json --verbose): what the agent ran, listed and opened, then its
-# answer. A path in it is read with slashes, however the agent wrote it. When the command printed
+# view is views/portfolio.md. The final answer of the agent is ../agent-output.txt, beside the
+# workspace: the "result" of the last line the command printed when that line is JSON that gives
+# one, as Claude Code prints with --output-format json or stream-json, or else all it printed. All
+# it printed is ../agent-transcript.txt, and it is the transcript when the command prints every
+# step as a line of JSON (for Claude Code, --output-format stream-json --verbose): what the agent
+# ran, listed and opened, then its answer. A path in it is read with slashes, however the agent
+# wrote it. When the command printed
 # its answer only, there is no transcript, and every transcript fact fails, saying so. A path to a field goes down with dots, and into a list with a
 # position from 0, or from -1 for the last: watch_list.people, history[0].field, history[-1].new.
 # A value or a text is compared exactly: a text with its case, a list with its order. Name the
@@ -79,7 +83,8 @@
 #    of the run, then the scenario's own files, then the proposal the scenario gives as collected,
 #    applied the same way;
 # 3. starts the agent in the workspace, with a prompt that names the routine and gives what the PO
-#    says. What the agent prints is kept beside the workspace, in agent-output.txt;
+#    says. What the agent prints is kept beside the workspace, in agent-transcript.txt, and its
+#    final answer in agent-output.txt;
 # 4. checks each expected fact, and that the register holds only what the register tool committed.
 # Nothing outside that temporary folder is touched. When a fact fails, the folder is kept and the
 # exit code is 1.
@@ -166,13 +171,22 @@ function New-ExampleBankWorkspace([string]$Folder, [string]$Scenario, $Collected
 function Start-Agent([string]$Folder, [string]$Prompt) {
     # Step 3: runs the agent's command in the workspace, the prompt on its standard input, and
     # returns its exit code. The command line is handed over as it was given, quotes included.
-    $in, $out, $err = 'prompt.txt', 'agent-output.txt', 'agent-errors.txt' | ForEach-Object { Join-Path $Folder $_ }
+    # All the command printed is kept in agent-transcript.txt, and its final answer in
+    # agent-output.txt.
+    $in, $printed, $out, $err = 'prompt.txt', 'agent-transcript.txt', 'agent-output.txt', 'agent-errors.txt' | ForEach-Object { Join-Path $Folder $_ }
     [IO.File]::WriteAllText($in, $Prompt, $Utf8)
-    $start = New-Object Diagnostics.ProcessStartInfo 'cmd.exe', "/d /s /c `"$Agent < `"$in`" > `"$out`" 2> `"$err`"`""
+    $start = New-Object Diagnostics.ProcessStartInfo 'cmd.exe', "/d /s /c `"$Agent < `"$in`" > `"$printed`" 2> `"$err`"`""
     $start.WorkingDirectory = Join-Path $Folder 'workspace'
     $start.UseShellExecute = $false
     $process = [Diagnostics.Process]::Start($start)
     $process.WaitForExit()
+    # The final answer is the "result" of the last line when that line is JSON that gives one, as
+    # Claude Code prints with --output-format json or stream-json; otherwise all that was printed.
+    $last = @([IO.File]::ReadAllLines($printed) | Where-Object { $_.Trim() }) | Select-Object -Last 1
+    $answer = $null
+    try { $answer = ($last | ConvertFrom-Json).result } catch { }
+    if ($answer -is [string]) { [IO.File]::WriteAllText($out, "$answer`n", $Utf8) }
+    else { Copy-Item -LiteralPath $printed -Destination $out }
     $process.ExitCode
 }
 
@@ -227,7 +241,7 @@ function Test-Fact($Fact, [string]$Workspace) {
         # JSON: what it ran, listed and opened, and its answer. A path in it may be written with
         # backslashes, escaped in JSON: they are read as slashes.
         $what = "the transcript of the agent has $(if ($Fact.absent) { 'no' } else { 'a' }) line containing `"$($Fact.transcript)`""
-        $printed = @([IO.File]::ReadAllLines((Join-Path (Split-Path -Parent $Workspace) 'agent-output.txt')) | Where-Object { $_.Trim() })
+        $printed = @([IO.File]::ReadAllLines((Join-Path (Split-Path -Parent $Workspace) 'agent-transcript.txt')) | Where-Object { $_.Trim() })
         if ($printed.Count -lt 2 -or @($printed | Where-Object { $_.Trim() -notmatch '^\{.*\}$' }).Count) {
             return @{ What = $what; Holds = $false; Found = 'no transcript: the agent''s command printed its answer only; for Claude Code, give it --output-format stream-json --verbose' }
         }

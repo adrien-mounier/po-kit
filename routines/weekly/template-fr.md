@@ -19,6 +19,15 @@ Engagements ouverts :
 An owner that is missing is written "sans responsable", a due date that is missing "sans échéance".
 When that section says "None.": Aucun engagement n'est ouvert.>
 
+# Valeur apportée
+
+<for each subject with a benefit that "Benefits" in the export lists as open or achieved, the subject on a line of its own, then one line per such benefit, as:
+Titre du sujet [identifier of the subject] :
+- la métrique : la dernière valeur, mesurée le yyyy-mm-dd, pour une cible de la cible, depuis une valeur de départ de la valeur de départ [identifier of the benefit]
+A benefit with no value yet is written "aucune valeur mesurée pour l'instant" in place of its latest value and its date; a baseline or a target that is missing, "sans valeur de départ" or "sans cible"; an achieved benefit says "atteint" after its metric.
+The benefits with a value recorded in the period come first in their subject, and the subjects that hold one come first. A subject with no benefit is not listed.
+When there is none: Aucun bénéfice n'est enregistré.>
+
 # Priorités proposées
 
 <one to five lines, the most pressing first, as:
