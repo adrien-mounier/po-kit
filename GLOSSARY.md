@@ -32,6 +32,10 @@ _Avoid_: card, item, entry, note, ticket
 A stream of work the PO follows: a product the PO steers, a contribution to someone else's product, or a service rendered to the organisation.
 _Avoid_: project, workstream, initiative, epic
 
+**Client bank**:
+A bank of the group that the PO's subjects may concern, listed in the settings. A subject names the client banks it concerns; one that names none concerns them all.
+_Avoid_: affiliate, subsidiary, customer bank
+
 **Commitment**:
 Something one named person owes another, with or without a due date. Actions are commitments.
 _Avoid_: task, action item, todo
@@ -151,7 +155,7 @@ The header of a view stating when it was generated, which register state it refl
 _Avoid_: header, metadata, footer
 
 **Portfolio view**:
-The view listing every active subject by horizon, with its clearance.
+The view listing every active subject by horizon, with its clearance and its client banks. Asked for one client bank, it keeps to that bank's subjects and those that name no bank.
 _Avoid_: roadmap, board, portfolio overview
 
 **Check report**:

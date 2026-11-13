@@ -22,14 +22,28 @@ Test 'the scenario "create" passes when the agent records the subject the PO des
     $run = Invoke-Scenarios -Agent "$FakeAgent -Proposal `"$Fixtures\scenario-create.proposal.json`"" subject-create
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    foreach ($fact in 'kind is "product"', 'horizon is "next"', 'clearance is "cleared"', 'cleared_by is "the sponsor"',
+    foreach ($fact in 'kind is "product"', 'horizon is "next"', 'banks is \["Harbour Bank","Alpine Bank"\]', 'clearance is "cleared"', 'cleared_by is "the sponsor"',
         'watch_list.people is \["the tech lead","the head of savings"\]') {
         Assert-Match $run.Output "  ok    record savings-simulator: $fact" 'expected fact reported as passed'
     }
     Assert-Match $run.Output '  ok    register/subjects holds 4 record\(s\)' 'the register gains one subject'
-    Assert-Match $run.Output '  ok    file views/portfolio\.md has a line containing "Savings simulator \[savings-simulator\]"' 'the portfolio view shows the new subject'
+    Assert-Match $run.Output '  ok    file views/portfolio\.md has a line containing "Savings simulator \[savings-simulator\] \(Harbour Bank, Alpine Bank\)"' 'the portfolio view shows the new subject with its banks'
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
     Assert-Match $run.Output '1 scenario\(s\): 1 passed, 0 failed' 'verdict'
+}
+
+Test 'the scenario "create for every bank" passes when the subject the PO says concerns all the client banks names none, and fails when it names one' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Proposal `"$Fixtures\scenario-create-every-bank.proposal.json`"" subject-create-every-bank
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    record group-data-platform: banks is \[\]' 'the subject names no bank'
+
+    $proposal = Join-Path $TestRoot 'one-bank.proposal.json'
+    [IO.File]::WriteAllText($proposal, [IO.File]::ReadAllText("$Fixtures\scenario-create-every-bank.proposal.json").Replace('"banks": []', '"banks": ["Harbour Bank"]'), $Utf8)
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Proposal `"$proposal`"" subject-create-every-bank
+
+    Assert-Match $run.Output '  FAIL  record group-data-platform: banks is \[\]' 'the subject that names a bank'
+    Assert-Equal 1 $run.ExitCode 'exit code when the subject names a bank'
 }
 
 Test 'the scenario "modify" passes when one subject moves to Now with a history entry and the other is closed and kept' {

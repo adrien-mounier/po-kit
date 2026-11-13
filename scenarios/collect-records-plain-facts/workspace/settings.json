@@ -16,6 +16,7 @@
     { "number": 1, "title": "Halve the time a retail customer needs to open an account" },
     { "number": 2, "title": "Give every retail customer a view of their savings options" }
   ],
+  "banks": ["Harbour Bank", "North Bank", "Alpine Bank"],
   "sponsor": {
     "name": "The sponsor",
     "email": "sponsor@example.com"

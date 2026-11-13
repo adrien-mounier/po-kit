@@ -5,7 +5,8 @@
     "last_collect": "Dernière collecte : {0}.",
     "not_covered": "Sources non couvertes par la dernière collecte : {0}.",
     "none": "aucune",
-    "no_collect": "Aucune collecte n'a encore eu lieu : aucune source n'est couverte."
+    "no_collect": "Aucune collecte n'a encore eu lieu : aucune source n'est couverte.",
+    "bank": "Filtrée sur la banque cliente {0} : ses sujets et ceux qui ne nomment aucune banque."
   },
   "check": {
     "title": "Rapport de contrôle",
