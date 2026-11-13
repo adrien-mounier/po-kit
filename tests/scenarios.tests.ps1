@@ -298,6 +298,33 @@ Test 'the scenario "an unclear real effort" passes when the done update leaves t
     Assert-Equal 1 $run.ExitCode 'exit code when the agent asks nothing'
 }
 
+Test 'the scenario "morning meeting brief" passes when the meeting with Harbour Bank gets a brief from Harbour Bank''s subjects only, and fails when the calendar is not read' {
+    $agent = "$FakeAgent -Snapshot `"$Fixtures\calendar.json`" -MeetingNotes `"$Fixtures\morning-notes.json`" -Morning -Say `"Brief: Send the pilot timeline to Harbour Bank [C-$Year-002]`""
+
+    $run = Invoke-Scenarios -Agent $agent morning-meeting-brief
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output "  ok    file views/morning\.html has no line containing `"<span class=`"id`">C-$Year-003</span>`"" 'the commitment of North Bank stays out of the brief'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning" morning-meeting-brief
+
+    Assert-Match $run.Output '  FAIL  file state/calendar\.json: meetings\[0\]\.status is "accepted"' 'no calendar snapshot'
+    Assert-Match $run.Output '  FAIL  file views/morning\.html has lines containing' 'no meeting on the page'
+    Assert-Equal 1 $run.ExitCode 'exit code when the calendar is not read'
+}
+
+Test 'the scenario "morning with the calendar off" passes when the meetings block says the calendar was not read, and fails when the agent reads it all the same' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Morning" morning-calendar-off
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file views/morning\.html has a line containing "not read: calendar</span></span></h2>"' 'the meetings block'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Snapshot `"$Fixtures\calendar.json`" -Morning" morning-calendar-off
+
+    Assert-Match $run.Output '  FAIL  file state/calendar\.json is absent' 'the calendar read although it is off'
+    Assert-Equal 1 $run.ExitCode 'exit code when the calendar is read'
+}
+
 Test 'the scenario "collect and drop a line" passes when the line kept is recorded alone and the note is filed, and fails when the line dropped is recorded too' {
     $note = 'pilot-preparation.md'
     $kept = New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }
@@ -837,6 +864,12 @@ Test 'without the command that starts the agent, the runner explains itself and 
     Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output 'scenarios\\run\.ps1 -Agent "<command>"' 'how to call the runner'
     Assert-True ($run.Output -notmatch 'subject-create') "a scenario was run: $($run.Output)"
+}
+
+Test 'in the files a scenario lays over the workspace, {today}, {month} and {year} stand for those of the day of the run, as in scenario.json' {
+    $run = Invoke-Scenarios -Agent $FakeAgent (Join-Path $Fixtures 'scenarios\dated-workspace')
+
+    Assert-Match $run.Output "  ok    file exports/calendar/stand-up\.txt has a line containing `"Start: ${Day}T09:30:00\+01:00`"" 'the date of the run in a file of the scenario'
 }
 
 Test 'the Example Bank settings carry every setting of the template, so the register tool reads them as it reads any workspace; so do the settings a scenario lays over them' {

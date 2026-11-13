@@ -1,0 +1,51 @@
+{
+  "routine": "morning",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "subject", "interpreted": false, "fields": {
+          "title": "Credit memo drafting", "kind": "product", "horizon": "now", "banks": ["Harbour Bank"],
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "2026-03-02" },
+          "next_step": "Agree the scope of the pilot with Harbour Bank",
+          "watch_list": { "people": ["the credit risk lead"], "keywords": ["credit memo"], "tracker_projects": [] } } },
+      { "op": "create", "type": "subject", "interpreted": false, "fields": {
+          "title": "KYC document reader", "kind": "product", "horizon": "next", "banks": ["North Bank"],
+          "evidence_level": "fact", "source": { "where": "conversation with the PO", "read_on": "2026-03-02" },
+          "next_step": "Choose the hosting of the reader",
+          "watch_list": { "people": ["the data lead"], "keywords": ["KYC"], "tracker_projects": [] } } },
+      { "op": "create", "type": "commitment", "interpreted": false, "fields": {
+          "title": "Send the pilot timeline to Harbour Bank", "subject": "line 1", "date_of_fact": "2026-03-02",
+          "owner": "the PO", "owed_to": "the credit risk lead", "evidence_level": "fact",
+          "source": { "where": "conversation with the PO", "read_on": "2026-03-02" } } },
+      { "op": "create", "type": "commitment", "interpreted": false, "fields": {
+          "title": "Share the KYC test dataset", "subject": "line 2", "date_of_fact": "2026-03-02",
+          "owner": "the data lead", "owed_to": "the PO", "evidence_level": "fact",
+          "source": { "where": "conversation with the PO", "read_on": "2026-03-02" } } },
+      { "op": "create", "type": "decision", "interpreted": false, "fields": {
+          "title": "Choose the scope of the credit memo pilot", "subject": "line 1", "date_of_fact": "2026-03-02", "status": "pending",
+          "needed_from": "the sponsor", "evidence_level": "fact",
+          "source": { "where": "conversation with the PO", "read_on": "2026-03-02" } } },
+      { "op": "create", "type": "decision", "interpreted": false, "fields": {
+          "title": "Choose the hosting of the KYC reader", "subject": "line 2", "date_of_fact": "2026-03-02", "status": "pending",
+          "needed_from": "the architect", "evidence_level": "fact",
+          "source": { "where": "conversation with the PO", "read_on": "2026-03-02" } } }
+    ]
+  },
+  "prompt": "Morning. Then brief me for the 14:00.",
+  "expect": [
+    { "file": "state/calendar.json", "field": "meetings[0].status", "is": "accepted" },
+    { "file": "state/calendar.json", "field": "meetings[1].status", "is": "accepted" },
+    { "file": "views/morning.html", "lines": [
+        "id=\"h-meetings\"",
+        "<span class=\"t\">09:30</span>",
+        "<span class=\"t\">14:00</span>",
+        "Credit memo pilot check-in <span class=\"bank\">Harbour Bank</span>",
+        "<span class=\"id\">C-{year}-002</span>",
+        "<span class=\"id\">D-{year}-001</span>",
+        "id=\"h-owe\""] },
+    { "file": "views/morning.html", "line": "<span class=\"m-key\">" },
+    { "file": "views/morning.html", "line": "<span class=\"id\">C-{year}-003</span>", "absent": true },
+    { "file": "views/morning.html", "line": "<span class=\"id\">D-{year}-002</span>", "absent": true },
+    { "file": "views/morning.html", "line": "class=\"refused", "absent": true },
+    { "file": "../agent-output.txt", "line": "C-{year}-002" }
+  ]
+}

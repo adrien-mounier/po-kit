@@ -1,0 +1,6 @@
+Title: Onboarding stand-up
+Start: {today}T09:30:00+01:00
+End: {today}T09:45:00+01:00
+Organizer: the tech lead
+Attendees: the tech lead
+Your response: accepted

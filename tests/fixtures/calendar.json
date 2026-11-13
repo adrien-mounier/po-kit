@@ -1,0 +1,12 @@
+{
+  "read_at": "{today}T07:05:00+01:00",
+  "from": "{today}",
+  "to": "{today}",
+  "meetings": [
+    { "start": "{today}T14:00:00+01:00", "end": "{today}T14:45:00+01:00", "title": "Credit memo pilot check-in",
+      "attendees": ["the credit risk lead of Harbour Bank", "the data lead"], "status": "accepted" },
+    { "start": "{today}T09:30:00+01:00", "end": "{today}T09:45:00+01:00", "title": "Onboarding stand-up",
+      "attendees": ["the tech lead"], "status": "accepted" }
+  ],
+  "absences": []
+}

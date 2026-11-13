@@ -11,6 +11,7 @@
     "sponsor": "en"
   },
   "per_source_cap": 50,
+  "working_hours": [{ "from": "09:00", "to": "18:00" }],
   "gates": ["architecture review", "security review"],
   "objectives": [
     { "number": 1, "title": "Halve the time a retail customer needs to open an account" },

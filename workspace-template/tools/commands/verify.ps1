@@ -9,12 +9,9 @@
 # - every record it cites is in the register and is not superseded. A record that is done, dropped
 #   or closed is still a record to cite.
 #
-# A view cites a record by its identifier in square brackets, as the portfolio view does:
-# Title [identifier]. Several identifiers share brackets when commas separate them:
-# [C-2026-001, D-2026-002]. Between square brackets, two things are read as a record cited: a
-# numbered identifier by its shape (C-2026-004), wherever it stands and whether the register holds
-# it or not, and, alone between commas, the identifier of a subject that the register holds.
-# Whatever else the brackets hold is text, as a ticket reference in a title, [REQ#4521].
+# A view cites a record by its identifier in square brackets, as Get-Cited reads it in the register
+# tool: Title [identifier]. The agent's notes on the meetings, which the morning page shows, are
+# checked the same way.
 #
 # A view that is not verified ends the run with a failure code, and one line per problem: the
 # stamp, then each identifier concerned, once.
@@ -38,21 +35,10 @@ foreach ($file in Get-ChildItem (Join-Path $Tools 'labels\*.json')) {
     if ($lines -cmatch "(?m)^$generated\n$state\n(?:$noCollect|$collect\n$notCovered)$") { $stamped = $true }
 }
 
-# The shape of a numbered identifier, whatever its type: the prefix of a type, a year, a number.
-$prefixes = @(Get-ChildItem (Join-Path $Tools 'definitions\*.json') -Exclude common.json | ForEach-Object { (Read-JsonFile $_.FullName).identifier_prefix } | Where-Object { $_ })
-$numbered = "(?<![A-Za-z0-9-])(?:$($prefixes -join '|'))-[0-9]{4}-[0-9]+(?![A-Za-z0-9-])"
-$cited = @([regex]::Matches($text, '\[([^\[\]]*)\]') | ForEach-Object {
-        $held = $_.Groups[1].Value
-        [regex]::Matches($held, $numbered) | ForEach-Object { $_.Value }
-        $held -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -and (Find-Record $_).type -eq 'subject' }
-    } | Select-Object -Unique)
+$cited = @(Get-Cited $text)
 $problems = @(
     if (-not $stamped) { 'The stamp is absent, or not whole as the register tool gives it. export prints the stamp of the view to write from it.' }
-    foreach ($id in $cited) {
-        $found = Find-Record $id
-        if (-not $found) { "$id is not in the register." }
-        elseif ($found.record.status -ceq 'superseded') { "$id is superseded by $($found.record.superseded_by)." }
-    }
+    Test-Cited $cited
 )
 if ($problems) { Stop-Run (@("Not verified: $given") + @($problems | ForEach-Object { "- $_" })) }
 "Verified: $given carries its stamp, and the $($cited.Count) record(s) it cites are in the register and not superseded."

@@ -1,0 +1,7 @@
+{
+  "routine": "morning",
+  "prompt": "Morning.",
+  "expect": [
+    { "file": "exports/calendar/stand-up.txt", "line": "Start: {today}T09:30:00+01:00" }
+  ]
+}

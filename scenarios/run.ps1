@@ -57,9 +57,10 @@
 # fields of a group one by one.
 #
 # The register tool numbers a commitment, a decision or a risk in the year it is recorded, and
-# files a note under the month it is processed. Anywhere in scenario.json, {year}, {month} and
-# {today} stand for those of the day of the run, as 2026, 2026-03 and 2026-03-02: the record
-# C-{year}-002, the file inbox/done/{month}/workshop.md.
+# files a note under the month it is processed. Anywhere in scenario.json and in the files of the
+# scenario's workspace folder, {year}, {month} and {today} stand for those of the day of the run,
+# as 2026, 2026-03 and 2026-03-02: the record C-{year}-002, the file inbox/done/{month}/workshop.md,
+# a meeting of the calendar that starts at {today}T14:00:00+01:00.
 #
 # For each scenario, in a temporary folder of its own, the runner:
 # 1. installs the kit: a workspace and a skills folder, as install.ps1 does on any machine;
@@ -90,6 +91,7 @@ $Kit = Split-Path -Parent $PSScriptRoot
 $ExampleBank = Join-Path $PSScriptRoot 'example-bank'
 $Utf8 = New-Object System.Text.UTF8Encoding $false
 try { [Console]::OutputEncoding = $Utf8 } catch { }
+$RunDay = Get-Date
 
 # The installer and the register tool commit as whoever git knows on the machine, which may know
 # nobody. In a scenario the commits are those of a fictional PO.
@@ -98,6 +100,14 @@ $env:GIT_AUTHOR_EMAIL = $env:GIT_COMMITTER_EMAIL = 'scenarios@example.com'
 
 function Read-Json([string]$Path) {
     [IO.File]::ReadAllText($Path) | ConvertFrom-Json
+}
+
+function Set-RunDate([string]$Text) {
+    # The text with {year}, {month} and {today} written as those of the day of the run.
+    foreach ($part in @{ '{year}' = 'yyyy'; '{month}' = 'yyyy-MM'; '{today}' = 'yyyy-MM-dd' }.GetEnumerator()) {
+        $Text = $Text.Replace($part.Key, $RunDay.ToString($part.Value, [Globalization.CultureInfo]::InvariantCulture))
+    }
+    $Text
 }
 
 function Invoke-Script {
@@ -119,7 +129,15 @@ function New-ExampleBankWorkspace([string]$Folder, [string]$Scenario, $Collected
     $run = Invoke-Script (Join-Path $workspace 'tools\register.ps1') apply
     if ($run.ExitCode -ne 0) { throw "the register of Example Bank was refused: $($run.Output)" }
     $own = Join-Path $Scenario 'workspace'
-    if (Test-Path -LiteralPath $own) { Copy-Item (Join-Path $own '*') $workspace -Recurse -Force }
+    if (Test-Path -LiteralPath $own) {
+        Copy-Item (Join-Path $own '*') $workspace -Recurse -Force
+        foreach ($file in Get-ChildItem -LiteralPath $own -Recurse -File) {
+            $copy = Join-Path $workspace $file.FullName.Substring($own.Length + 1)
+            $text = [IO.File]::ReadAllText($copy)
+            $dated = Set-RunDate $text
+            if ($dated -cne $text) { [IO.File]::WriteAllText($copy, $dated, $Utf8) }
+        }
+    }
     if ($Collected) {
         [IO.File]::WriteAllText((Join-Path $workspace 'state\proposal.json'), (ConvertTo-Json -InputObject $Collected -Depth 20), $Utf8)
         $run = Invoke-Script (Join-Path $workspace 'tools\register.ps1') apply
@@ -230,12 +248,7 @@ function Test-Fact($Fact, [string]$Workspace) {
 function Invoke-Scenario([string]$Scenario, [string]$Folder) {
     # Runs one scenario in its temporary folder, and returns what Test-Fact returns for each
     # expected fact.
-    $text = [IO.File]::ReadAllText((Join-Path $Scenario 'scenario.json'))
-    $day = Get-Date
-    foreach ($part in @{ '{year}' = 'yyyy'; '{month}' = 'yyyy-MM'; '{today}' = 'yyyy-MM-dd' }.GetEnumerator()) {
-        $text = $text.Replace($part.Key, $day.ToString($part.Value, [Globalization.CultureInfo]::InvariantCulture))
-    }
-    $definition = $text | ConvertFrom-Json
+    $definition = Set-RunDate ([IO.File]::ReadAllText((Join-Path $Scenario 'scenario.json'))) | ConvertFrom-Json
     New-ExampleBankWorkspace $Folder $Scenario $definition.collected
     $workspace = Join-Path $Folder 'workspace'
     $routine = Join-Path $Folder "skills\$($definition.routine)\SKILL.md"

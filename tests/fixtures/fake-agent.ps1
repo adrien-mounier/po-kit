@@ -8,6 +8,10 @@
 #   -Proposal <file>  leaves this proposal pending, then has the register tool apply it
 #   -Pending          leaves the proposal pending: nothing is applied
 #   -Plain            has the register tool apply the plain facts only: the other lines stay pending
+#   -Snapshot <file>  leaves this calendar snapshot, as the morning routine writes it from the calendar
+#   -MeetingNotes <file>
+#                     leaves these notes on the meetings; in both files {today} and {year} stand for
+#                     those of the day
 #   -Check            has the register tool run the check
 #   -Morning          has the register tool write the morning page
 #   -Weekly <file>    stores this text as the weekly synthesis of the day, with the stamp and the
@@ -16,7 +20,7 @@
 #   -Report <file>    writes down the folder it was started in, then the prompt it received
 #   -Say <text>       prints this text, as an agent prints its answer
 #   -ExitCode <n>     ends with this exit code
-param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [switch]$ByHand,
+param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [string]$Snapshot, [string]$MeetingNotes, [switch]$ByHand,
     [string]$Report, [string]$Say, [int]$ExitCode)
 
 $prompt = [Console]::In.ReadToEnd()
@@ -28,6 +32,11 @@ if ($Connections) { Copy-Item -LiteralPath $Connections -Destination 'connection
 if ($Proposal) {
     Copy-Item -LiteralPath $Proposal -Destination 'state\proposal.json'
     if (-not $Pending) { & powershell.exe -NoProfile -File tools\register.ps1 apply $(if ($Plain) { 'plain' }) }
+}
+foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'state\morning.json')) | Where-Object { $_[0] }) {
+    $day = Get-Date
+    $text = [IO.File]::ReadAllText($given[0]).Replace('{today}', $day.ToString('yyyy-MM-dd')).Replace('{year}', $day.ToString('yyyy'))
+    [IO.File]::WriteAllText($given[1], $text)
 }
 if ($Check) { & powershell.exe -NoProfile -File tools\register.ps1 check }
 if ($Morning) { & powershell.exe -NoProfile -File tools\register.ps1 morning }

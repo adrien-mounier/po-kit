@@ -136,6 +136,10 @@ _Avoid_: limit, quota, batch size
 What the workspace remembers of the collects: for each source, how far it was read and how many items were read, and which sources were not covered.
 _Avoid_: sync state, cursor file, collect log
 
+**Calendar snapshot**:
+What the morning routine read of the PO's calendar, today and the next ten working days: each meeting with its start, end, title, attendees and status, and the all-day absences. The calendar is only ever read, never written.
+_Avoid_: agenda, schedule, calendar sync
+
 **Proposal**:
 The list of register changes a routine has prepared and that awaits validation. Nothing reaches the register except through an applied proposal.
 _Avoid_: draft, patch, changeset
@@ -173,6 +177,10 @@ _Avoid_: check results, audit report, lint output
 **Weekly synthesis**:
 The view written each week for the sponsor.
 _Avoid_: weekly report, weekly brief, status report
+
+**Meeting brief**:
+For one meeting of the calendar snapshot: the subjects whose watch lists its title and attendees match (kept to a client bank's subjects when the meeting names that bank), their open commitments, the decisions awaited and what each still lacks.
+_Avoid_: meeting prep, briefing (which is the morning conversation with the PO), agenda
 
 **Export**:
 The digest of the register for a period that the register tool prints: the material the weekly synthesis is written from.
