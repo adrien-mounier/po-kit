@@ -125,7 +125,7 @@ The folder where the PO drops raw notes for the next collect.
 _Avoid_: drop zone, staging
 
 **Watch list**:
-The people, keywords, tracker projects and chat channels attached to a subject. It bounds what a collect may read. A chat channel is a channel or a group chat; a one-to-one chat is never read.
+The people, keywords, tracker projects and chat channels attached to a subject. It bounds what a collect may read. A chat channel is a channel or a group chat. A one-to-one chat is read whole with a person of a watch list; in any other, only the messages that hold a keyword of a watch list are read, and the rest is never read. No routine lists a source's folder as a whole: it opens only what the watch lists match, by its path.
 _Avoid_: filter, scope, query
 
 **Unclassified**:

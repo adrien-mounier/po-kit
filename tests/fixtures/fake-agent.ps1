@@ -22,10 +22,13 @@
 #   -Report <file>    writes down the folder it was started in, then the prompt it received
 #   -Say <text>       prints this text, as an agent prints its answer
 #   -ExitCode <n>     ends with this exit code
+#   -Stream           prints all it prints as a transcript does, one line of JSON per step, as
+#                     Claude Code does with --output-format stream-json --verbose
 param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [string]$Snapshot, [string]$MeetingNotes, [string]$Questions, [switch]$ByHand,
-    [string]$Report, [string]$Say, [int]$ExitCode)
+    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream)
 
 $prompt = [Console]::In.ReadToEnd()
+$steps = {
 if ($Say) { $Say }
 if ($Report) { [IO.File]::WriteAllText($Report, (Get-Location).Path + "`n" + $prompt) }
 if ($ByHand) { [IO.File]::WriteAllText('register\subjects\written-by-hand.json', '{ "id": "written-by-hand" }') }
@@ -58,4 +61,11 @@ if ($Weekly) {
     $portfolio = (@($export | Select-Object -Skip ([Array]::IndexOf($export, '## Portfolio view') + 1)) -join "`n").Trim()
     [IO.File]::WriteAllText("views\weekly\$today.md", [IO.File]::ReadAllText($Weekly).Replace('{stamp}', $stamp).Replace('{portfolio}', $portfolio))
 }
+}
+if ($Stream) {
+    '{"type":"system","subtype":"init"}'
+    & $steps 2>&1 | ForEach-Object { '{"type":"assistant","text":' + (ConvertTo-Json -InputObject "$_" -Compress) + '}' }
+    '{"type":"result"}'
+}
+else { & $steps }
 exit $ExitCode

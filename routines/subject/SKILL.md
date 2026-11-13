@@ -40,7 +40,7 @@ Creating a subject takes the eight answers below. Modifying one takes only the a
 
 Every answer comes from the PO's own words. "None", "not yet" and "nobody knows" are answers: record `none`, `unknown`, an empty list, or leave the field out. An answer the PO has not given is a question: ask for all the missing ones in one message, in the words of the left column, and stop there. The proposal waits for the PO's reply.
 
-Record these too when the PO mentions them: `owning_entity`, `sponsor`, `decider`, `links`, `notes`, `objectives` (the numbers of the objectives the subject serves), and in the watch list `chat_channels` (the chat channels and group chats to read; a one-to-one chat is never read).
+Record these too when the PO mentions them: `owning_entity`, `sponsor`, `decider`, `links`, `notes`, `objectives` (the numbers of the objectives the subject serves), and in the watch list `chat_channels` (the chat channels and group chats to read; the one-to-one chat with a person of the watch list, and a one-to-one message that holds one of its keywords, are read without being named here).
 
 Done when each answer needed is one the PO gave.
 

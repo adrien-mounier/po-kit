@@ -64,7 +64,7 @@ Every created record also gives:
 - `subject`: the identifier of the subject the note is about.
 - `date_of_fact`: the day the note gives for it (the meeting, the call, the decision), or today when it gives none.
 - `evidence_level`: see below.
-- `source`: `{ "where": "inbox/<file name of the note>", "read_on": "<today's date>" }`.
+- `source`: `{ "where": "inbox/<file name of the note>", "read_on": "<today's date>" }`. For a mail, a ticket or a chat message, `where` is as step 4 of `sources.md` says: read from a folder, the path of its file.
 
 When the note says which of the PO's objectives a record serves, the record gives `objectives` too: their numbers as `settings.json` lists them, as `[1]`. A note that names no objective leaves it out, even when the record seems to serve one: that objective is yours to recommend in step 6, and the PO's to attach.
 

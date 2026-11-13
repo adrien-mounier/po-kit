@@ -17,6 +17,9 @@
 # Code, started without that machine's plugins, hooks and connectors, with the tools a routine
 # needs and a spending limit per scenario:
 #   -Agent "claude -p --model haiku --output-format json --no-session-persistence --setting-sources project --strict-mcp-config --allowedTools Read,Write,Edit,Glob,Grep,Bash,PowerShell --max-budget-usd 0.25"
+# A scenario that checks the agent's transcript (a "transcript" fact, below) needs the command to
+# print every step, not only the answer: for Claude Code, --output-format stream-json --verbose in
+# place of --output-format json. Its other facts hold the same with either command.
 #
 # A scenario is a folder that holds scenario.json:
 #   { "routine": "subject",    the routine to follow: the name of a folder under routines
@@ -47,11 +50,15 @@
 #                                                                   register tool's export prints for the period since that date
 #   { "printed": "<command>", "line": "<text>" }                    a line of what the register tool prints for this command,
 #                                                                   as "export {today}", contains the text
+#   { "transcript": "<text>", "absent": true }                      no line of the agent's transcript contains the text: the
+#                                                                   agent never ran, listed, opened or said it
+#   { "transcript": "<text>" }                                      a line of the transcript does
 # A file is named from the workspace: the pending proposal is state/proposal.json, the portfolio
-# view is views/portfolio.md. What the agent printed is ../agent-output.txt, beside the workspace:
-# its answer, and all that it opened when its command prints that too (for Claude Code,
-# --output-format stream-json --verbose in place of --output-format json), so that a fact can
-# hold that a file was never opened. A path to a field goes down with dots, and into a list with a
+# view is views/portfolio.md. What the agent printed is ../agent-output.txt, beside the workspace.
+# The transcript is that file when the command prints every step as a line of JSON (for Claude
+# Code, --output-format stream-json --verbose): what the agent ran, listed and opened, then its
+# answer. A path in it is read with slashes, however the agent wrote it. When the command printed
+# its answer only, there is no transcript, and every transcript fact fails, saying so. A path to a field goes down with dots, and into a list with a
 # position from 0, or from -1 for the last: watch_list.people, history[0].field, history[-1].new.
 # A value or a text is compared exactly: a text with its case, a list with its order. Name the
 # fields of a group one by one.
@@ -215,6 +222,19 @@ function Test-Fact($Fact, [string]$Workspace) {
             Found = $(if ($run.ExitCode -eq 0) { 'no such line' } else { $run.Output })
         }
     }
+    if ($Fact.transcript) {
+        # The transcript is what the agent printed when its command prints every step as a line of
+        # JSON: what it ran, listed and opened, and its answer. A path in it may be written with
+        # backslashes, escaped in JSON: they are read as slashes.
+        $what = "the transcript of the agent has $(if ($Fact.absent) { 'no' } else { 'a' }) line containing `"$($Fact.transcript)`""
+        $printed = @([IO.File]::ReadAllLines((Join-Path (Split-Path -Parent $Workspace) 'agent-output.txt')) | Where-Object { $_.Trim() })
+        if ($printed.Count -lt 2 -or @($printed | Where-Object { $_.Trim() -notmatch '^\{.*\}$' }).Count) {
+            return @{ What = $what; Holds = $false; Found = 'no transcript: the agent''s command printed its answer only; for Claude Code, give it --output-format stream-json --verbose' }
+        }
+        $lines = @($printed | Where-Object { $_.Replace('\\', '/').Contains($Fact.transcript) })
+        if ($Fact.absent) { return @{ What = $what; Holds = ($lines.Count -eq 0); Found = ($lines -join "`n") } }
+        return @{ What = $what; Holds = ($lines.Count -gt 0); Found = 'no such line' }
+    }
     if ($Fact.record) {
         # An identifier is the file name of its record, wherever the register files it.
         $name = "record $($Fact.record)"
@@ -226,7 +246,7 @@ function Test-Fact($Fact, [string]$Workspace) {
         $path = Join-Path $Workspace $Fact.file
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) { $path = $null }
     }
-    else { throw "an expected fact names a record, a file, records, a view to verify, a view against the export or a command whose output to read: $(ConvertTo-FactJson $Fact)" }
+    else { throw "an expected fact names a record, a file, records, a view to verify, a view against the export, a command whose output to read or a text of the transcript: $(ConvertTo-FactJson $Fact)" }
 
     if ($Fact.PSObject.Properties['field']) {
         $expected = ConvertTo-FactJson $Fact.is

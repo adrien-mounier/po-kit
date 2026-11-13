@@ -364,11 +364,17 @@ Test 'the scenario "morning steering week" passes when the day before the steeri
     Assert-Equal 1 $run.ExitCode 'exit code when the calendar is not read'
 }
 
-Test 'the scenario "morning messages" passes when the chat message that asks the PO something is under the messages awaiting a reply and the one-to-one chat stays unread, and fails when the agent lists no message' {
-    $run = Invoke-Scenarios -Agent "$FakeAgent -MeetingNotes `"$Fixtures\messages-notes.json`" -Morning" morning-messages
+Test 'the scenario "morning messages" passes when the chat messages that ask the PO something, in a watched channel, in a one-to-one chat with a watched person and in one that names a keyword, are under the messages awaiting a reply and the one-to-one chat with anyone else on nothing watched stays unread, and fails when the agent lists no message' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -MeetingNotes `"$Fixtures\messages-notes.json`" -Morning -Stream" morning-messages
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    Assert-Match $run.Output '  ok    file views/morning\.html has lines containing, in this order: .*pilot branches' 'the message'
+    Assert-Match $run.Output '  ok    file views/morning\.html has lines containing, in this order: .*pilot branches", "compliance review", "pilot trainers' 'the messages'
+    Assert-Match $run.Output '  ok    the transcript of the agent has no line containing "the head of savings"' 'the one-to-one chat with a person of no watch list neither listed nor opened'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -MeetingNotes `"$Fixtures\messages-notes.json`" -Morning -Stream -Say `"Read exports/chat/one-to-one/the head of savings/2026-03-10 1145 the head of savings.txt: whether I should doubt the pilot date`"" morning-messages
+
+    Assert-Match $run.Output '  FAIL  the transcript of the agent has no line containing "doubt the pilot date"' 'the one-to-one chat opened'
+    Assert-Equal 1 $run.ExitCode 'exit code when the one-to-one chat is opened'
 
     $run = Invoke-Scenarios -Agent "$FakeAgent -Morning" morning-messages
 
@@ -680,38 +686,50 @@ Test 'the scenario "collect with a connector that fails" passes when the connect
 # Chat is supplied as a folder of exported files, exports/chat, one file per message under the
 # folder of its channel, its group chat or its one-to-one chat.
 
-$ChatRead = @{ sources_read = (New-SourceRead notes 0), (New-SourceRead chat 1); sources_not_covered = @('mail', 'tracker') }
+$ChatRead = @{ sources_read = (New-SourceRead notes 0), (New-SourceRead chat 3); sources_not_covered = @('mail', 'tracker') }
 
-Test 'the scenario "collect chat" passes when the message of a channel a watch list names yields a record with the message as its source, and fails when a message of another channel or of a one-to-one chat is quoted, or shows in what the agent printed' {
+Test 'the scenario "collect chat" passes when the messages of a channel a watch list names, of a one-to-one chat with a watched person and of one that names a keyword yield records with the message as their source, and fails when a message of another channel or of a one-to-one chat on nothing watched is quoted, or shows in the transcript of the agent' {
     $named = New-ItemOperation 'exports/chat/channels/onboarding squad/2026-03-10 0915 the tech lead.txt' @{ title = 'Create the test accounts of the onboarding pilot'; owner = 'the tech lead'; due_date = '2026-03-25'; date_of_fact = '2026-03-10' }
+    $keyword = New-ItemOperation 'exports/chat/one-to-one/the compliance officer/2026-03-10 1100 the compliance officer.txt' @{ title = 'Send the compliance sign-off of the onboarding pilot'; owner = 'the compliance officer'; owed_to = 'the PO'; due_date = '2026-03-20'; date_of_fact = '2026-03-10' }
+    $watched = New-ItemOperation 'exports/chat/one-to-one/the tech lead/2026-03-10 1130 the tech lead.txt' @{ title = 'Send the test plan of the onboarding pilot'; owner = 'the tech lead'; owed_to = 'the PO'; due_date = '2026-03-27'; date_of_fact = '2026-03-10' }
 
-    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named -Do '-Pending' -Collect $ChatRead) collect-chat
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named, $keyword, $watched -Do '-Pending -Stream' -Collect $ChatRead) collect-chat
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[0\]\.fields\.source\.where is "exports/chat/channels/onboarding squad/2026-03-10 0915 the tech lead\.txt"' 'the message is the source of the record'
-    Assert-Match $run.Output '  ok    file state/proposal\.json: sources_read\[1\]\.items is 1' 'one message is read'
-    Assert-Match $run.Output '  ok    file \.\./agent-output\.txt has no line containing "vendor"' 'nothing of the one-to-one chat in what the agent printed'
+    Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[0\]\.fields\.source\.where is "exports/chat/channels/onboarding squad/2026-03-10 0915 the tech lead\.txt"' 'the message of the channel is the source of the record'
+    Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[1\]\.fields\.source\.where is "exports/chat/one-to-one/the compliance officer/2026-03-10 1100 the compliance officer\.txt"' 'the message of a one-to-one chat that names a keyword is the source of the record'
+    Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[2\]\.fields\.source\.where is "exports/chat/one-to-one/the tech lead/2026-03-10 1130 the tech lead\.txt"' 'the message of the one-to-one chat with a watched person is the source of the record'
+    Assert-Match $run.Output '  ok    file state/proposal\.json: sources_read\[1\]\.items is 3' 'three messages are read'
+    Assert-Match $run.Output '  ok    the transcript of the agent has no line containing "vendor"' 'nothing of the other one-to-one chat in all that the agent did'
+    Assert-Match $run.Output '  ok    the transcript of the agent has no line containing "one-to-one/the head of savings"' 'not even its folder'
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
 
-    $private = New-ItemOperation 'exports/chat/one-to-one/the tech lead/2026-03-10 1130 the tech lead.txt' @{ title = 'The onboarding vendor is late again'; owner = 'the tech lead' }
-    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named, $private -Do '-Pending' -Collect $ChatRead) collect-chat
+    $private = New-ItemOperation 'exports/chat/one-to-one/the head of savings/2026-03-10 1145 the head of savings.txt' @{ title = 'The vendor is late again'; owner = 'the head of savings' }
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named, $keyword, $watched, $private -Do '-Pending' -Collect $ChatRead) collect-chat
 
-    Assert-Match $run.Output '  FAIL  file state/proposal\.json has no line containing "vendor"' 'the one-to-one chat quoted in the proposal'
-    Assert-Equal 1 $run.ExitCode 'exit code when the one-to-one chat is read'
+    Assert-Match $run.Output '  FAIL  file state/proposal\.json has no line containing "vendor"' 'the one-to-one chat on nothing watched quoted in the proposal'
+    Assert-Equal 1 $run.ExitCode 'exit code when that one-to-one chat is read'
 
     $other = $ChatRead + @{ unclassified = @(@{ source = 'exports/chat/channels/branch staff/2026-03-10 1000 the head of cards.txt'; text = 'The staff canteen moves to the second floor.' }) }
-    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named -Do '-Pending' -Collect $other) collect-chat
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named, $keyword, $watched -Do '-Pending' -Collect $other) collect-chat
 
     Assert-Match $run.Output '  FAIL  file state/proposal\.json has no line containing "canteen"' 'the message of a channel no watch list names, quoted as unclassified'
     Assert-Equal 1 $run.ExitCode 'exit code when the message of another channel is read'
 
-    # What the agent printed is checked too: its answer and, when its command prints them, the
-    # files it listed and opened. Even the name of a one-to-one chat is private.
-    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named -Do '-Pending -Say "I left aside a private message, 2026-03-10 1130 the tech lead.txt: the onboarding vendor is late again."' -Collect $ChatRead) collect-chat
+    # The whole transcript of the agent is checked too: its answer, and every folder it listed and
+    # file it opened. Even the name of that one-to-one chat is private, written with either slash.
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named, $keyword, $watched -Do '-Pending -Stream -Say "Listed: exports\chat\one-to-one\the head of savings\2026-03-10 1145 the head of savings.txt, the vendor is late again."' -Collect $ChatRead) collect-chat
 
-    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "vendor"' 'the one-to-one chat in what the agent printed'
-    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has no line containing "1130 the tech lead"' 'the name of the one-to-one chat in what the agent printed'
-    Assert-Equal 1 $run.ExitCode 'exit code when the agent prints something of the one-to-one chat'
+    Assert-Match $run.Output '  FAIL  the transcript of the agent has no line containing "vendor"' 'the one-to-one chat in the transcript'
+    Assert-Match $run.Output '  FAIL  the transcript of the agent has no line containing "the head of savings"' 'the name of the one-to-one chat in the transcript'
+    Assert-Match $run.Output '  FAIL  the transcript of the agent has no line containing "one-to-one/the head of savings"' 'the folder of the one-to-one chat, listed with backslashes'
+    Assert-Equal 1 $run.ExitCode 'exit code when the transcript holds something of the one-to-one chat'
+
+    # An agent whose command prints its answer only leaves no transcript: the fact cannot hold.
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named, $keyword, $watched -Do '-Pending -Say "Done."' -Collect $ChatRead) collect-chat
+
+    Assert-Match $run.Output '  FAIL  the transcript of the agent has no line containing "vendor"\n        found: no transcript: the agent''s command printed its answer only; for Claude Code, give it --output-format stream-json --verbose' 'no transcript'
+    Assert-Equal 1 $run.ExitCode 'exit code without a transcript'
 }
 
 Test 'the scenario "collect with chat off" passes when the collect completes, the collect state lists chat as not covered and the stamp of the portfolio view says so' {

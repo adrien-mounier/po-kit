@@ -10,6 +10,7 @@ This folder is the workspace of a Product Owner (PO): one register of the PO's s
 4. **Notes about a person's performance or career stay out of this workspace.**
 5. **What a person stated is `reported`; what you read into their motives is `hypothesis`.** Set the evidence level of the record accordingly.
 6. **A question you cannot settle goes to your open questions, and you ask it at the right moment.** Whatever routine you follow, see "Your open questions" below.
+7. **Mail, the tracker and chat are read only by the paths the watch lists give, never as a whole.** Whatever the routine and whatever the mode, you never list the folder of a source or its subfolders, not even for a first look around, and you never open its files through a pattern or a loop: you open what the searches of the collect's `sources.md` return, by their paths. In chat, that is the channels and group chats a watch list names, the one-to-one chat with each person a watch list names (`one-to-one/<that person>/` in a folder), and, in any other one-to-one chat, only the messages a search finds holding a keyword of a watch list. A one-to-one message that matches nothing is never opened, quoted, recorded or mentioned, nor the name of its conversation.
 
 ## The register tool
 
@@ -108,8 +109,8 @@ The parts of the morning page that need judgement are yours, in `state/morning.j
                    "stale": [ { "ticket": "ONB-120", "title": "Language switch", "why": "no update for 34 days" } ] } }
 
 - `meetings`: a note goes with the meeting of the same `start` and `title` in the snapshot. `key` is one sentence on what matters in the meeting; `lacks` says, for a decision awaited that `brief` lists, what it still lacks.
-- `first`: the three actions you recommend the PO do first, the most important first, each with one line of why. `record` names the record an action is about: the page gives the action that record's button. An action about no record gives its own `button` and `ask`, the request the button copies. The page always puts first, in its own words, a commitment of the PO to start today or late to start that your actions leave out.
-- `messages`: each mail or chat message within the watch lists that asks the PO something and has no answer from the PO: its source (`mail` or `chat`), who sent it, where (the channel or group chat, or the mail's subject), when it was sent, and the question as it was asked, on one line.
+- `first`: the three actions you recommend the PO do first, the most important first, each with one line of why. `record` names the record an action is about: while that record is awaited (an open commitment, a pending decision), the page gives the action that record's button. An action about no record, or about a record no longer awaited (a decision taken, a commitment done), gives its own `button` and `ask`, the request the button copies; without them, the page gives a neutral button that asks to show the record. The page always puts first, in its own words, a commitment of the PO to start today or late to start that your actions leave out.
+- `messages`: each mail or chat message within the watch lists that asks the PO something and has no answer from the PO: its source (`mail` or `chat`), who sent it, where (the channel or group chat, `one-to-one chat`, or the mail's subject), when it was sent, and the question as it was asked, on one line.
 - `progress`: for a commitment owed to the PO, the sign that it is moving. One due within three working days with no sign here is offered a nudge.
 - `backlog`: the tickets of the watched projects that contradict a recorded decision, with that decision; those not ready for the next refinement; and the stale ones, each with why.
 
