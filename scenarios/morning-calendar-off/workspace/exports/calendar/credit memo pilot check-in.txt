@@ -1,0 +1,6 @@
+Title: Credit memo pilot check-in
+Start: {today}T14:00:00+01:00
+End: {today}T14:45:00+01:00
+Organizer: the credit risk lead of Harbour Bank
+Attendees: the credit risk lead of Harbour Bank; the data lead
+Your response: accepted

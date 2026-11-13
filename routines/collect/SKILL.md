@@ -24,13 +24,13 @@ Done when no proposal is pending.
    It prints the time of this collect, as `2026-03-02T08:30:00+01:00`. Its first ten characters are today's date.
 2. Text the PO pasted into the conversation becomes a note first. Save it unchanged as `inbox/pasted-<today's date>.md`, as `inbox/pasted-2026-03-02.md`, written as UTF-8 without a byte order mark. When `inbox/` or `inbox/done/<this month>/` already holds that name, end it with `-2`, then `-3`.
 3. The notes are the files directly in `inbox/`. Read each one whole. `inbox/done/` holds the notes already processed.
-4. `connections.json` declares the other sources, `mail` and `tracker`. A source whose `mode` is `off` is not read: it is not covered. To read one in any other mode, follow `sources.md`, in the folder of this routine, before you look into the source: it gives you the mails and the tickets to treat as notes.
+4. `connections.json` declares the other sources, `mail` and `tracker`. A source whose `mode` is `off` is not read: it is not covered. To read one in any other mode, follow `sources.md`, in the folder of this routine, before you look into the source: it gives you the mails and the tickets to treat as notes. `connections.json` may also declare `calendar`: it is no source of the collect, which neither reads it nor names it among the sources read or not covered.
 
 A file you cannot read as text is not processed: it stays in the inbox, and you tell the PO.
 
 When there is no note, and no mail or ticket to treat as one, there is nothing new to collect, and the register tool must still learn that the sources were read. Write the proposal of step 5 with no operation, `"operations": []`, and run the register tool's `apply` at once, without asking the PO: there is nothing to validate. Then tell the PO that nothing new was found, and which sources are not covered: the routine ends here.
 
-Done when you have read every note of the inbox, and every source of `connections.json` is read or not covered.
+Done when you have read every note of the inbox, and every source of `connections.json` but the calendar is read or not covered.
 
 ## 3. Read what the register holds
 
@@ -130,7 +130,7 @@ Write `state/proposal.json` as UTF-8 without a byte order mark:
 
 - `collected_at` is the time read from the clock.
 - `sources_read` holds one entry per source read, in the order of `connections.json`. For `notes`, `cutoff` is the time read from the clock and `items` the number of notes read, 0 included. For `mail` and `tracker`, `sources.md` says what the entry holds.
-- `sources_not_covered` names every source of `connections.json` that was not read, in the same order.
+- `sources_not_covered` names every source of `connections.json` but the calendar that was not read, in the same order.
 - `notes_processed` holds the file name of every note read, without `inbox/`. The register tool files them under `inbox/done/` when the proposal is applied.
 - `fields` of an update holds only the fields that change, each with its whole new value, and the update carries its own `source`.
 - The register tool sets the identifiers, the dates recorded and the history.

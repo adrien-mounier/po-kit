@@ -624,9 +624,12 @@ function Get-Coverage {
     #
     # A source is not covered when the last collect did not read it, whether or not the collect
     # said so. A source the last collect read carries the time of that collect.
+    #
+    # The calendar is no source of the collect: the morning routine reads it into the calendar
+    # snapshot (Read-CalendarSnapshot).
     $collectPath = Join-Path $Workspace 'state\last-collect.json'
     $collect = if (Test-Path -LiteralPath $collectPath) { Read-JsonFile $collectPath }
-    foreach ($source in $Connections.PSObject.Properties) {
+    foreach ($source in $Connections.PSObject.Properties | Where-Object { $_.Name -cne 'calendar' }) {
         $read = $collect.sources.($source.Name)
         @{
             source = $source.Name; mode = $source.Value.mode; read = $read
@@ -737,6 +740,99 @@ function Write-PortfolioView($Labels, [string]$Bank) {
     # a client bank, the view keeps to its subjects, and its stamp says so.
     $lines = @("# $($Labels.portfolio.title)", '') + @(Get-Stamp $Labels $Bank) + @(Get-PortfolioHorizons $Labels $Bank)
     Write-TextFile (Join-Path $Workspace 'views\portfolio.md') (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
+}
+
+function Get-Cited([string]$Text) {
+    # The records a text cites, once each. A text cites a record by its identifier in square
+    # brackets, as the portfolio view does: Title [identifier]. Several identifiers share brackets
+    # when commas separate them: [C-2026-001, D-2026-002]. Between square brackets, two things are
+    # read as a record cited: a numbered identifier by its shape (C-2026-004), wherever it stands
+    # and whether the register holds it or not, and, alone between commas, the identifier of a
+    # subject that the register holds. Whatever else the brackets hold is text, as a ticket
+    # reference in a title, [REQ#4521].
+    $prefixes = @(Get-ChildItem (Join-Path $Tools 'definitions\*.json') -Exclude common.json | ForEach-Object { (Read-JsonFile $_.FullName).identifier_prefix } | Where-Object { $_ })
+    $numbered = "(?<![A-Za-z0-9-])(?:$($prefixes -join '|'))-[0-9]{4}-[0-9]+(?![A-Za-z0-9-])"
+    @([regex]::Matches($Text, '\[([^\[\]]*)\]') | ForEach-Object {
+            $held = $_.Groups[1].Value
+            [regex]::Matches($held, $numbered) | ForEach-Object { $_.Value }
+            $held -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -and (Find-Record $_).type -eq 'subject' }
+        } | Select-Object -Unique)
+}
+
+function Test-Cited([string[]]$Ids) {
+    # What is wrong with the records cited: one line per record that is not in the register or is
+    # superseded. A record that is done, dropped or closed is still a record to cite.
+    foreach ($id in $Ids) {
+        $found = Find-Record $id
+        if (-not $found) { "$id is not in the register." }
+        elseif ($found.record.status -ceq 'superseded') { "$id is superseded by $($found.record.superseded_by)." }
+    }
+}
+
+# --- Calendar -----------------------------------------------------------------------------------
+# The calendar is read, never written: nothing here creates, changes or cancels an event. It is no
+# source of the collect. The morning routine reads its next ten working days into the calendar
+# snapshot, state\calendar.json, in the format the workspace rules (AGENTS.md) give:
+#   { "read_at": "2026-03-02T07:05:00+01:00", "from": "2026-03-02", "to": "2026-03-13",
+#     "meetings": [ { "start": "2026-03-02T14:00:00+01:00", "end": "2026-03-02T14:45:00+01:00",
+#                     "title": "...", "attendees": ["..."], "status": "accepted" } ],
+#     "absences": [ { "date": "2026-03-05", "title": "..." } ] }
+# A meeting is accepted or tentative. An all-day absence is one entry per day. A time is read as
+# written, in the offset it carries.
+#
+# The agent leaves the parts of a brief that need judgement in state\morning.json:
+#   { "meetings": [ { "start": "2026-03-02T14:00:00+01:00", "title": "...", "key": "...",
+#                     "lacks": { "D-2026-004": "..." } } ] }
+# key is one sentence on what matters in the meeting, and lacks what each decision awaited still
+# lacks. A note goes with the meeting of the same start and title.
+
+function Read-CalendarSnapshot {
+    # The calendar snapshot, or nothing when the calendar is off or was never read.
+    $path = Join-Path $Workspace 'state\calendar.json'
+    if ($Connections.calendar -and $Connections.calendar.mode -cne 'off' -and (Test-Path -LiteralPath $path)) { Read-JsonFile $path }
+}
+
+function Get-DayMeetings($Snapshot, [string]$Date) {
+    # The meetings of a day in the snapshot, by their start.
+    @($Snapshot.meetings | Where-Object { (Read-Timestamp $_.start) -and (Read-Timestamp $_.end) -and $_.start.Substring(0, 10) -eq $Date } | Sort-Object start, title)
+}
+
+function Read-MeetingNotes {
+    # The agent's notes on meetings (notes), and what is wrong with the records they cite
+    # (problems), as verify checks a view. The notes are kept only when nothing is wrong.
+    $path = Join-Path $Workspace 'state\morning.json'
+    if (-not (Test-Path -LiteralPath $path)) { return @{ notes = @(); problems = @() } }
+    $notes = try { @((Read-JsonFile $path).meetings | Where-Object { $null -ne $_ }) } catch { return @{ notes = @(); problems = @('state\morning.json cannot be read: it must hold JSON, saved as UTF-8.') } }
+    $texts = foreach ($note in $notes) { $note.key; foreach ($lack in $note.lacks.PSObject.Properties) { "[$($lack.Name)]"; $lack.Value } }
+    $problems = @(Test-Cited @(Get-Cited ($texts -join "`n")))
+    @{ notes = $(if ($problems) { @() } else { $notes }); problems = $problems }
+}
+
+function Get-MeetingBrief($Meeting, $Records, $Notes) {
+    # The brief of a meeting, from the records of the register and the agent's notes:
+    # - subjects: the active subjects whose watch list names a person among its attendees, or a
+    #   keyword its title holds, whatever the case of the letters;
+    # - banks: the client banks of the settings that its title or an attendee names. A meeting with
+    #   a client bank keeps the subjects that name that bank or none, as view bank does. A meeting
+    #   that names none has the banks of its subjects;
+    # - commitments and decisions: the open commitments and the pending decisions of its subjects;
+    # - note: the agent's note on it.
+    $holds = { param($Text, $Part) "$Part".Trim() -and "$Text".IndexOf("$Part".Trim(), [StringComparison]::OrdinalIgnoreCase) -ge 0 }
+    $attendees = @($Meeting.attendees | Where-Object { $_ })
+    $named = @($Settings.banks | Where-Object { $bank = $_; (& $holds $Meeting.title $bank) -or @($attendees | Where-Object { & $holds $_ $bank }).Count })
+    $subjects = @($Records | Where-Object { $_.type -ceq 'subject' -and $_.status -ceq 'active' } | Where-Object {
+            $watch = $_.watch_list
+            @($watch.people | Where-Object { $person = $_; @($attendees | Where-Object { & $holds $_ $person }).Count }).Count -or @($watch.keywords | Where-Object { & $holds $Meeting.title $_ }).Count
+        } | Where-Object { -not $named -or -not $_.banks -or @($_.banks | Where-Object { $named -ccontains $_ }).Count })
+    $ids = @($subjects | ForEach-Object { $_.id })
+    $dated = { param($Date) if ($Date) { $Date } else { '9999-99-99' } }
+    @{
+        subjects    = $subjects
+        banks       = $(if ($named) { $named } else { @($subjects | ForEach-Object { $_.banks } | Where-Object { $_ } | Select-Object -Unique) })
+        commitments = @($Records | Where-Object { $_.type -ceq 'commitment' -and $_.status -ceq 'open' -and $ids -ccontains $_.subject } | Sort-Object { & $dated $_.due_date }, id)
+        decisions   = @($Records | Where-Object { $_.type -ceq 'decision' -and $_.status -ceq 'pending' -and $ids -ccontains $_.subject } | Sort-Object { & $dated $_.needed_by }, id)
+        note        = @($Notes | Where-Object { $_.start -ceq $Meeting.start -and $_.title -ceq $Meeting.title }) | Select-Object -First 1
+    }
 }
 
 # --- Check --------------------------------------------------------------------------------------

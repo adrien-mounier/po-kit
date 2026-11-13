@@ -1,0 +1,3 @@
+{ "meetings": [ { "start": "{today}T14:00:00+01:00", "title": "Credit memo pilot check-in",
+                  "key": "Harbour Bank will ask for the pilot timeline [C-{year}-002].",
+                  "lacks": { "D-{year}-001": "The sponsor's position" } } ] }

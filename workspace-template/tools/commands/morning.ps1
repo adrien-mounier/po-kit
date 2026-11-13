@@ -5,8 +5,12 @@
 #   morning fr    with the labels of another language; what the records say is never translated
 #
 # The page opens on the stamp of a view, in a bar: the date, when the page was written, the
-# register state, the sources the last collect read and those it did not. Its blocks follow, in
-# this order:
+# register state, the sources the last collect read and those it did not, and the calendar. Its
+# blocks follow, in this order:
+#   meetings   Today's meetings, in the white sheet of the day: a timeline of the meetings of the
+#              calendar snapshot, each with its duration, the agent's sentence on what matters and
+#              its brief opening in place, then the free time for work within the PO's working
+#              hours. A calendar off, or not read today, is a block that says it was not read.
 #   owe        What you owe: the open commitments whose owner is the PO
 #   owed       What others owe you: the open commitments owed to the PO
 #   decisions  Decisions: the pending decisions awaited from the PO, then those awaited from others
@@ -139,6 +143,112 @@ $commitments = @($records | Where-Object { $_.type -ceq 'commitment' -and $_.sta
 $decisions = @($records | Where-Object { $_.type -ceq 'decision' -and $_.status -ceq 'pending' })
 # The sources the collects should read and the last one did not.
 $unread = @(Get-Coverage | Where-Object { $_.mode -cne 'off' -and -not $_.covered } | ForEach-Object { $_.source })
+# The calendar snapshot when it was read today: one of an earlier day says nothing of today.
+$calendar = Read-CalendarSnapshot
+if ($calendar -and -not "$($calendar.read_at)".StartsWith($Today)) { $calendar = $null }
+
+function Get-Minutes([string]$Timestamp) {
+    $moment = Read-Timestamp $Timestamp
+    $moment.Hour * 60 + $moment.Minute
+}
+
+function Format-Minutes([int]$Minutes) { '{0:00}:{1:00}' -f [Math]::Floor($Minutes / 60), ($Minutes % 60) }
+
+function Format-Duration([int]$Minutes) {
+    $hours = [int][Math]::Floor($Minutes / 60)
+    if (-not $hours) { "$Minutes min" } elseif ($Minutes % 60) { "$hours h $(($Minutes % 60).ToString('00'))" } else { "$hours h" }
+}
+
+function Get-FreeTime($Meetings) {
+    # The stretches of the PO's working hours that no meeting takes, each as its start and end in
+    # minutes. A tentative meeting takes its time as an accepted one does.
+    # ponytail: settings written before the working hours have none, and read as the template's.
+    $hours = if ($Settings.working_hours) { $Settings.working_hours } else { @([pscustomobject]@{ from = '09:00'; to = '18:00' }) }
+    $busy = @($Meetings | ForEach-Object { @{ start = Get-Minutes $_.start; end = Get-Minutes $_.end } } | Sort-Object { $_.start })
+    foreach ($range in $hours) {
+        $at, $until = foreach ($time in $range.from, $range.to) { [int]$time.Substring(0, 2) * 60 + [int]$time.Substring(3, 2) }
+        foreach ($meeting in $busy) {
+            if ($meeting.start -gt $at -and $at -lt $until) { @{ start = $at; end = [Math]::Min($meeting.start, $until) } }
+            $at = [Math]::Max($at, $meeting.end)
+        }
+        if ($at -lt $until) { @{ start = $at; end = $until } }
+    }
+}
+
+function Get-MeetingsBlock {
+    $said = $words.meetings
+    if (-not $calendar) { return Format-Block 'meetings' $said.heading "<span class=`"late`">$(Icon alert) $(Html ($words.block_not_read -f 'calendar'))</span>" @() }
+    $meetings = @(Get-DayMeetings $calendar $Today)
+    $dayOff = @($calendar.absences | Where-Object { $_.date -eq $Today }).Count
+    if (-not $meetings -and -not $dayOff) { return Format-Block 'meetings' $said.heading (Html $words.none) @() }
+    $records = @(Get-RecordFiles | ForEach-Object { Read-JsonFile $_.path })
+    $booked = 0
+    $lines = foreach ($meeting in $meetings) {
+        $brief = Get-MeetingBrief $meeting $records $notes.notes
+        $time = Format-Minutes (Get-Minutes $meeting.start)
+        $length = (Get-Minutes $meeting.end) - (Get-Minutes $meeting.start)
+        $booked += $length
+        $banks = @($brief.banks | ForEach-Object { " <span class=`"bank`">$(Html $_)</span>" }) -join ''
+        $duration = (Format-Duration $length) + $(if ($meeting.status -ceq 'tentative') { ", $($said.tentative)" })
+        "<li class=`"mtg$(if ($meeting.status -ceq 'tentative') { ' is-tentative' })`">"
+        '<details>'
+        '<summary>'
+        "<span class=`"t`">$time</span>"
+        "<span class=`"opener`">$(Icon chev 'i chev')</span>"
+        '<span class="m">'
+        "<span class=`"m-title`">$(Html $meeting.title)$banks <span class=`"dur`">$(Html $duration)</span></span>"
+        if ("$($brief.note.key)".Trim()) { "<span class=`"m-key`">$(Html $brief.note.key)</span>" }
+        '</span>'
+        '</summary>'
+        '<dl class="brief">'
+        if ($meeting.attendees) { "<dt>$(Html $said.with)</dt><dd>$(Html $meeting.attendees)</dd>" }
+        $subjects = if ($brief.subjects) { @($brief.subjects | ForEach-Object { "$(Html $_.title) <span class=`"id`">$(Html $_.id)</span>" }) -join ', ' } else { Html $said.no_subject }
+        "<dt>$(Html $said.subjects)</dt><dd>$subjects</dd>"
+        if ($brief.commitments) {
+            "<dt>$(Html $said.commitments)</dt><dd><ul>"
+            foreach ($commitment in $brief.commitments) {
+                $who = if ("$($commitment.owed_to)".Trim()) { $said.owes -f (Format-Value $commitment.owner), (Format-Value $commitment.owed_to) } else { Format-Value $commitment.owner }
+                $due = if ($commitment.due_date) {
+                    $text = Html ($said.due -f (Format-Day $commitment.due_date))
+                    if ($commitment.due_date -lt $Today) {
+                        $days = Get-DaysSince $commitment.due_date
+                        ", <span class=`"late`">$(Icon alert) $text, $(Html $(if ($days -eq 1) { $words.late_one } else { $words.late_many -f $days }))</span>"
+                    }
+                    else { ", $text" }
+                }
+                "<li>$(Html $commitment.title) <span class=`"who`">$(Html $who)$due</span> <span class=`"id`">$(Html $commitment.id)</span></li>"
+            }
+            '</ul></dd>'
+        }
+        if ($brief.decisions) {
+            "<dt>$(Html $said.decisions)</dt><dd><ul>"
+            foreach ($decision in $brief.decisions) {
+                $who = @(
+                    if ("$($decision.needed_from)".Trim()) { $said.from -f (Format-Value $decision.needed_from) }
+                    if ($decision.needed_by) { $said.by -f (Format-Day $decision.needed_by) }
+                ) -join ', '
+                $lacks = "$($brief.note.lacks.($decision.id))".Trim()
+                if ($lacks) { $lacks = ' <span class="missing">' + (Html ($said.lacks -f $lacks)) + '</span>' }
+                "<li>$(Html $decision.title) <span class=`"who`">$(Html $who)</span> <span class=`"id`">$(Html $decision.id)</span>$lacks</li>"
+            }
+            '</ul></dd>'
+        }
+        '</dl>'
+        '</details>'
+        "<button class=`"ask`" type=`"button`" data-ask=`"$(Html ($said.ask -f $time, (Format-Value $meeting.title)))`">$(Icon copy)<span class=`"lbl`">$(Html $said.button)</span></button>"
+        '</li>'
+    }
+    $free = @(Get-FreeTime $meetings)
+    $longest = ($free | Sort-Object { $_.start - $_.end } | Select-Object -First 1)
+    $stretches = @($free | ForEach-Object { "$(Format-Minutes $_.start)&ndash;$(Format-Minutes $_.end)$(if ($free.Count -gt 1 -and $_ -eq $longest) { ', ' + (Html $said.longest) })" }) -join ' &middot; '
+    $count = if ($meetings) { Html ($said.count -f $meetings.Count, (Format-Duration $booked)) } else { Html $words.none }
+    $body = @(
+        if ($lines) { '<ol class="tt">'; $lines; '</ol>' }
+        if ($notes.problems) { "<p class=`"refused late`">$(Icon alert) $(Html ($said.refused -f ($notes.problems -join ' ')))</p>" }
+        "<p class=`"free`"><b>$(Html $said.free)</b> $(if ($dayOff) { Html $said.day_off } elseif ($stretches) { $stretches } else { Html $said.no_free })</p>"
+    )
+    Format-Block 'meetings' $said.heading $count $body
+}
 
 function Get-OweBlock {
     $owe = $words.owe
@@ -237,7 +347,9 @@ function Get-Header {
             if ($unread) { "<span class=`"src fail`">$(Icon alert)$(Html ($words.not_read -f ($unread -join ', ')))</span>" }
         }
         else { "<span class=`"src fail`">$(Icon alert)$(Html $words.no_collect)</span>" }
-        $off = @($coverage | Where-Object { $_.mode -ceq 'off' } | ForEach-Object { $_.source })
+        if ($calendar) { "<span class=`"src`">$(Icon check)$(Html ($words.calendar_read -f (Format-Moment $calendar.read_at)))</span>" }
+        elseif ($Connections.calendar -and $Connections.calendar.mode -cne 'off') { "<span class=`"src fail`">$(Icon alert)$(Html ($words.not_read -f 'calendar'))</span>" }
+        $off = @($Connections.PSObject.Properties | Where-Object { $_.Value.mode -ceq 'off' } | ForEach-Object { $_.Name })
         if ($off) { "<span class=`"src`">$(Html ($words.off -f ($off -join ', ')))</span>" }
         "<span class=`"src`">$(Html ($words.register_state -f "$(Invoke-Git write-tree --prefix=register/)".Substring(0, 12)))</span>"
     )
@@ -250,7 +362,9 @@ function Get-Header {
     '</header>'
 }
 
-$blocks = @(Get-OweBlock) + @(Get-OwedBlock) + @(Get-DecisionsBlock) + @(Get-SortBlock)
+$notes = Read-MeetingNotes
+# The white sheet holds the day: the blocks of today side by side, then the ruled blocks below.
+$blocks = @('<div class="sheet">') + @(Get-MeetingsBlock) + @('</div>') + @(Get-OweBlock) + @(Get-OwedBlock) + @(Get-DecisionsBlock) + @(Get-SortBlock)
 $newLine = [Environment]::NewLine
 $page = [IO.File]::ReadAllText((Join-Path $Tools 'templates\morning.html'), $Utf8)
 # What a record says goes in last, so that no text of a record is read as a place to fill.
@@ -263,3 +377,4 @@ Write-TextFile (Join-Path $Workspace 'views\morning.html') $page
 foreach ($heading in [regex]::Matches(($blocks -join $newLine), '<h2 id="h-[a-z]+">(.*?)</h2>')) {
     [Net.WebUtility]::HtmlDecode(($heading.Groups[1].Value -replace '<[^>]+>', '' -replace '\s+', ' ').Trim())
 }
+if ($notes.problems) { @('Not verified: state\morning.json. The notes on the meetings are left off the page; correct them, then run morning again.') + @($notes.problems | ForEach-Object { "- $_" }) }
