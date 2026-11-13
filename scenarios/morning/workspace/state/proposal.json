@@ -1,0 +1,11 @@
+{
+  "operations": [
+    {
+      "op": "update",
+      "id": "mobile-onboarding",
+      "interpreted": true,
+      "source": { "where": "inbox/pilot review.md", "read_on": "{workday-1}" },
+      "fields": { "next_step": "Agree the pilot branches with the sponsor" }
+    }
+  ]
+}

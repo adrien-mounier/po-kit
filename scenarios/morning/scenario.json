@@ -8,6 +8,8 @@
     { "file": "inbox/pilot-follow-up.md", "absent": true },
     { "file": "inbox/done/{month}/pilot-follow-up.md" },
     { "file": "state/last-collect.json", "field": "sources.notes.items", "is": 1 },
+    { "file": "state/proposal.json", "field": "operations[0].fields.next_step", "is": "Agree the pilot branches with the sponsor" },
+    { "record": "mobile-onboarding", "field": "next_step", "is": "Present the target journey to the retail steering committee" },
     { "file": "views/morning.html" },
     { "file": "views/morning.html", "lines": ["id=\"h-owe\"", "<li class=\"row is-late\">", "&middot; C-{year}-002</span>", "id=\"h-owed\""] }
   ]

@@ -208,6 +208,26 @@ Test 'the collect is settled once, when the plain facts are applied: applying th
     Assert-Equal '' (@(git -C $ws status --porcelain) -join ' ') 'changes left out of the commit'
 }
 
+Test 'a morning collect over lines that still wait carries them first, unchanged: apply plain records its plain facts and leaves the old and the new waiting lines pending' {
+    # Monday: the PO's commitment is recorded, and its estimate waits for the PO.
+    $ws = New-TestWorkspaceWithSubject
+    $estimate = { param($Id, $Days) @{ op = 'update'; id = $Id; interpreted = $true; source = @{ where = 'inbox/steering-notes.md'; read_on = '2026-03-02' }; fields = @{ estimated_effort = $Days } } }
+    Set-Proposal $ws @{ operations = @((New-RecordOperation commitment @{ title = 'Draft the pilot timeline'; owner = 'the PO'; due_date = '2026-03-20' }), (& $estimate 'line 1' 2)) }
+    $run = Invoke-Register $ws apply plain -Today 2026-03-02
+    Assert-Equal 0 $run.ExitCode "exit code of Monday's apply plain, with output: $($run.Output)"
+    $waiting = @((Read-Json (Join-Path $ws 'state\proposal.json')).operations)
+
+    # Tuesday's morning collect writes the line that waits first, as it was, then its own lines.
+    Set-CollectedProposal $ws (@($waiting) + @((New-RecordOperation commitment @{ title = 'Book the committee room'; owner = 'the PO'; due_date = '2026-03-13' }), (& $estimate 'line 2' 0.5)))
+    $run = Invoke-Register $ws apply plain -Today 2026-03-03
+
+    Assert-Equal 0 $run.ExitCode "exit code of Tuesday's apply plain, with output: $($run.Output)"
+    Assert-Equal 'C-2026-001 C-2026-002 mobile-onboarding' (Get-RecordsWritten $ws) 'records of the register'
+    Assert-True (Test-Path -LiteralPath (Join-Path $ws 'inbox\done\2026-03\pilot preparation.md')) 'the note of the morning collect is not filed'
+    $pending = @((Read-Json (Join-Path $ws 'state\proposal.json')).operations)
+    Assert-Equal 'C-2026-001: 2 | C-2026-002: 0.5' (@($pending | ForEach-Object { "$($_.id): $($_.fields.estimated_effort)" }) -join ' | ') 'lines still pending: the one carried over, then the new one'
+}
+
 Test 'when no line is a plain fact, apply plain settles the collect, records nothing and leaves every line pending; asked again, it writes nothing' {
     $ws = New-TestWorkspaceWithSubject
     Set-CollectedProposal $ws @(

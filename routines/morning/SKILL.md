@@ -13,16 +13,15 @@ Work in the PO's workspace, under its rules: read `AGENTS.md` there first when i
 
 ## 1. Collect, without asking
 
-When `state/proposal.json` exists, a proposal is pending: do not collect. The page lists it under "To sort", and the PO settles it when they choose. Go to step 2.
-
-Otherwise follow the collect routine: `SKILL.md` in the folder `collect`, beside the folder of this routine. Follow it from its step 2 to point 2 of its step 6, with these differences:
+The morning always collects, so that the page shows what arrived overnight, even when lines of an earlier proposal still wait for the PO. Follow the collect routine: `SKILL.md` in the folder `collect`, beside the folder of this routine. Follow it from its step 2 to point 2 of its step 6, with these differences:
 
 - The PO is asked nothing while the morning runs: they read the page first.
-- In step 6, do what point 2 says for the validation mode, then go to step 2 of this routine instead of showing a table and waiting for an answer. Under `Validation mode: interpreted.` that is `apply plain`: the plain facts are recorded, and the interpreted lines stay pending. Under `Validation mode: all.` every line stays pending, and nothing is applied.
-- When the collect finds nothing new, it applies its empty proposal as it says, and the morning goes on.
+- **Lines that still wait are carried over.** When `state/proposal.json` exists, its lines still wait for the PO, and your proposal keeps every one of them. In step 5, its operations are the first operations of yours, in their order, each as it is but with `"interpreted": true`, so that it keeps waiting; your own operations follow them. Your "line N" counts the lines carried over: with two of them, the record your first operation creates is "line 3". The lines carried over may name each other as "line 1", "line 2": leave them as they are.
+- In step 6, do what point 2 says for the validation mode, then go to step 2 of this routine instead of showing a table and waiting for an answer. Under `Validation mode: interpreted.` that is `apply plain`: the plain facts are recorded, and the interpreted lines, those carried over among them, stay pending. Under `Validation mode: all.` every line stays pending, and nothing is applied.
+- When the collect finds nothing new and no line is carried over, it applies its empty proposal as it says, and the morning goes on. With lines carried over, its proposal holds them and no line of its own: go through step 6 as for any proposal.
 - A question the notes cannot settle goes to your open questions, as `AGENTS.md` says: the briefing asks it.
 
-Done when the plain facts are recorded under `interpreted`, every other line of the collect is pending, and every note read is filed or still in a pending proposal.
+Done when the plain facts are recorded under `interpreted`, every other line of the collect is pending, every line that waited before still waits, and every note read is filed or still in a pending proposal.
 
 ## 2. Read the calendar
 
@@ -61,7 +60,7 @@ Done when it ends without error and prints no `Not verified`.
 
 Your answer is short:
 
-1. What the collect did, in one sentence: each record written with its identifier, the notes filed, how many lines wait for the PO, what went to unclassified, what the check found. When no collect ran because a proposal is pending, say so.
+1. What the collect did, in one sentence: each record written with its identifier, the notes filed, how many lines wait for the PO, what went to unclassified, what the check found.
 2. Then what the page holds, in two lines, from the counts that `morning` printed: first what is late, due today, and each task to start today by its title as `morning` printed it, and a day that does not fit with the suggestion `morning` printed; then the rest, ending with where the page is, `views/morning.html`, to open in a browser.
 3. Then each reminder and nudge `morning` printed to offer, one line each, as a question: `Shall I draft the reminder to the tech lead for C-2026-005, "Deliver the test accounts", 3 days late?` You draft one only once the PO says yes, as a mail draft when the connections allow it or in the chat otherwise, and you never send it.
 4. Then each question on a real effort that the collect kept, one line each, as step 4 of the collect writes it: `Real effort of C-2026-004, "Build the steering pack": how many days did it take you? My guess: 2 d.` A real effort the collect could infer is in its line, and asks nothing.
