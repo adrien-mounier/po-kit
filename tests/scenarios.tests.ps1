@@ -576,6 +576,54 @@ Test 'the scenario "subject work changes" passes when the PO''s answer is record
     Assert-Equal 1 $run.ExitCode 'exit code when the answer is not recorded'
 }
 
+function New-ScoredRequest([string]$Name, [hashtable]$Request, [hashtable]$Scores) {
+    # A proposal of the subject routine, saved under the test root: the request the PO describes,
+    # recorded as a plain fact, then the agent's scores on a line of their own, interpreted.
+    $create = New-SubjectOperation (@{ horizon = 'later'; clearance = 'pending'; source = @{ where = 'conversation with the PO'; read_on = $Day } } + $Request)
+    $scores = @{ op = 'update'; id = 'line 1'; interpreted = $true; source = @{ where = "the agent's reading of the subject"; read_on = $Day }; fields = $Scores }
+    New-Item -ItemType Directory -Path $TestRoot -Force | Out-Null
+    $path = Join-Path $TestRoot $Name
+    Write-Json $path @{ operations = @($create, $scores) }
+    $path
+}
+
+Test 'the scenario "subject scores wait" passes when the subject the PO described is recorded and the agent''s scores, with their reasons, wait for the PO, and fails when the scores are recorded' {
+    $proposal = New-ScoredRequest 'scores-wait.proposal.json' @{ title = 'Complaint triage assistant'; banks = @('Harbour Bank') } @{
+        value_score = 4; value_reason = 'Every complaint would be routed within the hour.'; feasibility_score = 4; feasibility_reason = 'The complaint mails are kept with their category.'
+        risk_score = 2; risk_reason = 'A care agent reads every complaint routed.'; ai_act_high_risk = $false; ai_act_reason = 'It routes mails; it decides nothing about a person.'
+    }
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Proposal `"$proposal`" -Plain" subject-scores-wait
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    record complaint-triage-assistant: value_score is null' 'the score not recorded'
+    Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[0\]\.id is "complaint-triage-assistant"' 'the scores wait on the subject recorded'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Proposal `"$proposal`"" subject-scores-wait
+
+    Assert-Match $run.Output '  FAIL  record complaint-triage-assistant: value_score is null' 'the score recorded without the PO''s yes'
+    Assert-Equal 1 $run.ExitCode 'exit code when the scores are recorded'
+}
+
+Test 'the scenario "subject AI Act high-risk" passes when a use case scored high is marked high-risk under the AI Act and the ranked portfolio shows the mark, and fails without the mark' {
+    $request = @{ title = 'Instant credit scoring'; banks = @('Alpine Bank') }
+    $scores = @{ value_score = 5; value_reason = 'Thousands of applicants a month answered within the hour.'; feasibility_score = 4; feasibility_reason = 'The loan history is in one place.'
+        risk_score = 4; risk_reason = 'A refused loan harms a customer.' }
+    $marked = New-ScoredRequest 'high-risk.proposal.json' $request ($scores + @{ ai_act_high_risk = $true; ai_act_reason = 'It assesses the creditworthiness of natural persons, an Annex III area.' })
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Proposal `"$marked`" -Ranking" subject-ai-act-high-risk
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    record instant-credit-scoring: ai_act_high_risk is true' 'the mark recorded'
+    Assert-Match $run.Output '  ok    the register tool verifies views/ranking\.md' 'the ranked portfolio is stamped'
+
+    $unmarked = New-ScoredRequest 'unmarked.proposal.json' $request $scores
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Proposal `"$unmarked`" -Ranking" subject-ai-act-high-risk
+
+    Assert-Match $run.Output '  FAIL  file views/ranking\.md has a line containing "High-risk"' 'no mark in the ranked portfolio'
+    Assert-Equal 1 $run.ExitCode 'exit code without the mark'
+}
+
 Test 'the scenario "collect and drop a line" passes when the line kept is recorded alone and the note is filed, and fails when the line dropped is recorded too' {
     $note = 'pilot-preparation.md'
     $kept = New-NoteOperation commitment $note @{ title = 'Send the security file of the pilot'; owner = 'the architect'; owed_to = 'the tech lead'; due_date = '2026-03-26'; date_of_fact = '2026-03-12' }

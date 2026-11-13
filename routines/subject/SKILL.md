@@ -1,6 +1,6 @@
 ---
 name: subject
-description: Create, modify or close a subject of the PO's register by asking the PO a few questions, and brainstorm with the PO the benefits it promises. Use when the PO wants to add a subject, change one (horizon, client banks, clearance, gates, watch list, next step), close one, or define its benefits, gains or metrics.
+description: Create, modify, score or close a subject of the PO's register by asking the PO a few questions, and brainstorm with the PO the benefits it promises. Use when the PO wants to add a subject, change one (horizon, client banks, clearance, gates, watch list, next step), have one scored, see the ranked portfolio, close one, or define its benefits, gains or metrics.
 ---
 
 # Create, modify or close a subject
@@ -48,7 +48,18 @@ Record these too when the PO mentions them: `owning_entity`, `sponsor`, `decider
 
 A question the PO leaves unanswered goes to your open questions once the subject is recorded, about it.
 
-Done when each answer needed is one the PO gave.
+**Scores.** For each request for an AI use case you create, and for any subject the PO asks you to score or that lacks scores when the PO asks for the ranked portfolio, propose its scores yourself: they are not the PO's answers but yours, each with its reason in one short sentence:
+
+- `value_score` and `value_reason`: what the subject would bring, from 1 (little) to 5 (a lot): its expected gain, and how many people or cases it serves;
+- `feasibility_score` and `feasibility_reason`: how easily it can be done, from 1 (hard) to 5 (easy): the data it needs and whether that data is at hand;
+- `risk_score` and `risk_reason`: what could go wrong, from 1 (little) to 5 (a lot): harm to a customer, sensitive data, an error no one would catch;
+- `ai_act_high_risk` and `ai_act_reason`: the AI Act mark, below.
+
+A score is a whole number from 1 to 5: the register tool refuses any other, and a score or a mark without its reason. A score you have nothing to ground is left out, with a question.
+
+**The AI Act mark is a mark to check, never legal advice.** Give `true` when the use case would fall in an area that the EU AI Act lists as high-risk (its Annex III), such as assessing the creditworthiness or the credit score of natural persons, deciding their access to essential private services, or recruiting and managing workers; or when it would be the safety component of a product. Give `false` when it plainly falls in none, as a tool that drafts a text a person reviews. Name the area in `ai_act_reason`, and tell the PO that the mark is theirs and the organisation's compliance function's to confirm. When you cannot tell, leave the mark out and keep the question. The mark never weighs on a score: the ranked portfolio shows it beside the score.
+
+Done when each answer needed is one the PO gave, and the scores to propose are written.
 
 ## 3. Write the proposal
 
@@ -87,15 +98,27 @@ To modify or close:
 - To close: `"fields": { "status": "closed" }`. A refused request is closed with its reason, after the notes it already holds: `"fields": { "status": "closed", "notes": "Refused on 2026-03-09: the data cannot leave the bank." }`.
 - `read_on` is today's date, read from the machine.
 - What the PO tells you is a plain fact: `"interpreted": false` and `"evidence_level": "fact"`.
+- Your scores are not: they go in an update of their own, `"interpreted": true`, after the line that creates or modifies the subject, so that the PO can keep the subject and drop them. For a subject this proposal creates, the update names it by its line, `"id": "line 1"`; it carries the source `{ "where": "the agent's reading of the subject", "read_on": "<today's date>" }` and gives the scores and the mark with their reasons:
+
+```json
+{ "op": "update", "id": "line 1", "interpreted": true,
+  "source": { "where": "the agent's reading of the subject", "read_on": "2026-03-02" },
+  "fields": { "value_score": 4, "value_reason": "Every credit memo would take two hours instead of a day.",
+              "feasibility_score": 3, "feasibility_reason": "The memos exist, but they must be gathered from three teams.",
+              "risk_score": 2, "risk_reason": "An analyst reviews every draft before it is used.",
+              "ai_act_high_risk": false, "ai_act_reason": "It drafts a memo an analyst reviews; it does not assess the creditworthiness of a person." } }
+```
 - The register tool sets the identifier, the dates and the history.
 
 ## 4. Preview, then apply once the PO accepts
 
 1. Run the register tool's `preview`. When it refuses the proposal, it lists its reasons. Correct the proposal when the reason is its form. Ask the PO when the reason is an answer: a gate, an objective or a client bank that `settings.json` does not list is the PO's to add there.
 2. Show the PO the table that `preview` printed.
-3. Run `apply` once the PO accepts. An acceptance given ahead, with the request, counts. When the PO wants a change, correct the proposal and preview again. When the PO wants nothing recorded, delete `state/proposal.json`.
+3. Run `apply` once the PO accepts. An acceptance given ahead, with the request, counts. **Your scores are recorded only on a yes the PO gives them**: an acceptance given ahead covers them only when it accepts the proposal as `preview` shows it, or names the scores. When it covers only what the PO told you, run `apply plain`: it records the PO's answers and leaves your scores waiting; show the PO the table it prints under `Waiting for the PO`, and wait. When the PO wants a change, correct the proposal and preview again. When the PO wants nothing recorded, delete `state/proposal.json`.
 
 For a subject a request created, run the register tool's `view intake <identifier>` once it is recorded, and tell the PO where the intake card is: a draft, to review before using it.
+
+When the PO asks for the ranked portfolio, run the register tool's `view ranking` once the scores are applied (`view ranking bank <client bank>` for one client bank) and tell the PO where it is: `views/ranking.md`.
 
 Done when the register tool has answered `Applied and committed`, and you have told the PO which subject was recorded, with its identifier. Once a new subject is recorded, offer in one line to brainstorm its benefits: step 5.
 

@@ -744,18 +744,22 @@ function Format-Clearance($Subject, [string]$Clearance, [string]$By, [string]$On
     $Clearance
 }
 
+function Get-ActiveSubjects([string]$Bank) {
+    # The active subjects, in the order of their identifiers. Given a client bank, only those that
+    # name it or name no bank.
+    @(Get-RecordFiles | Where-Object { $_.type -eq 'subject' } | ForEach-Object { Read-JsonFile $_.path } |
+            Where-Object { $_.status -ceq 'active' -and (-not $Bank -or -not $_.banks -or $_.banks -ccontains $Bank) })
+}
+
 function Get-PortfolioHorizons($Labels, [string]$Bank) {
     # The portfolio view below its title and its stamp, as lines: every active subject under its
     # horizon. export prints these lines too, for the weekly synthesis that opens with them. Given a
     # client bank, only the subjects that name it or name no bank.
     $portfolio = $Labels.portfolio
-    # In the order of their identifiers.
-    $files = @(Get-RecordFiles)
-    $subjects = @($files | Where-Object { $_.type -eq 'subject' } | ForEach-Object { Read-JsonFile $_.path } |
-            Where-Object { $_.status -ceq 'active' -and (-not $Bank -or -not $_.banks -or $_.banks -ccontains $Bank) })
+    $subjects = Get-ActiveSubjects $Bank
     # The benefits in play of each subject, open or achieved, follow its title when it has any.
     $benefits = @{}
-    foreach ($benefit in $files | Where-Object { $_.type -eq 'benefit' } | ForEach-Object { Read-JsonFile $_.path }) {
+    foreach ($benefit in Get-RecordFiles | Where-Object { $_.type -eq 'benefit' } | ForEach-Object { Read-JsonFile $_.path }) {
         if ('open', 'achieved' -ccontains $benefit.status) { $benefits[$benefit.subject]++ }
     }
     $lines = @()
@@ -950,7 +954,8 @@ function Get-MeetingBrief($Meeting, $Records, $Notes) {
 
 $CheckRules = @{
     error   = 'unreadable_record', 'unknown_field_or_value', 'missing_required_field', 'identifier_differs_from_file_name', 'reference_to_missing_record',
-        'cleared_without_name_and_date', 'missing_gate_not_out_of_frame', 'taken_decision_without_author', 'effort_of_another_person', 'value_without_date'
+        'cleared_without_name_and_date', 'missing_gate_not_out_of_frame', 'taken_decision_without_author', 'effort_of_another_person', 'score_without_reason',
+        'value_without_date'
     warning = 'commitment_without_owner', 'commitment_without_due_date', 'commitment_overdue', 'decision_past_its_date', 'subject_stale',
         'inbox_note_old', 'source_stale', 'unclassified_old', 'intake_incomplete', 'benefit_stale'
 }
@@ -958,6 +963,9 @@ $CheckRules = @{
 # The five parts of the intake card of a subject, in the order the card and the check name them.
 # The client bank is the field banks: a subject that names no bank has not given it.
 $IntakeParts = 'problem', 'banks', 'requested_by', 'data_needed', 'expected_gain'
+
+# The scores of a subject and the AI Act mark, each with the field that holds its reason.
+$ScoreReasons = [ordered]@{ value_score = 'value_reason'; feasibility_score = 'feasibility_reason'; risk_score = 'risk_reason'; ai_act_high_risk = 'ai_act_reason' }
 
 function Test-RecordRules([string]$Type, $Record) {
     # The error rules that a record breaks by what its fields say together, as it is recorded or
@@ -972,6 +980,9 @@ function Test-RecordRules([string]$Type, $Record) {
             @{ rule = 'missing_gate_not_out_of_frame'; detail = $missing
                 reason = "subject under Now with a missing gate ($missing) and a clearance other than out of frame: its clearance is '$($Record.clearance)'" }
         }
+        # A score is a guess until its reason says why.
+        $unreasoned = @($ScoreReasons.Keys | Where-Object { $null -ne $Record.$_ -and -not "$($Record.($ScoreReasons[$_]))".Trim() } | ForEach-Object { "'$_' needs '$($ScoreReasons[$_])'" }) -join ', '
+        if ($unreasoned) { @{ rule = 'score_without_reason'; detail = $unreasoned; reason = "score without its reason: $unreasoned" } }
     }
     if ($Type -eq 'decision' -and $Record.status -ceq 'taken' -and -not "$($Record.decided_by)".Trim()) {
         @{ rule = 'taken_decision_without_author'; reason = "taken decision without its author: a taken decision gives 'decided_by'" }
