@@ -175,6 +175,25 @@ Test 'a meeting is linked to subjects by its attendees and its title against the
     Assert-Match (Get-Meeting $block '11:00') '<dt>Subjects</dt><dd>none of your subjects</dd>' 'a meeting no watch list names'
 }
 
+Test 'a watch list links a meeting by whole words only, whatever the case: the keyword AI names no daily, the tech lead no tech leader' {
+    $ws = New-TestWorkspaceWithSubject
+    Set-Proposal $ws @{ operations = @(New-SubjectOperation @{ title = 'AI assistant'; watch_list = @{ people = @('the tech lead'); keywords = @('AI') } }) }
+    $run = Invoke-Register $ws apply -Today 2026-03-02
+    Assert-Equal 0 $run.ExitCode "exit code when recording the subject, with output: $($run.Output)"
+    Set-Calendar $ws @(
+        (New-Meeting '2026-03-02T09:30' '2026-03-02T09:45' 'Daily of the branch staff' 'the tech leader'),
+        (New-Meeting '2026-03-02T11:00' '2026-03-02T12:00' 'ai pilot review' 'the sponsor'),
+        (New-Meeting '2026-03-02T14:00' '2026-03-02T14:30' 'Weekly sync' 'The Tech Lead, Example Bank')
+    )
+
+    Invoke-Register $ws morning -Now $Morning | Out-Null
+
+    $block = Get-PageBlock (Read-MorningPage $ws) 'meetings'
+    Assert-Match (Get-Meeting $block '09:30') '<dt>Subjects</dt><dd>none of your subjects</dd>' 'a meeting that holds the keyword and the person only inside other words'
+    Assert-Match (Get-Meeting $block '11:00') '<dt>Subjects</dt><dd>AI assistant <span class="id">ai-assistant</span></dd>' 'the keyword as a word, in other letters'
+    Assert-Match (Get-Meeting $block '14:00') '<dt>Subjects</dt><dd>AI assistant <span class="id">ai-assistant</span></dd>' 'the person among the attendees'
+}
+
 Test 'a meeting with a client bank keeps to that bank''s subjects, and shows the bank; a meeting that names no bank has the banks of its subjects' {
     $ws = New-TestWorkspaceWithMeetings
 

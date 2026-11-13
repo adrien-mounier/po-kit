@@ -894,13 +894,14 @@ function Get-WorkingDaysSince([string]$Date) {
 function Get-MeetingBrief($Meeting, $Records, $Notes) {
     # The brief of a meeting, from the records of the register and the agent's notes:
     # - subjects: the active subjects whose watch list names a person among its attendees, or a
-    #   keyword its title holds, whatever the case of the letters;
+    #   keyword its title holds, as whole words, whatever the case of the letters: the keyword AI
+    #   is not in "Daily";
     # - banks: the client banks of the settings that its title or an attendee names. A meeting with
     #   a client bank keeps the subjects that name that bank or none, as view bank does. A meeting
     #   that names none has the banks of its subjects;
     # - commitments and decisions: the open commitments and the pending decisions of its subjects;
     # - note: the agent's note on it.
-    $holds = { param($Text, $Part) "$Part".Trim() -and "$Text".IndexOf("$Part".Trim(), [StringComparison]::OrdinalIgnoreCase) -ge 0 }
+    $holds = { param($Text, $Part) "$Part".Trim() -and [regex]::IsMatch("$Text", '(?<![\p{L}\p{N}])' + [regex]::Escape("$Part".Trim()) + '(?![\p{L}\p{N}])', 'IgnoreCase') }
     $attendees = @($Meeting.attendees | Where-Object { $_ })
     $named = @($Settings.banks | Where-Object { $bank = $_; (& $holds $Meeting.title $bank) -or @($attendees | Where-Object { & $holds $_ $bank }).Count })
     $subjects = @($Records | Where-Object { $_.type -ceq 'subject' -and $_.status -ceq 'active' } | Where-Object {
