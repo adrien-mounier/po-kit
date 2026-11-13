@@ -24,9 +24,11 @@
 #   -Say <text>       prints this text, as an agent prints its answer
 #   -ExitCode <n>     ends with this exit code
 #   -Stream           prints all it prints as a transcript does, one line of JSON per step, as
-#                     Claude Code does with --output-format stream-json --verbose
+#                     Claude Code does with --output-format stream-json --verbose: last, the line
+#                     of the result, which gives the text of -Say as its final answer
+#   -Read <file>      with -Stream, shows this file in the transcript, as a file the agent opened
 param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [string]$Snapshot, [string]$MeetingNotes, [string]$Questions, [switch]$ByHand,
-    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake)
+    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [string]$Read)
 
 $prompt = [Console]::In.ReadToEnd()
 $steps = {
@@ -66,8 +68,9 @@ if ($Weekly) {
 }
 if ($Stream) {
     '{"type":"system","subtype":"init"}'
+    if ($Read) { '{"type":"user","tool_result":' + (ConvertTo-Json -InputObject ([IO.File]::ReadAllText($Read)) -Compress) + '}' }
     & $steps 2>&1 | ForEach-Object { '{"type":"assistant","text":' + (ConvertTo-Json -InputObject "$_" -Compress) + '}' }
-    '{"type":"result"}'
+    '{"type":"result","result":' + (ConvertTo-Json -InputObject "$Say" -Compress) + '}'
 }
 else { & $steps }
 exit $ExitCode

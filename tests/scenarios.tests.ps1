@@ -364,6 +364,27 @@ Test 'the scenario "an unclear real effort" passes when the done update leaves t
     Assert-Equal 1 $run.ExitCode 'exit code when the agent asks in the chat'
 }
 
+Test 'when the command prints a transcript, ../agent-output.txt holds the final answer only, so a routine the agent read does not fail a fact on what it said, while a transcript fact still sees what it read' {
+    $note = 'march steering pack.md'
+    $done = New-DoneUpdate $note @{ status = 'done' }
+    # The collect routine holds "My guess", as the agent reads it in every collect.
+    $read = "-Read `"$(Join-Path $KitRoot 'routines\collect\SKILL.md')`""
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($done) -Do "-Plain -Questions `"$Fixtures\real-effort-questions.json`" -Morning -Stream $read -Say `"One question waits for the briefing.`"") effort-real-unclear -Keep
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file \.\./agent-output\.txt has no line containing "My guess"' 'the routine read is not the answer'
+    Assert-True ($run.Output -match '(?m)^Kept: (.+)$') "the run does not say where its folder is kept: $($run.Output)"
+    $folder = Join-Path $Matches[1].Trim() 'effort-real-unclear'
+    Assert-Equal "One question waits for the briefing.`n" ([IO.File]::ReadAllText((Join-Path $folder 'agent-output.txt'))) 'the final answer'
+    Assert-Match ([IO.File]::ReadAllText((Join-Path $folder 'agent-transcript.txt'))) 'My guess' 'the transcript keeps what the agent read'
+
+    $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($done) -Do "-Plain -Morning -Stream $read -Say `"Real effort of C-$Year-002: how many days did it take you? My guess: 2 d.`"") effort-real-unclear
+
+    Assert-Match $run.Output "  FAIL  file \.\./agent-output\.txt has no line containing `"My guess`"\n        found: Real effort of C-$Year-002" 'the question asked in the final answer'
+    Assert-Equal 1 $run.ExitCode 'exit code when the agent asks in the chat'
+}
+
 Test 'the scenario "morning meeting brief" passes when the meeting with Harbour Bank gets a brief from Harbour Bank''s subjects only, and fails when the calendar is not read' {
     $agent = "$FakeAgent -Snapshot `"$Fixtures\calendar.json`" -MeetingNotes `"$Fixtures\morning-notes.json`" -Morning -Say `"Brief: Send the pilot timeline to Harbour Bank [C-$Year-002]`""
 
