@@ -29,7 +29,8 @@
       "fields": {
         "people": { "type": "list", "items": { "type": "text" } },
         "keywords": { "type": "list", "items": { "type": "text" } },
-        "tracker_projects": { "type": "list", "items": { "type": "text" } }
+        "tracker_projects": { "type": "list", "items": { "type": "text" } },
+        "chat_channels": { "type": "list", "items": { "type": "text" } }
       }
     },
     "links": { "type": "list", "items": { "type": "text" } }

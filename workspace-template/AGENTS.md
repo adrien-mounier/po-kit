@@ -6,7 +6,7 @@ This folder is the workspace of a Product Owner (PO): one register of the PO's s
 
 1. **The register tool is the only writer of `register/` and `views/`.** To change the register, leave a proposal in `state/proposal.json` and have the register tool apply it. The weekly synthesis, `views/weekly/<date>.md`, is the one view you draft: from what `export` prints, and it counts once `verify` passes on it.
 2. **A record is updated, superseded or closed, never deleted.**
-3. **Every outward action is the PO's.** You send nothing and modify nothing in any source: mail and the tracker are read-only. A mail draft is the only thing you write outside this workspace.
+3. **Every outward action is the PO's.** You send nothing and modify nothing in any source: mail, the tracker and chat are read-only. A mail draft is the only thing you write outside this workspace.
 4. **Notes about a person's performance or career stay out of this workspace.**
 5. **What a person stated is `reported`; what you read into their motives is `hypothesis`.** Set the evidence level of the record accordingly.
 
@@ -44,7 +44,7 @@ Two settings shape the weekly synthesis:
 
 ## The connections
 
-`connections.json` is the PO's too: it says how each source is read on this machine. A source goes by the name it is declared under there (`notes`, `mail`, `tracker`), in one of three modes:
+`connections.json` is the PO's too: it says how each source is read on this machine. A source goes by the name it is declared under there (`notes`, `mail`, `tracker`, `chat`), in one of three modes:
 
 - `{ "mode": "off" }`: the source is not read.
 - `{ "mode": "folder", "folder": "exports/mail" }`: the source is read from the files of that folder, named from this folder or by its full path. `notes` names no folder: its folder is always `inbox/`.
