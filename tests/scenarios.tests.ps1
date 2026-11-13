@@ -1283,3 +1283,20 @@ Test 'the scenario "backlog paste" passes when, with a tracker that may not writ
     Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has a line containing "Identity document scan screen"' 'no text given'
     Assert-Equal 1 $run.ExitCode 'exit code when no text is given'
 }
+
+Test 'the scenario "backlog draft tickets" passes when the workshop note becomes two ticket drafts proposed, the need a ticket covers is named and not drafted, and nothing is applied, and fails when nothing is drafted' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Changes `"$Fixtures\backlog-drafts.json`" -Say `"The scan is covered by ONB-142, Identity document scan.`"" backlog-draft-tickets
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    what the register tool prints for backlog check has a line containing "2 change\(s\), valid"' 'the drafts pass the check'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Changes `"$Fixtures\backlog-drafts.json`" -BacklogApply 1" backlog-draft-tickets
+
+    Assert-Match $run.Output '  ok    file state/backlog-log\.json is absent' 'a draft not approved is not applied'
+    Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has a line containing "ONB-142"' 'the ticket that covers a need is not named'
+
+    $run = Invoke-Scenarios -Agent $FakeAgent backlog-draft-tickets
+
+    Assert-Match $run.Output '  FAIL  file state/backlog-changes\.json: changes\[0\]\.kind is "create"' 'nothing drafted'
+    Assert-Equal 1 $run.ExitCode 'exit code when nothing is drafted'
+}

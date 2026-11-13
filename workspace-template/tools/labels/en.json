@@ -365,6 +365,7 @@
     "create": "create a ticket in project {0}",
     "reason": "Why: {0}",
     "source": "Source: {0}, read on {1}",
+    "subject": "Subject: {0}",
     "before": "Text before:",
     "after": "Text after:",
     "fields": { "title": "Title", "description": "Description", "acceptance criteria": "Acceptance criteria" },

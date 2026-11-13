@@ -1,0 +1,16 @@
+{
+  "changes": [
+    { "id": "1", "kind": "create", "project": "ONB", "subject": "mobile-onboarding",
+      "after": { "title": "Save the application and resume it later",
+                 "description": "As a customer who stops halfway, I want to save my application and resume it on another device, so that I do not start again.\n\nDefinition of ready:\n- [ ] The team understands the need and its value.",
+                 "acceptance criteria": "- [ ] The application is kept for 30 days.\n- [ ] The customer gets a link by mail to resume it." },
+      "reason": "The workshop asks that a customer can resume an application.",
+      "source": { "where": "inbox/onboarding workshop.md", "read_on": "2026-03-02" }, "state": "proposed" },
+    { "id": "2", "kind": "create", "project": "ONB", "subject": "mobile-onboarding",
+      "after": { "title": "Branch finder",
+                 "description": "As a customer who prefers a branch, I want to find the nearest one, so that I finish my application there.\n\nDefinition of ready:\n- [ ] The team understands the need and its value.",
+                 "acceptance criteria": "- [ ] Given a postcode, the app lists the three nearest branches with their opening hours." },
+      "reason": "The workshop asks that a customer finds the nearest branch.",
+      "source": { "where": "inbox/onboarding workshop.md", "read_on": "2026-03-02" }, "state": "proposed" }
+  ]
+}

@@ -13,6 +13,8 @@ Work in the PO's workspace, under its rules: read `AGENTS.md` there first when i
 
 **The collect writes nothing in a source.** The one exception of the workspace rules is the backlog routine's, never the collect's: create a ticket or edit its text, only after the PO's approval of that exact change, one at a time; never delete, close or move a ticket, never change another field. When a note asks for a change to a ticket, tell the PO the backlog routine can propose it.
 
+**Work for the team.** When a note describes work for the team to do, as a workshop or a call that settles what to build, say so in one line in the same answer as the table, and offer to draft its tickets: `The note "onboarding workshop" describes work for the team: shall I draft its tickets?` Drafting them is the backlog routine's: the collect drafts no ticket.
+
 ## 1. Settle a pending proposal first
 
 When `state/proposal.json` exists, a proposal is pending and this collect waits for it. Run the register tool's `preview`, show the PO its table, ask whether to apply it, change it or delete it, and end there.
