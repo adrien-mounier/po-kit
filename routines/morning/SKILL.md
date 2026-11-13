@@ -113,6 +113,8 @@ Each open question that `morning` printed is asked in the block of the record or
 
 The PO answers the round in one reply. `ok` accepts every recommendation. `2: ...` answers question 2 in the PO's words, and the others keep their recommended answer when the reply ends with `ok`, as `2: they now come on Monday, ok`; without it, ask once for those left. A reply that says neither is an answer to the round: read it against the questions, and ask again only what it leaves open.
 
+A recommendation the PO accepts is the PO's answer, worded as you recommended it: record it as said, with the PO as its source. Do not weigh it again against the notes, mail or calendar. A source that does not say it is the reason you asked, and the PO's answer settles it. If a recommendation needs a fact you do not have, write the fact into the recommended answer, as Q1 above does, so that "ok" confirms the fact.
+
 **One proposal.** The answers build one proposal: the pending one when there is one, `state/proposal.json`, with its lines kept or dropped as the PO said, and each answer that changes the register added to it as an operation, as the collect writes them, with the source `{ "where": "the PO, at the morning briefing", "read_on": "<today's date>" }`. An answer that changes nothing (still due, no change) adds no line. Write the proposal as you go, and apply nothing before the end.
 
 **The end.** After the last block, or at `stop`:

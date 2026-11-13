@@ -6,3 +6,5 @@ Attendees: the sponsor; the tech lead
 Your response: accepted
 
 The sponsor is to choose the pilot branches of the onboarding pilot: the tech lead proposes Harbour Street and Market Square. The tech lead confirms when the onboarding screens are delivered.
+
+Notes added by the tech lead after the meeting: the sponsor agreed to Harbour Street and Market Square.

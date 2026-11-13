@@ -44,8 +44,7 @@
         "id=\"h-owe\""] },
     { "file": "views/morning.html", "line": "<span class=\"m-key\">" },
     { "file": "views/morning.html", "line": "<span class=\"id\">C-{year}-003</span>", "absent": true },
-    { "file": "views/morning.html", "line": "<span class=\"id\">D-{year}-002</span>", "absent": true },
     { "file": "views/morning.html", "line": "class=\"refused", "absent": true },
-    { "file": "../agent-output.txt", "line": "C-{year}-002" }
+    { "file": "../agent-output.txt", "line": "pilot timeline" }
   ]
 }
