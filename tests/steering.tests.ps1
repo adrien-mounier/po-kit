@@ -248,6 +248,19 @@ Test 'the deck takes the sponsor''s language, as the weekly synthesis does: its 
     Assert-Equal 0 (Invoke-Register $ws verify "views\steering\$Committee.html").ExitCode 'verify on the deck in French'
 }
 
+Test 'a decimal value of a benefit is written as the sponsor''s language writes numbers' {
+    $ws = New-SteeringWorkspace
+    $settings = Read-Json (Join-Path $ws 'settings.json')
+    $settings.languages.sponsor = 'fr'
+    Write-Json (Join-Path $ws 'settings.json') $settings
+    Set-Proposal $ws @{ operations = @(@{ op = 'update'; id = 'B-2026-001'; interpreted = $false; fields = @{ current_value = 27.5; measured_on = '2026-03-02' }; source = @{ where = 'inbox/pilot figures.md'; read_on = '2026-03-02' } }) }
+    Invoke-Register $ws apply -Today 2026-03-02 | Out-Null
+
+    Invoke-Register $ws steering $Committee -Now $SteeringNow | Out-Null
+
+    Assert-Match (Get-Slide (Read-Deck $ws) 'value') '\b27,5 minutes\b' 'the value in French'
+}
+
 Test 'a deck template of the organisation in the workspace replaces the kit''s for that workspace; one that leaves out a place to fill is refused and writes nothing' {
     $ws = New-SteeringWorkspace
     $kitTemplate = Join-Path $ws 'tools\templates\steering.html'

@@ -56,8 +56,8 @@ function Format-Record($Record, [string[]]$More = @()) {
         }
         if ($Record.type -ceq 'benefit') {
             "metric: $(Format-Value $Record.metric)"
-            "baseline: $(Get-OrMissing (Format-Measure $Record $Record.baseline))"; "target: $(Get-OrMissing (Format-Measure $Record $Record.target))"
-            "latest value: $(if ($null -ne $Record.current_value) { "$(Format-Measure $Record $Record.current_value), measured $($Record.measured_on)" } else { 'none measured yet' })"
+            "baseline: $(Get-OrMissing (Format-Measure $Record $Record.baseline $numbers))"; "target: $(Get-OrMissing (Format-Measure $Record $Record.target $numbers))"
+            "latest value: $(if ($null -ne $Record.current_value) { "$(Format-Measure $Record $Record.current_value $numbers), measured $($Record.measured_on)" } else { 'none measured yet' })"
             "measured by: $(Get-OrMissing $Record.owner)"
         }
         if ($Record.type -ceq 'commitment') {
@@ -75,11 +75,6 @@ function Format-Record($Record, [string[]]$More = @()) {
         if ($Record.type -ceq 'risk') { "severity: $($Record.severity)"; if ($Record.owner) { "owner: $(Format-Value $Record.owner)" } }
     )
     '- ' + ((@("$(Format-Value $Record.title) [$($Record.id)]", $Record.type, $Record.evidence_level) + $says + $More) -join ' | ')
-}
-
-function Format-Measure($Benefit, $Value) {
-    # A value of a benefit with its unit, as 40 minutes; nothing when there is no value.
-    if ($null -ne $Value) { "$(Format-Value $Value) $(Format-Value $Benefit.unit)".Trim() }
 }
 
 function Get-MeasuredValues($Benefit) {
@@ -113,6 +108,9 @@ $labels = Get-Labels $Settings.languages.sponsor
 # An effort is stated in English, as the rest that the agent reads.
 $effortWords = (Get-Labels 'en').effort
 $invariant = [Globalization.CultureInfo]::InvariantCulture
+# A value of a benefit is written as the sponsor's language writes numbers: the synthesis quotes it
+# as the export gives it.
+$numbers = [Globalization.CultureInfo]::GetCultureInfo($labels.morning.culture)
 
 # Every record of the register, type after type, in the order of the identifiers.
 $all = @(Get-RecordFiles | ForEach-Object { Read-JsonFile $_.path })
@@ -166,7 +164,7 @@ Write-Section 'Open risks' @(foreach ($urgent in $true, $false) { $risks | Where
 $measuredSince = @{ Expression = { if ($_.measured_on -ge $since) { $_.measured_on } else { '' } }; Descending = $true }
 Write-Section 'Benefits' @($records | Where-Object { $_.type -ceq 'benefit' -and 'open', 'achieved' -ccontains $_.status } | Sort-Object $measuredSince, @{ Expression = 'id'; Ascending = $true } | ForEach-Object {
         $benefit = $_
-        $values = @(Get-MeasuredValues $benefit | Where-Object { $_.recorded -ge $since } | ForEach-Object { "$(Format-Measure $benefit $_.value) measured $($_.on) ($(Format-Value $_.source.where))" })
+        $values = @(Get-MeasuredValues $benefit | Where-Object { $_.recorded -ge $since } | ForEach-Object { "$(Format-Measure $benefit $_.value $numbers) measured $($_.on) ($(Format-Value $_.source.where))" })
         Format-Record $benefit "values recorded since ${since}: $(if ($values) { $values -join '; ' } else { 'none' })"
     })
 

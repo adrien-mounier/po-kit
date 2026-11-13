@@ -168,6 +168,18 @@ Test 'export lists every open or achieved benefit, not a dropped one, those meas
     Assert-Equal 'B-2026-003 B-2026-001 B-2026-002' "$(@([regex]::Matches($section, '\[(B-2026-\d+)\]') | ForEach-Object { $_.Groups[1].Value }))" 'the order of the benefits'
 }
 
+Test 'export writes a decimal value of a benefit as the sponsor''s language writes numbers, so that the synthesis quotes it as it is' {
+    $ws = New-TestWorkspaceWithBenefit @{ baseline = 4.5; target = 2; unit = 'days'; current_value = 3.25; measured_on = '2026-03-02' }
+    $settings = Read-Json (Join-Path $ws 'settings.json')
+    $settings.languages.sponsor = 'fr'
+    Write-Json (Join-Path $ws 'settings.json') $settings
+
+    $run = Invoke-Register $ws export 2026-03-01 -Today 2026-03-03
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'baseline: 4,5 days \| target: 2 days \| latest value: 3,25 days, measured 2026-03-02' 'the values in French'
+}
+
 Test 'verify accepts a view that cites a benefit, and refuses one that cites a superseded or a missing benefit' {
     $ws = New-TestWorkspaceWithBenefit
     Set-Proposal $ws @{ operations = @(New-BenefitOperation @{ title = 'Open an account in a quarter of an hour'; target = 15; supersedes = 'B-2026-001' }) }

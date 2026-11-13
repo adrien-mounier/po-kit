@@ -164,7 +164,7 @@ $portfolio = @(
 $slides += New-Slide 'portfolio' $words.portfolio $portfolio
 
 # --- Value delivered against target -------------------------------------------------------------
-$measure = { param($Benefit, $Value) "$(Format-Value $Value) $(Format-Value $Benefit.unit)".Trim() }
+$measure = { param($Benefit, $Value) Format-Measure $Benefit $Value $culture }
 $benefits = @($records | Where-Object { $_.type -ceq 'benefit' -and 'open', 'achieved' -ccontains $_.status -and $active -ccontains $_.subject } | Sort-Object { $titles[$_.subject] }, id)
 $rows = @(foreach ($benefit in $benefits | Select-Object -First 5) {
         $latest = if ($null -ne $benefit.current_value) { "<b>$(Html (& $measure $benefit $benefit.current_value))</b><span class=`"sub`">$(Html ($words.measured_on -f (Format-Day $benefit.measured_on)))</span>" } else { "<span class=`"sub`">$(Html $words.not_measured)</span>" }

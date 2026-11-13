@@ -283,6 +283,14 @@ function Format-Value($Value) {
     "$Value" -replace '\s*\r?\n\s*', ' '
 }
 
+function Format-Measure($Benefit, $Value, [Globalization.CultureInfo]$Culture) {
+    # A value of a benefit with its unit, its number as the culture writes it: 4.5 minutes in
+    # English, 4,5 minutes in French. Nothing when there is no value.
+    if ($null -eq $Value) { return }
+    $number = if ($Value -is [IFormattable]) { $Value.ToString($null, $Culture) } else { Format-Value $Value }
+    "$number $(Format-Value $Benefit.unit)".Trim()
+}
+
 function Format-Fields($Fields, [string[]]$Except) {
     # The fields that hold something: a record as it is recorded carries every field, most empty.
     $given = $Fields.PSObject.Properties | Where-Object { $Except -notcontains $_.Name -and "$(Format-Value $_.Value)" }
