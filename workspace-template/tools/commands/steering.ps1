@@ -11,7 +11,9 @@
 # mark and whether the work changes beside the score; each benefit open or achieved against its
 # target; the decisions taken since the last committee and those awaited, from the committee first;
 # the open risks and the commitments late; the next steps. The labels are those of the sponsor's
-# language, languages.sponsor of settings.json, as for the weekly synthesis.
+# language, languages.sponsor of settings.json, as for the weekly synthesis. Nothing is left out: a
+# list longer than its slide holds goes on over the slides after it, under the same title marked as
+# continued.
 #
 # The last committee is the latest deck of views\steering before that date, or four weeks before
 # it when there is none. The agent's commentary is state\steering.json, written as UTF-8 without a
@@ -80,14 +82,13 @@ function Format-Note([string]$Text) {
 
 function Format-Key([string]$Name) { $said = "$($notes.$Name)".Trim(); if ($said) { "<p class=`"key`">$(Format-Note $said)</p>" } }
 
-function Format-Items($Items, [int]$Most) {
-    # A list of items, each its title and a line below, at most $Most and the number left over.
+function Format-Items($Items) {
+    # A list of items, each its title and a line below.
     $Items = @($Items)
     if (-not $Items) { return "<p class=`"none`">$(Html $words.none)</p>" }
     '<ul class="items">'
-    $Items | Select-Object -First $Most | ForEach-Object { "<li>$($_.tag)<span class=`"t`">$($_.title)</span><span class=`"meta`">$($_.meta)</span></li>" }
+    $Items | ForEach-Object { "<li>$($_.tag)<span class=`"t`">$($_.title)</span><span class=`"meta`">$($_.meta)</span></li>" }
     '</ul>'
-    if ($Items.Count -gt $Most) { "<p class=`"note`">$(Html ($words.more -f ($Items.Count - $Most)))</p>" }
 }
 
 $icon = @{
@@ -105,6 +106,20 @@ function New-Slide([string]$Id, [string]$Heading, [string[]]$Body, [string]$Clas
     # The number of slides is known once they are all built: the mark takes it then.
     "<footer class=`"s-foot`"><span>$(Html $meeting) &middot; $(Html $when)</span><span>$([string]::Format((Html $words.page), $script:number, '<!--slides-->'))</span></footer>"
     '</section>'
+}
+
+function New-ListSlides([string]$Id, [string]$Heading, [object[]]$Lists, [int[]]$Caps, [scriptblock]$Body) {
+    # The slides of lists: what a slide cannot hold, at most $Caps[i] items of $Lists[i], goes on
+    # over the slides after it, under the same title marked as continued, so that nothing is left
+    # out. $Body builds the body of one slide from the part of each list it holds, in order, and
+    # whether it is the first of these slides and the last.
+    $count = 1
+    for ($i = 0; $i -lt $Lists.Count; $i++) { $count = [Math]::Max($count, [int][Math]::Ceiling(@($Lists[$i]).Count / $Caps[$i])) }
+    for ($page = 0; $page -lt $count; $page++) {
+        $parts = @(for ($i = 0; $i -lt $Lists.Count; $i++) { , @(@($Lists[$i]) | Select-Object -Skip ($page * $Caps[$i]) -First $Caps[$i]) })
+        $title = if ($count -gt 1) { $words.continued -f $Heading, ($page + 1), $count } else { $Heading }
+        New-Slide $(if ($page) { "$Id-$($page + 1)" } else { $Id }) $title (& $Body $parts ($page -eq 0) ($page -eq $count - 1))
+    }
 }
 
 $records = @(Get-RecordFiles | ForEach-Object { Read-JsonFile $_.path })
@@ -128,43 +143,43 @@ $slides = @(New-Slide 'title' '' $cover ' cover')
 # --- The portfolio, ranked ----------------------------------------------------------------------
 $ranked = Get-RankedSubjects
 $given = { param($Value) if ($null -ne $Value) { Html $Value } else { Html $words.not_given } }
-$rows = @(
-    $rank = 0
-    foreach ($subject in $ranked.scored | Select-Object -First 7) {
+$rank = 0
+$rows = @(foreach ($subject in $ranked.scored) {
         $rank++
         $score = $subject.value_score * $subject.feasibility_score
         $banks = @($subject.banks | Where-Object { $_ } | ForEach-Object { "<span class=`"bank`">$(Html $_)</span>" }) -join ''
         $mark = Format-AiActMark $subject "<span class=`"mark`">$($icon.warn) $(Html $words.high_risk)</span>" (Html $words.not_high_risk) (Html $words.not_given)
         $changes = if ($subject.work_changes) { Html $labels.intake.work_changes.($subject.work_changes) } else { Html $words.not_given }
-        '<tr>'
-        "<td><span class=`"rank`">$rank</span></td>"
-        "<td class=`"t`">$(Format-Cited $subject)$banks</td>"
-        "<td><span class=`"score`">$(Html $score)<span class=`"gauge`" aria-hidden=`"true`"><i style=`"width: $([int]($score * 4))%`"></i></span></span></td>"
-        "<td class=`"n`">$(Html $subject.value_score)</td><td class=`"n`">$(Html $subject.feasibility_score)</td><td class=`"n`">$(& $given $subject.risk_score)</td>"
-        "<td>$mark</td><td>$changes</td>"
-        '</tr>'
-    }
-)
-$portfolio = @(
-    Format-Key 'portfolio'
+        @('<tr>'
+            "<td><span class=`"rank`">$rank</span></td>"
+            "<td class=`"t`">$(Format-Cited $subject)$banks</td>"
+            "<td><span class=`"score`">$(Html $score)<span class=`"gauge`" aria-hidden=`"true`"><i style=`"width: $([int]($score * 4))%`"></i></span></span></td>"
+            "<td class=`"n`">$(Html $subject.value_score)</td><td class=`"n`">$(Html $subject.feasibility_score)</td><td class=`"n`">$(& $given $subject.risk_score)</td>"
+            "<td>$mark</td><td>$changes</td>"
+            '</tr>') -join [Environment]::NewLine
+    })
+# Five rows of two lines each, under the commentary, leave room for the notes above the footer.
+$slides += New-ListSlides 'portfolio' $words.portfolio @(, $rows) 5 {
+    param($Parts, $First, $Last)
+    if ($First) { Format-Key 'portfolio' }
     '<div class="s-body">'
-    if ($rows) {
+    if ($Parts[0]) {
         '<table class="tbl">'
         "<thead><tr><th>$(Html $words.rank)</th><th>$(Html $words.subject)</th><th>$(Html $words.score)</th><th class=`"n`">$(Html $words.value)</th><th class=`"n`">$(Html $words.feasibility)</th><th class=`"n`">$(Html $words.risk)</th><th>$(Html $words.ai_act)</th><th>$(Html $words.work_changes)</th></tr></thead>"
-        '<tbody>'; $rows; '</tbody></table>'
+        '<tbody>'; $Parts[0]; '</tbody></table>'
     }
     else { "<p class=`"none`">$(Html $words.none)</p>" }
-    if ($ranked.scored.Count -gt 7) { "<p class=`"note`">$(Html ($words.more -f ($ranked.scored.Count - 7)))</p>" }
-    if ($ranked.others) { '<p class="note">' + (Html $words.not_scored).Replace('{0}', (@($ranked.others | ForEach-Object { Format-Cited $_ }) -join ', ')) + '</p>' }
-    "<p class=`"note`">$(Html $words.portfolio_note)</p>"
+    if ($Last) {
+        if ($ranked.others) { '<p class="note">' + (Html $words.not_scored).Replace('{0}', (@($ranked.others | ForEach-Object { Format-Cited $_ }) -join ', ')) + '</p>' }
+        "<p class=`"note`">$(Html $words.portfolio_note)</p>"
+    }
     '</div>'
-)
-$slides += New-Slide 'portfolio' $words.portfolio $portfolio
+}
 
 # --- Value delivered against target -------------------------------------------------------------
 $measure = { param($Benefit, $Value) Format-Measure $Benefit $Value $culture }
 $benefits = @($records | Where-Object { $_.type -ceq 'benefit' -and 'open', 'achieved' -ccontains $_.status -and $active -ccontains $_.subject } | Sort-Object { $titles[$_.subject] }, id)
-$rows = @(foreach ($benefit in $benefits | Select-Object -First 5) {
+$rows = @(foreach ($benefit in $benefits) {
         $latest = if ($null -ne $benefit.current_value) { "<b>$(Html (& $measure $benefit $benefit.current_value))</b><span class=`"sub`">$(Html ($words.measured_on -f (Format-Day $benefit.measured_on)))</span>" } else { "<span class=`"sub`">$(Html $words.not_measured)</span>" }
         # How far the latest value stands from the baseline towards the target, as a bar only.
         $bar = if ($benefit.status -ceq 'achieved') { "<span class=`"done`">$($icon.check) $(Html $words.achieved)</span>" }
@@ -172,28 +187,27 @@ $rows = @(foreach ($benefit in $benefits | Select-Object -First 5) {
             $share = [Math]::Max([double]0, [Math]::Min([double]1, [double]($benefit.current_value - $benefit.baseline) / ($benefit.target - $benefit.baseline)))
             "<span class=`"track`" aria-hidden=`"true`"><i style=`"width: $([int]($share * 100))%`"></i></span>"
         }
-        '<tr>'
-        "<td class=`"t`">$(Format-Cited $benefit)<span class=`"sub one`">$(Html $titles[$benefit.subject]) &middot; $(Html $benefit.metric)</span></td>"
-        "<td class=`"nw`">$(if ($null -ne $benefit.baseline) { Html (& $measure $benefit $benefit.baseline) } else { Html $words.not_given })</td>"
-        "<td class=`"nw`">$latest</td>"
-        "<td class=`"nw`">$(if ($null -ne $benefit.target) { Html (& $measure $benefit $benefit.target) } else { Html $words.not_given })</td>"
-        "<td>$bar</td>"
-        "<td>$(if ("$($benefit.owner)".Trim()) { Html $benefit.owner } else { Html $words.not_given })</td>"
-        '</tr>'
+        @('<tr>'
+            "<td class=`"t`">$(Format-Cited $benefit)<span class=`"sub one`">$(Html $titles[$benefit.subject]) &middot; $(Html $benefit.metric)</span></td>"
+            "<td class=`"nw`">$(if ($null -ne $benefit.baseline) { Html (& $measure $benefit $benefit.baseline) } else { Html $words.not_given })</td>"
+            "<td class=`"nw`">$latest</td>"
+            "<td class=`"nw`">$(if ($null -ne $benefit.target) { Html (& $measure $benefit $benefit.target) } else { Html $words.not_given })</td>"
+            "<td>$bar</td>"
+            "<td>$(if ("$($benefit.owner)".Trim()) { Html $benefit.owner } else { Html $words.not_given })</td>"
+            '</tr>') -join [Environment]::NewLine
     })
-$value = @(
-    Format-Key 'value'
+$slides += New-ListSlides 'value' $words.value_heading @(, $rows) 5 {
+    param($Parts, $First)
+    if ($First) { Format-Key 'value' }
     '<div class="s-body">'
-    if ($rows) {
+    if ($Parts[0]) {
         '<table class="tbl fixed"><colgroup><col style="width: 34%"><col style="width: 11%"><col style="width: 14%"><col style="width: 11%"><col style="width: 13%"><col style="width: 17%"></colgroup>'
         "<thead><tr><th>$(Html $words.benefit)</th><th>$(Html $words.baseline)</th><th>$(Html $words.latest)</th><th>$(Html $words.target)</th><th></th><th>$(Html $words.measured_by)</th></tr></thead>"
-        '<tbody>'; $rows; '</tbody></table>'
+        '<tbody>'; $Parts[0]; '</tbody></table>'
     }
     else { "<p class=`"none`">$(Html $words.none)</p>" }
-    if ($benefits.Count -gt 5) { "<p class=`"note`">$(Html ($words.more -f ($benefits.Count - 5)))</p>" }
     '</div>'
-)
-$slides += New-Slide 'value' $words.value_heading $value
+}
 
 # --- Decisions ----------------------------------------------------------------------------------
 $taken = @($records | Where-Object { $_.type -ceq 'decision' -and $_.status -ceq 'taken' -and $_.date_of_fact -ge $since -and $_.date_of_fact -le $date -and $active -ccontains $_.subject } | Sort-Object date_of_fact, id |
@@ -214,16 +228,18 @@ $awaited = {
 $committeeWords = '\b(?:' + ((@('committee') + @($Settings.steering_words | Where-Object { "$_".Trim() } | ForEach-Object { [regex]::Escape("$_".Trim()) })) -join '|') + ')\b'
 $fromCommittee = @($pending | Where-Object { "$($_.needed_from)" -imatch $committeeWords })
 $fromOthers = @($pending | Where-Object { "$($_.needed_from)" -inotmatch $committeeWords })
-$decisions = @(
-    Format-Key 'decisions'
+$slides += New-ListSlides 'decisions' $words.decisions_heading @($taken, @(& $awaited $fromCommittee), @(& $awaited $fromOthers)) 6, 4, 2 {
+    # A list the slides before have shown whole is not repeated on the next.
+    param($Parts, $First)
+    if ($First) { Format-Key 'decisions' }
     '<div class="s-body cols">'
-    "<div><h3>$(Html ($words.taken -f (Format-Day $since)))</h3>"; Format-Items $taken 6; '</div>'
-    "<div><h3>$(Html $words.awaited)</h3>"; Format-Items @(& $awaited $fromCommittee) 4
-    if ($fromOthers) { "<h3>$(Html $words.awaited_others)</h3>"; Format-Items @(& $awaited $fromOthers) 2 }
+    '<div>'; if ($First -or $Parts[0]) { "<h3>$(Html ($words.taken -f (Format-Day $since)))</h3>"; Format-Items $Parts[0] }; '</div>'
+    '<div>'
+    if ($First -or $Parts[1]) { "<h3>$(Html $words.awaited)</h3>"; Format-Items $Parts[1] }
+    if ($Parts[2]) { "<h3>$(Html $words.awaited_others)</h3>"; Format-Items $Parts[2] }
     '</div>'
     '</div>'
-)
-$slides += New-Slide 'decisions' $words.decisions_heading $decisions
+}
 
 # --- Risks and commitments late -----------------------------------------------------------------
 $risks = @(foreach ($urgent in $true, $false) {
@@ -235,14 +251,14 @@ $late = @($records | Where-Object { $_.type -ceq 'commitment' -and $_.status -ce
         $owner = if ("$($_.owner)".Trim()) { (Html ($words.owner -f (Format-Value $_.owner))) + ', ' }
         @{ title = Format-Cited $_; meta = "$owner<span class=`"late`">$($icon.alert) $(Html ($words.late_by -f (Format-Day $_.due_date), (Get-DaysSince $_.due_date)))</span>" }
     })
-$riskSlide = @(
-    Format-Key 'risks'
+$slides += New-ListSlides 'risks' $words.risks_heading @($risks, $late) 6, 6 {
+    param($Parts, $First)
+    if ($First) { Format-Key 'risks' }
     '<div class="s-body cols">'
-    "<div><h3>$(Html $words.risks)</h3>"; Format-Items $risks 6; '</div>'
-    "<div><h3>$(Html $words.late)</h3>"; Format-Items $late 6; '</div>'
+    '<div>'; if ($First -or $Parts[0]) { "<h3>$(Html $words.risks)</h3>"; Format-Items $Parts[0] }; '</div>'
+    '<div>'; if ($First -or $Parts[1]) { "<h3>$(Html $words.late)</h3>"; Format-Items $Parts[1] }; '</div>'
     '</div>'
-)
-$slides += New-Slide 'risks' $words.risks_heading $riskSlide
+}
 
 # --- Next steps ---------------------------------------------------------------------------------
 $steps = @($notes.next_steps | Where-Object { "$_".Trim() })
@@ -266,8 +282,10 @@ if (-not (Test-Path -LiteralPath $template)) { $name = "tools\$name"; $template 
 $page = [IO.File]::ReadAllText($template, $Utf8)
 $lacking = @('{{language}}', '{{title}}', '{{slides}}' | Where-Object { -not $page.Contains($_) })
 if ($lacking) { Stop-Run "The template $name lacks $($lacking -join ', '). Nothing was written. A deck template holds each of {{language}}, {{title}} and {{slides}}." }
-# The deck holds no script and calls no network, whoever wrote its template.
-if ($page -imatch '<script|(?:\b(?:src|href)\s*=\s*["'']?|url\(\s*["'']?)\s*https?:') { Stop-Run "The template $name holds a script or calls the network. Nothing was written. A deck template holds no <script> and no http:// or https:// address in a src, an href or a url(): the deck is read with no script and no network." }
+# The deck holds no script and calls no network, whoever wrote its template: no element that runs
+# or embeds something, no attribute run on an event, no @import, no address of another machine,
+# http:, https: or // (after an =, a comma of a list or the bracket of url()).
+if ($page -imatch '<(?:script|iframe|object|embed)\b|<meta\b[^>]*\bhttp-equiv|<[^>]*\son\w+\s*=|@import|https?:|[=,(]\s*["'']?\s*//') { Stop-Run "The template $name holds a script or calls the network. Nothing was written. A deck template holds no <script>, <iframe>, <object>, <embed> or <meta http-equiv>, no on... attribute, no @import, and no http://, https:// or // address: the deck is read with no script and no network." }
 # In one pass, so that a text of a record or of the calendar holding a place to fill is left as it is.
 $values = @{ language = $Settings.languages.sponsor; title = (Html ($words.title -f $meeting, $when)); slides = ($slides -join [Environment]::NewLine).Replace('<!--slides-->', "$script:number") }
 $page = [regex]::Replace($page, '\{\{(language|title|slides)\}\}', { param($Found) $values[$Found.Groups[1].Value] })

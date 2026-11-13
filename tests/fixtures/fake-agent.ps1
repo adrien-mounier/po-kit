@@ -16,6 +16,7 @@
 #   -Questions <file> leaves these open questions, dated the same way
 #   -Check            has the register tool run the check
 #   -Morning          has the register tool write the morning page
+#   -Now <moment>     with -Morning, as of this moment rather than the clock's
 #   -Intake <subject> has the register tool write the intake card of this subject
 #   -Ranking          has the register tool write the ranked portfolio
 #   -SteeringNotes <file>
@@ -32,7 +33,7 @@
 #                     of the result, which gives the text of -Say as its final answer
 #   -Read <file>      with -Stream, shows this file in the transcript, as a file the agent opened
 param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [string]$Snapshot, [string]$MeetingNotes, [string]$Questions, [switch]$ByHand,
-    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [switch]$Ranking, [string]$SteeringNotes, [switch]$Steering, [string]$Read)
+    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [switch]$Ranking, [string]$SteeringNotes, [switch]$Steering, [string]$Read, [string]$Now)
 
 $prompt = [Console]::In.ReadToEnd()
 $steps = {
@@ -58,7 +59,7 @@ foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'stat
     [IO.File]::WriteAllText($given[1], $text)
 }
 if ($Check) { & powershell.exe -NoProfile -File tools\register.ps1 check }
-if ($Morning) { & powershell.exe -NoProfile -File tools\register.ps1 morning }
+if ($Morning) { & powershell.exe -NoProfile -File tools\register.ps1 morning $(if ($Now) { '-Now'; $Now }) }
 if ($Intake) { & powershell.exe -NoProfile -File tools\register.ps1 view intake $Intake }
 if ($Ranking) { & powershell.exe -NoProfile -File tools\register.ps1 view ranking }
 if ($Steering) {

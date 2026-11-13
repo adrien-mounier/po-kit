@@ -73,7 +73,7 @@ Done when `verify` answers `Verified`.
 
 Your answer is short:
 
-1. Where the deck is, `views/steering/<date>.html`, to open in a browser: six slides, one landscape page each.
+1. Where the deck is, `views/steering/<date>.html`, to open in a browser: six slides, one landscape page each, and a slide continued over the next ones when its list is long.
 2. The headline you wrote, and the next steps, one line each.
 3. To share it: print it to PDF from the browser, landscape, with background graphics on, one slide per page. The PDF is the PO's to send; you send nothing.
 4. That it is a draft: the PO reads it before using it, and asks for any change. A change to a fact goes through a proposal and the deck is written again; a change to the commentary is yours, then step 5 again.

@@ -99,6 +99,77 @@ Test 'the portfolio slide ranks the scored subjects by value times feasibility w
     Assert-Match $slide 'Not scored yet: Complaint triage assistant \[complaint-triage-assistant\]\.' 'the subjects not scored'
 }
 
+function Get-DeckText([string]$Deck) {
+    # The text of the whole deck, as a reader sees it.
+    [Net.WebUtility]::HtmlDecode(($Deck -replace '(?s)<head>.*?</head>', '' -replace '<[^>]+>', ' ' -replace '\s+', ' ').Trim())
+}
+
+function Assert-DeckWhole([string]$Workspace, [string]$Deck) {
+    # Every slide numbered out of the slides built, the deck verified.
+    $count = [regex]::Matches($Deck, '<section class="slide').Count
+    $numbers = @([regex]::Matches($Deck, '<footer class="s-foot">.*?<span>(\d+) / (\d+)</span></footer>') | ForEach-Object { "$($_.Groups[1].Value)/$($_.Groups[2].Value)" })
+    Assert-Equal ((1..$count | ForEach-Object { "$_/$count" }) -join ' ') ($numbers -join ' ') 'the slide numbers'
+    Assert-True ($Deck -notmatch 'And \d+ more') 'a list of the deck is cut short'
+    Assert-Equal 0 (Invoke-Register $Workspace verify "views\steering\$Committee.html").ExitCode 'verify on the deck'
+}
+
+foreach ($count in 9, 15) {
+    Test "the portfolio slide hides no subject: with $count scored, the ranking goes on over slides of the same title marked as continued, and the high-risk one ranked last is there with its mark" {
+        $ws = New-SteeringWorkspace
+        $more = @(for ($i = 3; $i -lt $count; $i++) { New-SubjectOperation @{ title = "Use case $i for the branch advisers of Example Bank"; value_score = 4; value_reason = 'It saves hours.'; feasibility_score = 2; feasibility_reason = 'The data is scattered.' } })
+        $more += New-SubjectOperation @{ title = 'Fraud alert explanation for branch advisers'; value_score = 1; value_reason = 'It helps a little.'; feasibility_score = 1; feasibility_reason = 'Nothing is ready.'; ai_act_high_risk = $true; ai_act_reason = 'It feeds a fraud decision.' }
+        Set-Proposal $ws @{ operations = $more }
+        Assert-Equal 0 (Invoke-Register $ws apply -Today 2026-03-02).ExitCode 'exit code when recording the subjects'
+
+        $run = Invoke-Register $ws steering $Committee -Now $SteeringNow
+
+        Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+        $deck = Read-Deck $ws
+        $text = Get-DeckText $deck
+        foreach ($title in @(3..($count - 1) | ForEach-Object { "Use case $_ for the branch advisers of Example Bank" }) + 'Mobile onboarding', 'Credit memo drafting') { Assert-Match $text ([regex]::Escape($title)) "the subject $title" }
+        Assert-Match $text "\b$count Fraud alert explanation for branch advisers \[fraud-alert-explanation-for-branch-advisers\] 1 1 1 - High-risk" 'the high-risk subject ranked last, with its mark'
+        $slides = if ($deck -match '<h2 id="h-portfolio">The portfolio, ranked \(1/(\d)\)</h2>') { [int]$Matches[1] }
+        Assert-True ($slides -gt 1) 'the first portfolio slide, marked as continued'
+        Assert-Match $deck "<h2 id=`"h-portfolio-$slides`">The portfolio, ranked \($slides/$slides\)</h2>" 'the last portfolio slide'
+        Assert-Equal "title $((1..$slides | ForEach-Object { 'portfolio' }) -join ' ') value decisions risks next" (@([regex]::Matches($deck, '<section class="slide[^"]*" id="slide-([a-z]+)') | ForEach-Object { $_.Groups[1].Value }) -join ' ') 'the slides, in order'
+        Assert-DeckWhole $ws $deck
+    }
+}
+
+Test 'every list slide hides nothing: benefits, decisions, risks and commitments late beyond what a slide holds go on over slides of the same title marked as continued, in French too' {
+    $ws = New-SteeringWorkspace
+    $settings = Read-Json (Join-Path $ws 'settings.json')
+    $settings.languages.sponsor = 'fr'
+    Write-Json (Join-Path $ws 'settings.json') $settings
+    $source = @{ where = 'inbox/pilot review.md'; read_on = '2026-03-02' }
+    Set-Proposal $ws @{ operations = @(
+            for ($i = 1; $i -le 9; $i++) {
+                @{ op = 'create'; type = 'benefit'; interpreted = $false; fields = @{ title = "Gain $i of the onboarding pilot"; subject = 'mobile-onboarding'; metric = 'Minutes per file'; unit = 'minutes'; baseline = 40; target = 20; current_value = 31; measured_on = '2026-03-02'; owner = 'the head of retail operations'; evidence_level = 'fact'; source = $source } }
+                New-RecordOperation decision @{ title = "Taken decision $i of the pilot"; status = 'taken'; decided_by = 'the sponsor'; date_of_fact = '2026-03-02' }
+                New-RecordOperation decision @{ title = "Committee decision $i of the pilot"; needed_from = 'the retail steering committee'; needed_by = '2026-03-20' }
+                New-RecordOperation decision @{ title = "Other decision $i of the pilot"; needed_from = 'the architect' }
+                New-RecordOperation risk @{ title = "Risk $i of the pilot" }
+                New-RecordOperation commitment @{ title = "Late commitment $i of the pilot"; owner = 'the tech lead'; due_date = '2026-02-26' }
+            })
+    }
+    Assert-Equal 0 (Invoke-Register $ws apply -Today 2026-03-02).ExitCode 'exit code when recording the records'
+
+    $run = Invoke-Register $ws steering $Committee -Now $SteeringNow
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $deck = Read-Deck $ws
+    $text = Get-DeckText $deck
+    foreach ($kind in 'Gain', 'Taken decision', 'Committee decision', 'Other decision', 'Risk', 'Late commitment') {
+        foreach ($i in 1..9) { Assert-Match $text "\b$kind $i of (?:the|the onboarding) pilot\b" "$kind $i" }
+    }
+    $french = Read-Json (Join-Path $KitRoot 'workspace-template\tools\labels\fr.json')
+    foreach ($id in 'value', 'decisions', 'risks') {
+        $heading = [regex]::Escape($french.steering."$(if ($id -eq 'value') { 'value_heading' } else { "${id}_heading" })")
+        Assert-Match ([Net.WebUtility]::HtmlDecode($deck)) "<h2 id=`"h-$id-2`">$heading \(2/\d\)</h2>" "the $id slide continued"
+    }
+    Assert-DeckWhole $ws $deck
+}
+
 Test 'the value slide sets each benefit in play against its target: baseline, latest value with the day it was measured, target and who measures it' {
     $ws = New-SteeringWorkspace
 
@@ -266,7 +337,7 @@ Test 'a deck template of the organisation in the workspace replaces the kit''s f
     $kitTemplate = Join-Path $ws 'tools\templates\steering.html'
     $kitBefore = (Get-FileHash $kitTemplate).Hash
     New-Item -ItemType Directory -Path (Join-Path $ws 'templates') | Out-Null
-    [IO.File]::WriteAllText((Join-Path $ws 'templates\steering.html'), "<!doctype html><html lang=`"{{language}}`"><head><title>Harbour Group | {{title}}</title><style>.slide { break-after: page; }</style></head><body class=`"group-brand`">`n{{slides}}`n</body></html>", $Utf8)
+    [IO.File]::WriteAllText((Join-Path $ws 'templates\steering.html'), "<!doctype html><html lang=`"{{language}}`"><head><title>Harbour Group | {{title}}</title><style>.slide { break-after: page; }</style></head><body class=`"group-brand`">`n{{slides}}`n<p class=`"conf one`" data-note=`"on paper only`">Printed // Harbour Group, confidential</p></body></html>", $Utf8)
 
     $run = Invoke-Register $ws steering $Committee -Now $SteeringNow
 
@@ -296,19 +367,26 @@ Test 'a meeting title holding a place to fill is written as it is, never filled'
     Assert-Equal 6 ([regex]::Matches($deck, '<section class="slide').Count) 'the slides, written once'
 }
 
-Test 'a deck template of the organisation that holds a script or calls the network is refused and writes nothing' {
-    $ws = New-SteeringWorkspace
-    New-Item -ItemType Directory -Path (Join-Path $ws 'templates') | Out-Null
-    $before = Get-WorkspaceSnapshot $ws
-    foreach ($added in '<script>alert(1)</script>', '<link rel="stylesheet" href="https://fonts.example.com/brand.css">', '<style>body { background: url(http://cdn.example.com/logo.png); }</style>', '<img src="https://cdn.example.com/logo.png">') {
+$script:GuardWorkspace = $null
+foreach ($added in '<script>alert(1)</script>', '<SCRIPT src="brand.js"></SCRIPT>', '<iframe src="brand.html"></iframe>', '<object data="brand.svg"></object>', '<embed src="brand.svg">',
+        '<meta http-equiv="refresh" content="0; url=brand.html">', '<div onclick="go()">Harbour Group</div>', '<body onload = "go()">',
+        '<style>@import "brand.css";</style>', '<style>@import url(https://fonts.example.com/brand.css);</style>',
+        '<link rel="stylesheet" href="https://fonts.example.com/brand.css">', '<style>body { background: url(http://cdn.example.com/logo.png); }</style>', '<style>body { background: url( "//cdn.example.com/logo.png"); }</style>',
+        '<img src="https://cdn.example.com/logo.png">', '<img src="//cdn.example.com/logo.png">', "<img src='//cdn.example.com/logo.png'>", '<img srcset="logo.png 1x, https://cdn.example.com/logo2.png 2x">', '<img srcset="logo.png 1x, //cdn.example.com/logo2.png 2x">',
+        '<a href="http://intranet.example.com/">Harbour Group</a>') {
+    Test "a deck template of the organisation that could run a script or call the network is refused and writes nothing: $added" {
+        # One workspace for every template of this table: each leaves it as it found it.
+        if (-not $script:GuardWorkspace) { $script:GuardWorkspace = New-SteeringWorkspace; New-Item -ItemType Directory -Path (Join-Path $script:GuardWorkspace 'templates') | Out-Null }
+        $ws = $script:GuardWorkspace
+        $before = Get-WorkspaceSnapshot $ws
         [IO.File]::WriteAllText((Join-Path $ws 'templates\steering.html'), "<!doctype html><html lang=`"{{language}}`"><head><title>{{title}}</title>$added</head><body>{{slides}}</body></html>", $Utf8)
 
         $run = Invoke-Register $ws steering $Committee -Now $SteeringNow
 
-        Assert-Equal 1 $run.ExitCode "exit code with $added, with output: $($run.Output)"
-        Assert-Match $run.Output 'The template templates\\steering\.html holds a script or calls the network\. Nothing was written\.' "the reason, with $added"
         Remove-Item (Join-Path $ws 'templates\steering.html')
-        Assert-Equal $before (Get-WorkspaceSnapshot $ws) "files of the workspace, with $added"
+        Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
+        Assert-Match $run.Output 'The template templates\\steering\.html holds a script or calls the network\. Nothing was written\.' 'the reason'
+        Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
     }
 }
 

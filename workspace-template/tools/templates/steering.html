@@ -83,7 +83,9 @@ svg.i { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; s
 .s-head { padding-bottom: 14px; border-bottom: 2px solid var(--brand); }
 .s-head h2 { font: 600 30px/1.2 "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif; letter-spacing: -0.01em; }
 .key { margin-top: 16px; font-size: 19px; line-height: 1.4; color: var(--ink-2); max-width: 60em; }
-.s-body { flex: 1 1 auto; min-height: 0; margin-top: 22px; }
+/* The register tool puts on a slide only the rows that fit above the footer; whatever text runs
+   longer is cut at the body rather than written over the footer. */
+.s-body { flex: 1 1 auto; min-height: 0; margin-top: 22px; overflow: hidden; }
 .note { margin-top: 10px; font-size: 13px; color: var(--muted); }
 .s-foot { display: flex; justify-content: space-between; gap: 24px; margin: 0 -56px; padding: 12px 56px 14px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); }
 
@@ -125,7 +127,7 @@ svg.i { width: 1em; height: 1em; flex: none; fill: none; stroke: currentColor; s
 /* ---------- Two columns of items ---------- */
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 48px; }
 .cols h3 { font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); padding-bottom: 8px; border-bottom: 1px solid var(--edge); }
-.cols h3 + h3, .items + h3 { margin-top: 22px; }
+.cols h3:not(:first-child) { margin-top: 22px; }
 .items li { padding: 9px 0; border-bottom: 1px solid var(--rule); }
 .items .t { font-weight: 600; }
 .items .meta { display: block; margin-top: 1px; font-size: 13px; color: var(--muted); }

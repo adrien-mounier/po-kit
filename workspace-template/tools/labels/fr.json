@@ -94,7 +94,7 @@
     "stamp": "Tiré du registre",
     "page": "{0} / {1}",
     "none": "Aucun.",
-    "more": "Et {0} de plus.",
+    "continued": "{0} ({1}/{2})",
     "portfolio": "Le portefeuille, classé",
     "portfolio_note": "Classé par valeur fois faisabilité, chacune notée de 1 à 5. Le risque, la marque AI Act et le changement du travail sont à côté de la note, jamais dedans.",
     "rank": "Rang",
