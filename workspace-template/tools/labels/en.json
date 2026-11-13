@@ -33,6 +33,7 @@
       "inbox_note_old": "Inbox note older than {0} day(s)",
       "source_stale": "Source not read for more than {0} day(s)",
       "unclassified_old": "Unclassified items older than {0} day(s)",
+      "intake_incomplete": "Subject under Later, pending, with an incomplete intake",
       "benefit_stale": "Open benefit without a measured value for more than {0} day(s)"
     },
     "details": {
@@ -44,6 +45,7 @@
       "dated": "dated {0}",
       "read": "last read: {0}",
       "never_read": "never read",
+      "missing": "missing: {0}",
       "measured": "last measured: {0}",
       "never_measured": "never measured, recorded {0}"
     }
@@ -62,6 +64,11 @@
     "cleared_by": "by {0}",
     "cleared_on": "on {0}",
     "benefits": "{0} benefit(s)"
+  },
+  "intake": {
+    "not_given": "not given",
+    "parts": { "problem": "problem", "banks": "client bank", "requested_by": "who asks", "data_needed": "data needed", "expected_gain": "expected gain" },
+    "work_changes": { "yes": "Yes", "no": "No", "unknown": "Unknown" }
   },
   "effort": {
     "adjusted": "est. {0} d, adjusted x{1} from past {2}: {3} d",

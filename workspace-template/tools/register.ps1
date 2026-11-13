@@ -952,8 +952,12 @@ $CheckRules = @{
     error   = 'unreadable_record', 'unknown_field_or_value', 'missing_required_field', 'identifier_differs_from_file_name', 'reference_to_missing_record',
         'cleared_without_name_and_date', 'missing_gate_not_out_of_frame', 'taken_decision_without_author', 'effort_of_another_person', 'value_without_date'
     warning = 'commitment_without_owner', 'commitment_without_due_date', 'commitment_overdue', 'decision_past_its_date', 'subject_stale',
-        'inbox_note_old', 'source_stale', 'unclassified_old', 'benefit_stale'
+        'inbox_note_old', 'source_stale', 'unclassified_old', 'intake_incomplete', 'benefit_stale'
 }
+
+# The five parts of the intake card of a subject, in the order the card and the check name them.
+# The client bank is the field banks: a subject that names no bank has not given it.
+$IntakeParts = 'problem', 'banks', 'requested_by', 'data_needed', 'expected_gain'
 
 function Test-RecordRules([string]$Type, $Record) {
     # The error rules that a record breaks by what its fields say together, as it is recorded or
@@ -1146,6 +1150,11 @@ function Get-CheckFindings($Labels) {
             $from = (Format-Value $record.needed_from).Trim()
             $said = @(if ($from) { $details.needed_from -f $from }) + ($details.needed_by -f $record.needed_by) -join ', '
             @{ rule = 'decision_past_its_date'; about = $about; detail = $said }
+        }
+        # A request taken in sits under Later, pending, until its intake card is whole.
+        if ($file.type -eq 'subject' -and $record.status -ceq 'active' -and $record.horizon -ceq 'later' -and $record.clearance -ceq 'pending') {
+            $missing = @($IntakeParts | Where-Object { -not (Format-Value $record.$_).Trim() } | ForEach-Object { $Labels.intake.parts.$_ })
+            if ($missing) { @{ rule = 'intake_incomplete'; about = $about; detail = $details.missing -f ($missing -join ', ') } }
         }
         # An open benefit waits for a value a person measured: its last one, or one since it was recorded.
         if ($file.type -eq 'benefit' -and $record.status -ceq 'open') {

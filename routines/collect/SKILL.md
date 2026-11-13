@@ -56,6 +56,7 @@ Take each note from top to bottom: the operations follow the order in which the 
 | A change of a commitment, a decision or a risk of the register: done, dropped, closed, a new due date | update that record |
 | A sign that the PO has started a commitment the PO owns: a ticket of it moved to in progress, a mail or a document the PO wrote about it | update that commitment: see "A start" below |
 | A value a person measured for the metric of a benefit of the register | update that benefit: see "A measured value" below |
+| Someone asks for an AI use case: to build one, to study one | create a `subject`: see "A request for an AI use case" below |
 
 A person or a date that the note does not give is left out: an action without a due date is a commitment all the same, and the check will list it. What fits no row is not recorded.
 
@@ -121,6 +122,16 @@ When no kind of `task_kinds` fits, leave `task_kind` out, and tell the PO the ki
 **An optional task.** When the PO says that a commitment of theirs is optional, that it could be dropped or handed over, update it with `"optional": true`, plain fact, the PO as its source. Only the PO marks a task optional: never infer it.
 
 **The real effort of what the PO has done.** When you update a commitment of the PO to `done`, give in that same update, never in a line of its own, `real_effort`, the days the task really took the PO, as `"fields": { "status": "done", "real_effort": 3 }`, when it is clear: a note, a mail or the PO says how long it took, or the calendar, when this workspace reads one, shows the time the PO blocked for that task. The days between its start and its end are not its effort: a task shares them with others. When it is not clear, leave `real_effort` out and keep one question for the PO, with your guess, its estimate when it has one: `Real effort of C-2026-004, "Build the steering pack": how many days did it take you? My guess: 2 d.` The PO's answer is an update of that record that gives `real_effort`, with the source `{ "where": "the PO, in conversation", "read_on": "<today's date>" }`.
+
+**A request for an AI use case.** Whoever asks, and even when it is about no subject of the register, the request becomes a new subject, never an unclassified item. Create a `subject`, `"interpreted": true`, that gives:
+
+- `title`: the name the request gives the use case, word for word, else a short name of what it does;
+- `kind` `product` unless the request says otherwise, `horizon` `later`, `clearance` `pending`;
+- the intake parts the request gives, in its words: `problem` (what goes wrong today), `banks` (the client bank it is for, as `settings.json` lists it), `requested_by` (who asks, named as above), `data_needed` and `expected_gain`;
+- `work_changes` when the request says plainly whether the way people work changes (`yes`) or only a tool is added (`no`), with that in one sentence in `work_changes_reason`;
+- `evidence_level` `reported` and `source`; a subject gives no `subject` and no `date_of_fact`.
+
+A part the request does not give is left out: keep one question for it, with the answer you recommend. **Every new subject gets the work changes question**: when the source does not settle it, keep the question `Does <title> change the way people work, or only add a tool?`, with your recommended answer and why, as `No: the analysts keep their work and gain a search tool.` While the line waits for the PO, ask these questions in the same answer as the table; once the subject is recorded, those not answered go to your open questions, about the subject. Then run the register tool's `view intake <identifier of the subject>`, and tell the PO where the intake card is: a draft, to review before using it.
 
 **What fits no subject.** A passage that matters to the PO's work and is about no subject of the register becomes no record. It goes to `unclassified`, with the note as its source, and you tell the PO.
 
@@ -190,4 +201,4 @@ Done when the proposal holds one operation per change found in step 4, and every
 
 **Ask the real effort you could not infer.** Each question on a real effort that you kept in step 4 goes in the same answer, one line each, as step 4 writes it. When the PO answers, propose the update it gives and preview it as any proposal.
 
-Done when every line is recorded, dropped, or shown to the PO as waiting for them, you have told the PO each record written with its identifier, the notes filed, what went to unclassified, what the check found, each objective you recommend and each real effort you ask, and each question you could not settle is in your open questions.
+Done when every line is recorded, dropped, or shown to the PO as waiting for them, you have told the PO each record written with its identifier, the notes filed, what went to unclassified, what the check found, each objective you recommend and each real effort you ask, each subject a request created has its intake card, and each question you could not settle is in your open questions.

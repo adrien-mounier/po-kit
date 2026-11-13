@@ -84,6 +84,7 @@ function New-UpdatedWorkspace {
     Set-TestFile (Join-Path $ws 'views\weekly\2026-03-02.md') "# Weekly synthesis`n"
     Set-TestFile (Join-Path $ws 'state\last-collect.json') "{ `"notes`": `"2026-03-02T08:00:00+01:00`" }`n"
     Set-TestFile (Join-Path $ws 'state\unclassified.md') "- A mail about the opening hours of a branch.`n"
+    Set-TestFile (Join-Path $ws 'templates\intake-en.md') "# Use case request {title} [{id}]`n"
     git -C $ws add -A
     git -C $ws commit -q -m 'Apply proposal: 2 operation(s)'
 
@@ -251,13 +252,13 @@ Test 'a clone of the workspace keeps every file as it was written, whatever the 
     Assert-Equal (Get-WorkspaceSnapshot $ws) (Get-WorkspaceSnapshot $clone) 'files of the clone'
 }
 
-Test 'an update leaves records, inbox notes, views, state, settings and connections byte-identical, and replaces the kit-owned files' {
+Test 'an update leaves records, inbox notes, views, state, settings, connections and the organisation''s templates byte-identical, and replaces the kit-owned files' {
     $story = New-UpdatedWorkspace
 
     Assert-Equal 0 $story.Run.ExitCode "exit code, with output: $($story.Run.Output)"
     foreach ($file in 'register\subjects\mobile-onboarding.json', 'register\commitments\2026\2026-001.json', 'inbox\2026-03-03',
         'inbox\done\2026-02\2026-02-27', 'views\portfolio.md', 'views\weekly\2026-03-02.md', 'state\proposal.json',
-        'state\last-collect.json', 'settings.json', 'connections.json') {
+        'state\last-collect.json', 'settings.json', 'connections.json', 'templates\intake-en.md') {
         Assert-Match $story.DataBefore ([regex]::Escape("\$file")) 'files compared before and after the update'
     }
     Assert-Equal $story.DataBefore (Get-DataSnapshot $story.Workspace) 'files the kit does not own'

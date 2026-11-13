@@ -1,0 +1,3 @@
+{ "questions": [
+    { "about": "credit-memo-drafting", "question": "Does Credit memo drafting change the way people work, or only add a tool?", "recommended": "Yes: the credit analysts would review a draft instead of writing the memo.", "added": "{today}" },
+    { "about": "payments-api-contribution", "question": "Does the payments API need card tokens?", "recommended": "No: card tokens stay out.", "added": "{workday-2}" } ] }

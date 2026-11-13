@@ -4,12 +4,55 @@
 #   view fr                  with the labels of another language; what the records say is never translated
 #   view bank Harbour Bank   the subjects of one client bank of settings.json and those that name no
 #                            bank; its stamp says so. view fr bank Harbour Bank does both.
+#   view intake <subject>    the intake card of a subject, views\intake\<subject>.md; view intake
+#                            <subject> fr in another language
 #
 # apply regenerates the view after every write, in the default language, with every subject.
+#
+# The intake card is written from a template: templates\intake-<language>.md in the workspace when
+# the organisation has its own, otherwise the kit's, tools\templates\intake-<language>.md. Each
+# {name} of the template is replaced by its value: {title}, {id}, {stamp}, the five parts
+# ($IntakeParts), {work_changes} and {clearance}. A part the subject does not give is shown as not
+# given. A template that leaves out one of them is refused, so that a card always holds them all.
+
+function Write-IntakeCard($Subject, [string]$Language) {
+    $labels = Get-Labels $Language
+    $words = $labels.intake
+    $name = "templates\intake-$Language.md"
+    $template = Join-Path $Workspace $name
+    if (-not (Test-Path -LiteralPath $template)) { $name = "tools\$name"; $template = Join-Path $Workspace $name }
+    $text = [IO.File]::ReadAllText($template, $Utf8)
+    $values = [ordered]@{ title = (Format-Value $Subject.title); id = $Subject.id; stamp = (@(Get-Stamp $labels) -join [Environment]::NewLine) }
+    foreach ($part in $IntakeParts) {
+        $said = (Format-Value $Subject.$part).Trim()
+        $values[$part] = if ($said) { $said } else { $words.not_given }
+    }
+    $values.work_changes = if (-not $Subject.work_changes) { $words.not_given }
+    else { $words.work_changes.($Subject.work_changes) + $(if ("$($Subject.work_changes_reason)".Trim()) { ": $(Format-Value $Subject.work_changes_reason)" }) }
+    $values.clearance = Format-Clearance $Subject $labels.portfolio.clearances.($Subject.clearance) $labels.portfolio.cleared_by $labels.portfolio.cleared_on
+    $lacking = @($values.Keys | Where-Object { -not $text.Contains("{$_}") })
+    if ($lacking) {
+        Stop-Run "The template $name lacks $(@($lacking | ForEach-Object { "{$_}" }) -join ', '). Nothing was written. An intake card always holds every part: put each one in the template."
+    }
+    # In one pass, so that a value holding braces is left as it is.
+    $card = [regex]::Replace($text, '\{([a-z_]+)\}', { param($Found) if ($values.Contains($Found.Groups[1].Value)) { $values[$Found.Groups[1].Value] } else { $Found.Value } })
+    $folder = Join-Path $Workspace 'views\intake'
+    New-Item -ItemType Directory -Path $folder -Force | Out-Null
+    Write-TextFile (Join-Path $folder "$($Subject.id).md") $card
+    "Intake card written in '$Language': views\intake\$($Subject.id).md"
+}
 
 # The stamp of the view names a committed register.
 Assert-RegisterCommitted
 $words = @($Arguments | Where-Object { $null -ne $_ })
+if ($words.Count -and $words[0] -ceq 'intake') {
+    $found = if ($words.Count -gt 1) { Find-Record "$($words[1])" }
+    if ($found.type -ne 'subject') {
+        Stop-Run "view intake takes the identifier of a subject of the register$(if ($words.Count -gt 1) { ", and '$($words[1])' is none" }). Nothing was written: view intake <subject>"
+    }
+    Write-IntakeCard $found.record $(if ($words.Count -gt 2) { "$($words[2])" } else { $Settings.languages.default })
+    return
+}
 $at = [Array]::IndexOf([string[]]$words, 'bank')
 $bank = $null
 if ($at -ge 0) {
