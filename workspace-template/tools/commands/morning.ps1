@@ -588,26 +588,28 @@ function Get-StartBlock {
     $lines = @(foreach ($commitment in $commitments | Where-Object { Test-IsPo $_.owner }) {
             $start = Get-LatestStart $commitment
             if (-not $start -or $start -gt $leadBy) { continue }
-            $dated = if ($start -lt $Today) { 'late' } elseif ($start -eq $Today) { 'today' } else { 'later' }
+            $dated = Get-Dated $start
             $when = switch ($dated) {
                 'late' {
                     $days = Get-DaysSince $start
                     "$(Icon alert)<span class=`"sr k`">$(Html $said.start_by) </span><b>$(Html (Format-Day $start))</b> <span class=`"lag`">$(Html $(if ($days -eq 1) { $words.late_one } else { $words.late_many -f $days }))</span>"
                 }
                 'today' { "$(Icon clock)<span class=`"sr k`">$(Html $said.start_by) </span><b>$(Html $words.today)</b>" }
+                'week' { "$(Icon clock)<span class=`"sr k`">$(Html $said.start_by) </span><b>$(Html (Format-Day $start))</b>" }
                 default { "<span class=`"sr k`">$(Html $said.start_by) </span><b>$(Html (Format-Day $start))</b>" }
             }
             $started = "$($commitment.started_on)".Trim()
+            $sign = "$($commitment.started_sign)".Trim()
             $button, $ask = Get-StartAsk $commitment
             @{
                 date = $start; id = $commitment.id; dated = $dated
                 html = @(
-                    "<li class=`"row start$(@{ late = ' is-late'; today = ' is-soon' }[$dated])`" id=`"start-$(Html $commitment.id)`">"
+                    "<li class=`"row start$(@{ late = ' is-late'; today = ' is-soon'; week = ' is-soon' }[$dated])`" id=`"start-$(Html $commitment.id)`">"
                     "<span class=`"when`">$when</span>"
                     "<span class=`"what`"><span class=`"t`">$(Html $commitment.title)</span> <span class=`"ref`">$(Html $commitment.id)</span></span>"
                     "<span class=`"eff`"><span class=`"sr k`">$(Html $said.effort) </span><b>$(Html ($said.days -f (& $number (Get-AdjustedEffort $commitment).adjusted)))</b> <span class=`"adj`">$(Html (Format-Effort $commitment $labels.effort $culture))</span></span>"
                     "<span class=`"due`"><span class=`"sr k`">$(Html $said.due) </span>$(Html (Format-Day $commitment.due_date))</span>"
-                    "<span class=`"status`"><span class=`"dot$(if ($started) { ' on' })`" aria-hidden=`"true`"></span>$(Html $(if ($started) { $said.started } else { $said.not_started }))</span>"
+                    "<span class=`"status`"><span class=`"dot$(if ($started) { ' on' })`" aria-hidden=`"true`"></span>$(Html $(if ($started -and $sign) { $said.started_with -f $sign } elseif ($started) { $said.started } else { $said.not_started }))</span>"
                     "<span class=`"act`">$(Format-Act $commitment.id $button $ask)</span>"
                     '</li>'
                 )
@@ -615,8 +617,8 @@ function Get-StartBlock {
         })
     foreach ($line in $lines | Where-Object { -not $placed[$_.id] }) { $placed[$line.id] = @{ anchor = "start-$($line.id)"; block = $said.heading } }
     $counts = @(
-        foreach ($kind in @(@('late', 'count_late', 'late'), @('today', 'count_today', 'soon'), @('later', 'count_more', ''))) {
-            $count = @($lines | Where-Object { $_.dated -eq $kind[0] }).Count
+        foreach ($kind in @(@('late', 'count_late', 'late'), @('today', 'count_today', 'soon'), @(@('week', 'later'), 'count_more', ''))) {
+            $count = @($lines | Where-Object { $kind[0] -contains $_.dated }).Count
             if ($count) { $(if ($kind[2]) { "<span class=`"$($kind[2])`">$(Html ($said.($kind[1]) -f $count))</span>" } else { Html ($said.($kind[1]) -f $count) }) }
         }
     )
@@ -649,13 +651,11 @@ function Get-StartBlock {
         $overDays = @($days | Where-Object { $plan.over[$_] -gt 0 })
         if ($overDays) { $counts += "<span class=`"late`">$(Icon alert) $(Html ($said.count_over -f (@($overDays | ForEach-Object { Format-Day $_ }) -join ', ')))</span>" }
     }
-    # The earliest starts first: four lines shown on a day of up to five meetings, three beyond, and
-    # never a start of today or past folded.
-    $short = if ($calendar -and @(Get-DayMeetings $calendar $Today).Count -gt 5) { 3 } else { 4 }
+    # The earliest starts first, every one shown: a task to start soon is never folded away.
     $body = @(
         if ($lines) {
             "<div class=`"cols start`" aria-hidden=`"true`"><span>$(Html $said.start_by)</span><span>$(Html $said.task)</span><span>$(Html $said.effort)<span class=`"adj-h`">$(Html $said.adjusted_from)</span></span><span>$(Html $said.due)</span><span>$(Html $said.status)</span><span></span></div>"
-            Format-Lines $lines $short
+            Format-Lines $lines $lines.Count
         }
         if (-not $calendar) { "<p class=`"free`"><b>$(Html $said.workload_short)</b> <span class=`"late`">$(Icon alert) $(Html ($words.block_not_read -f 'calendar'))</span></p>" }
         elseif ($lines -or $planned) { Get-Workload $days $room $plan $share }

@@ -154,6 +154,7 @@
       "status": "État",
       "days": "{0} j",
       "started": "Commencée",
+      "started_with": "Commencée : {0}",
       "not_started": "Pas commencée",
       "count_late": "{0} en retard pour commencer",
       "count_today": "{0} à commencer aujourd'hui",

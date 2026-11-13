@@ -154,6 +154,7 @@
       "status": "Status",
       "days": "{0} d",
       "started": "Started",
+      "started_with": "Started: {0}",
       "not_started": "Not started",
       "count_late": "{0} late to start",
       "count_today": "{0} to start today",
