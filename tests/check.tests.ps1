@@ -50,7 +50,7 @@ Test 'check on a register in order writes the check report under its stamp, with
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     $state = "$(git -C $ws rev-parse HEAD:register)".Substring(0, 12)
     $expected = '# Check report', '', '> Generated: 2026-03-03T09:15:00+01:00.', "> Register state: $state.",
-        '> Last collect: 2026-03-02T08:30:00+01:00.', '> Sources not covered by the last collect: mail, tracker.', '',
+        '> Last collect: 2026-03-02T08:30:00+01:00.', '> Sources not covered by the last collect: mail, tracker, chat.', '',
         '## Errors', '', 'No error.', '', '## Warnings', '', 'No warning.', ''
     Assert-Equal ($expected -join "`n") ((Read-CheckReport $ws) -replace '\r\n', "`n") 'check report'
     Assert-Match $run.Output '(?m)^Check: 0 error\(s\), 0 warning\(s\)\. Check report: views\\check-report\.md$' 'output'

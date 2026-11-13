@@ -188,7 +188,7 @@ Test 'the bar is the stamp of the page: the date, when it was written, the sourc
     $page = Read-Page $ws
     $state = "$(git -C $ws rev-parse HEAD:register)".Substring(0, 12)
     Assert-Match $page '<h1>Monday 2 March <span class="sub">Morning page, written <time datetime="2026-03-02T07:12:00\+01:00">07:12</time></span></h1>' 'the date and when the page was written'
-    Assert-Match $page "<p class=`"sources`"><span class=`"src`">[^\n]*Read by the collect of 06:50: notes</span> <span class=`"src fail`">[^\n]*Not read: mail</span> <span class=`"src`">Off: tracker, calendar</span> <span class=`"src`">Register state $state</span></p>" 'the sources and the register state'
+    Assert-Match $page "<p class=`"sources`"><span class=`"src`">[^\n]*Read by the collect of 06:50: notes</span> <span class=`"src fail`">[^\n]*Not read: mail</span> <span class=`"src`">Off: tracker, chat, calendar</span> <span class=`"src`">Register state $state</span></p>" 'the sources and the register state'
     Assert-Match $page '<title>Morning page, 2 Mar 2026</title>' 'the title of the page'
 
     $fresh = New-TestWorkspaceWithSubject

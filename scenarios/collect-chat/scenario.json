@@ -1,0 +1,25 @@
+{
+  "routine": "collect",
+  "prompt": "Collect.",
+  "expect": [
+    { "file": "state/proposal.json", "field": "operations[0].type", "is": "commitment" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.owner", "is": "the tech lead" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.due_date", "is": "2026-03-25" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.source.where", "is": "exports/chat/channels/onboarding squad/2026-03-10 0915 the tech lead.txt" },
+    { "file": "state/proposal.json", "field": "operations[1]", "is": null },
+    { "file": "state/proposal.json", "field": "unclassified[0]", "is": null },
+    { "file": "state/proposal.json", "field": "sources_read[1].source", "is": "chat" },
+    { "file": "state/proposal.json", "field": "sources_read[1].items", "is": 1 },
+    { "file": "state/proposal.json", "field": "sources_not_covered", "is": ["mail", "tracker"] },
+    { "file": "state/proposal.json", "line": "canteen", "absent": true },
+    { "file": "state/proposal.json", "line": "vendor", "absent": true },
+    { "file": "../agent-output.txt", "line": "canteen", "absent": true },
+    { "file": "../agent-output.txt", "line": "second floor", "absent": true },
+    { "file": "../agent-output.txt", "line": "vendor", "absent": true },
+    { "file": "../agent-output.txt", "line": "pilot date", "absent": true },
+    { "file": "../agent-output.txt", "line": "1000 the head of cards", "absent": true },
+    { "file": "../agent-output.txt", "line": "1130 the tech lead", "absent": true },
+    { "records": "commitments", "count": 1 },
+    { "file": "state/unclassified.md", "absent": true }
+  ]
+}

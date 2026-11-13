@@ -35,3 +35,4 @@ According to the PO: the team is complete this week.
 
 - mail: it is off
 - tracker: it is off
+- chat: it is off

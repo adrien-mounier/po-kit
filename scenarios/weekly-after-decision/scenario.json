@@ -3,7 +3,7 @@
   "collected": {
     "collected_at": "{today}T08:30:00+01:00",
     "sources_read": [ { "source": "notes", "cutoff": "{today}T08:30:00+01:00", "items": 1 } ],
-    "sources_not_covered": [ "mail", "tracker" ],
+    "sources_not_covered": [ "mail", "tracker", "chat" ],
     "notes_processed": [ "call-with-the-sponsor.md" ],
     "operations": [
       { "op": "create", "type": "decision", "interpreted": true,
@@ -27,7 +27,7 @@
         "> Generated: {today}T",
         "> Register state: ",
         "> Last collect: {today}T08:30:00+01:00.",
-        "> Sources not covered by the last collect: mail, tracker.",
+        "> Sources not covered by the last collect: mail, tracker, chat.",
         "## Now",
         "| Subject                               | Kind    | Clearance                            | Next date | Next step |",
         "|---------------------------------------|---------|--------------------------------------|-----------|-----------|",

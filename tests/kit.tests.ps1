@@ -38,12 +38,13 @@ Test 'the default settings hold the delays, the validation mode, the languages, 
     Assert-Equal '' $settings.sponsor.email "sponsor's address"
 }
 
-Test 'the default connections read notes from a folder, which is always the inbox, and set mail and tracker to off' {
+Test 'the default connections read notes from a folder, which is always the inbox, and set mail, tracker and chat to off' {
     $connections = Read-Json (Join-Path $Template 'connections.json')
 
     Assert-Equal 'folder' $connections.notes.mode 'notes mode'
     Assert-Equal 'off' $connections.mail.mode 'mail mode'
     Assert-Equal 'off' $connections.tracker.mode 'tracker mode'
+    Assert-Equal 'off' $connections.chat.mode 'chat mode'
 }
 
 Test 'every routine is a folder that an agent loads as a skill: its SKILL.md opens with its name and a description, and names no agent and no connector' {
@@ -56,7 +57,7 @@ Test 'every routine is a folder that an agent loads as a skill: its SKILL.md ope
         Assert-Match $opening "(?m)^name: $([regex]::Escape($routine.Name))\s*$" "name of the routine $($routine.Name)"
         Assert-Match $opening '(?m)^description: \S' "description of the routine $($routine.Name)"
         foreach ($file in Get-ChildItem -LiteralPath $routine.FullName -Recurse -File) {
-            $named = [regex]::Matches((Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8), '(?i)\b(Claude|Codex|Copilot|Gemini|MCP|Outlook|Gmail|Exchange|Jira|Azure DevOps)\b') | ForEach-Object { $_.Value }
+            $named = [regex]::Matches((Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8), '(?i)\b(Claude|Codex|Copilot|Gemini|MCP|Outlook|Gmail|Exchange|Jira|Azure DevOps|Slack|Microsoft Teams|Mattermost|Webex|Google Chat|WhatsApp)\b') | ForEach-Object { $_.Value }
             Assert-Equal '' "$named" "agents and connectors named in routines\$($routine.Name)\$($file.Name)"
         }
     }

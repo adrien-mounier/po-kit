@@ -280,12 +280,12 @@ Test 'a source that the connections do not declare is refused, whether read or n
     $ws = New-TestWorkspace
     Set-Proposal $ws (New-CollectProposal @{
             sources_read        = @(@{ source = 'email'; cutoff = '2026-03-02T08:12:00+01:00'; items = 14 })
-            sources_not_covered = @('tracker', 'chat')
+            sources_not_covered = @('tracker', 'wiki')
         })
 
     Assert-Refused $ws @(
-        "source 'email' is not declared in connections\.json, which declares: notes, mail, tracker",
-        "source 'chat' is not declared in connections\.json, which declares: notes, mail, tracker"
+        "source 'email' is not declared in connections\.json, which declares: notes, mail, tracker, chat",
+        "source 'wiki' is not declared in connections\.json, which declares: notes, mail, tracker, chat"
     )
 }
 

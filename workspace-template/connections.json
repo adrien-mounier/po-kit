@@ -8,6 +8,9 @@
   "tracker": {
     "mode": "off"
   },
+  "chat": {
+    "mode": "off"
+  },
   "calendar": {
     "mode": "off"
   }
