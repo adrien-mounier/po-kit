@@ -120,6 +120,25 @@ Test 'the meetings of today are a timeline by start time, each with its duration
     Assert-Match (Read-MorningPage $ws) '<span class="src"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg>Calendar read at 07:05</span>' 'the bar'
 }
 
+Test 'the units of a duration are words of the labels, as every other word of the page' {
+    $ws = New-TestWorkspaceWithMeetings
+    $path = Join-Path $ws 'tools\labels\en.json'
+    $labels = [IO.File]::ReadAllText($path, $Utf8) | ConvertFrom-Json
+    $labels.morning.meetings.minutes = '{0} minutes'
+    $labels.morning.meetings.hours = '{0} hours'
+    $labels.morning.meetings.hours_minutes = '{0} hours {1}'
+    Write-Json $path $labels
+    git -C $ws commit -q -am 'Labels with long units'
+
+    $run = Invoke-Register $ws morning -Now $Morning
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $block = Get-PageBlock (Read-MorningPage $ws) 'meetings'
+    Assert-Match (Get-Meeting $block '09:30') '<span class="dur">15 minutes</span>' 'a duration in minutes'
+    Assert-Match (Get-Meeting $block '11:00') '<span class="dur">1 hours, tentative</span>' 'a duration in hours'
+    Assert-Equal '3 meeting(s), 2 hours booked. Open a line for its brief.' (Get-BlockCount $block) 'the time booked'
+}
+
 Test 'the free time for work is the working hours that no meeting takes, tentative ones included, with the longest stretch named' {
     $ws = New-TestWorkspaceWithMeetings
 

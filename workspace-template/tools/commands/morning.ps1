@@ -271,8 +271,9 @@ function Get-Minutes([string]$Timestamp) {
 function Format-Minutes([int]$Minutes) { '{0:00}:{1:00}' -f [Math]::Floor($Minutes / 60), ($Minutes % 60) }
 
 function Format-Duration([int]$Minutes) {
+    $said = $words.meetings
     $hours = [int][Math]::Floor($Minutes / 60)
-    if (-not $hours) { "$Minutes min" } elseif ($Minutes % 60) { "$hours h $(($Minutes % 60).ToString('00'))" } else { "$hours h" }
+    if (-not $hours) { $said.minutes -f $Minutes } elseif ($Minutes % 60) { $said.hours_minutes -f $hours, ($Minutes % 60).ToString('00') } else { $said.hours -f $hours }
 }
 
 function Get-FreeTime($Meetings) {
