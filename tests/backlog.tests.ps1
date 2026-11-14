@@ -367,6 +367,17 @@ Test 'with a tracker connector that may write, backlog apply records the change 
     Assert-True (-not (Test-Path (Join-Path $ws 'outbox'))) 'an outbox was written'
 }
 
+Test 'a tracker entry whose writes is not true itself, as the text "true", does not let the agent write: backlog apply gives the text to paste' {
+    $ws = New-BacklogWorkspace @{ mode = 'connector'; connector = 'tracker'; writes = 'true' }
+    Set-Changes $ws @(New-Change) -Shown
+
+    $run = Invoke-Register $ws backlog apply 1 (Get-Code $ws)
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output 'Not recorded: the tracker does not let the agent write' 'output'
+    Assert-True (-not (Test-Path (Join-Path $ws 'state\backlog-log.json'))) 'the change was logged as written'
+}
+
 Test 'backlog ready checks the approval code and the text shown before a connector writes, refusing without a code, with a wrong one or the code of an older text, and writes nothing' {
     $ws = New-BacklogWorkspace @{ mode = 'connector'; connector = 'tracker'; writes = $true }
     Set-Changes $ws @(New-Change @{ after = 'Document scan screen' }) -Shown
@@ -374,10 +385,10 @@ Test 'backlog ready checks the approval code and the text shown before a connect
     Set-Changes $ws @(New-Change) -Shown
     $wrong = if ((Get-Code $ws) -ceq 'ABC123') { 'ABC124' } else { 'ABC123' }
     $refused = @(
-        @{ why = 'without a code'; code = @(); reason = 'Change 1 is not applied: no approval code' }
-        @{ why = 'with a wrong code'; code = @($wrong); reason = "Change 1 is not applied: the approval code $wrong is not the code of its text as it stands" }
-        @{ why = 'with the code of an older text'; code = @($old); reason = "Change 1 is not applied: the approval code $old is not the code of its text as it stands" }
-        @{ why = 'with done'; code = @('done'); reason = 'Change 1 is not applied: the approval code done is not the code' }
+        @{ why = 'without a code'; code = @(); reason = 'Change 1 is not ready to write: no approval code' }
+        @{ why = 'with a wrong code'; code = @($wrong); reason = "Change 1 is not ready to write: the approval code $wrong is not the code of its text as it stands" }
+        @{ why = 'with the code of an older text'; code = @($old); reason = "Change 1 is not ready to write: the approval code $old is not the code of its text as it stands" }
+        @{ why = 'with done'; code = @('done'); reason = 'Change 1 is not ready to write: the approval code done is not the code' }
     )
     foreach ($case in $refused) {
         $before = Get-WorkspaceSnapshot $ws
@@ -395,6 +406,20 @@ Test 'backlog ready checks the approval code and the text shown before a connect
     $run = Invoke-Register $ws backlog ready 1 (Get-Code $ws)
     Assert-Equal 1 $run.ExitCode "exit code for a text changed since it was shown, with output: $($run.Output)"
     Assert-Match $run.Output 'it is not the text backlog show last gave the PO' 'output for a text changed since it was shown'
+
+    # A tracker the PO has not let the agent write: ready never vouches for a write.
+    foreach ($tracker in @(@{ mode = 'connector'; connector = 'tracker' }), @(@{ mode = 'connector'; connector = 'tracker'; writes = 'true' }), @(@{ mode = 'folder'; folder = 'exports/tracker' }), @(@{ mode = 'off' })) {
+        $closed = New-BacklogWorkspace $tracker[0]
+        Set-Changes $closed @(New-Change) -Shown
+        $before = Get-WorkspaceSnapshot $closed
+
+        $run = Invoke-Register $closed backlog ready 1 (Get-Code $closed)
+
+        $what = $tracker[0] | ConvertTo-Json -Compress
+        Assert-Equal 1 $run.ExitCode "exit code for the tracker $what, with output: $($run.Output)"
+        Assert-Match $run.Output "Change 1 is not ready to write: the tracker's entry in connections\.json does not let the agent write in it" "output for the tracker $what"
+        Assert-Equal $before (Get-WorkspaceSnapshot $closed) "files of the workspace for the tracker $what"
+    }
 
     Set-Changes $ws @(New-Change) -Shown
     $before = Get-WorkspaceSnapshot $ws

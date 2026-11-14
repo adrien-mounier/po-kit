@@ -283,6 +283,12 @@ if ($action -ceq 'show') {
 #   records it, while the change is still that text.
 # Each change recorded as applied is added to the applied-change log, state\backlog-log.json, which
 # the next apply of the register commits with the rest of the state.
+# ready refuses as apply does, in its own words, and first of all for a tracker the PO has not let
+# the agent write: it never vouches for a write the connections do not allow.
+$not = if ($action -ceq 'ready') { 'is not ready to write' } else { 'is not applied' }
+if ($action -ceq 'ready' -and -not ($Connections.tracker.mode -ceq 'connector' -and $Connections.tracker.writes -is [bool] -and $Connections.tracker.writes)) {
+    Stop-Run "Change $id is not ready to write: the tracker's entry in connections.json does not let the agent write in it; only a connector entry with `"writes`": true, which the PO alone sets, does. Nothing was done. Write nothing in the tracker: backlog apply $id <code> gives the PO the text to paste, or writes it in the outbox."
+}
 $logPath = Join-Path $Workspace 'state\backlog-log.json'
 $log = if (Test-Path -LiteralPath $logPath) { @((Read-JsonFile $logPath).applied | Where-Object { $null -ne $_ }) } else { @() }
 $done = @($log | Where-Object { $_.change -ceq $id }) | Select-Object -First 1
@@ -291,16 +297,16 @@ if ($change.state -cne 'approved') {
     Stop-Run "Change $id is $($change.state), not approved: a change is applied only once the PO has approved it as backlog show gives it. Nothing was done."
 }
 if ($change.shown -cne (Get-Fingerprint $change)) {
-    Stop-Run "Change $id is not applied: it is not the text backlog show last gave the PO. Nothing was done. Show it again with backlog show $id, and apply it only once the PO approved that exact text."
+    Stop-Run "Change $id $($not): it is not the text backlog show last gave the PO. Nothing was done. Show it again with backlog show $id, and apply it only once the PO approved that exact text."
 }
 if ($saidDone) {
     if ($change.given -cne $change.shown) { Stop-Run "Change $id is not recorded: its text to paste was not given with the PO's approval code, or it changed since. Nothing was done. Show the change to the PO again with backlog show $id." }
 }
 elseif (-not $code) {
-    Stop-Run "Change $id is not applied: no approval code. The PO approves a change by answering with the code backlog show printed for it: backlog apply $id <code>. Nothing was done. Show the change to the PO again with backlog show $id."
+    Stop-Run "Change $id $($not): no approval code. The PO approves a change by answering with the code backlog show printed for it: backlog apply $id <code>. Nothing was done. Show the change to the PO again with backlog show $id."
 }
 elseif ($code.ToUpper() -cne $change.shown.Substring(0, 6).ToUpper()) {
-    Stop-Run "Change $id is not applied: the approval code $code is not the code of its text as it stands. Nothing was done. Show the change to the PO again with backlog show $id, and apply it only with the code the PO gives back."
+    Stop-Run "Change $id $($not): the approval code $code is not the code of its text as it stands. Nothing was done. Show the change to the PO again with backlog show $id, and apply it only with the code the PO gives back."
 }
 # ready: every check of apply has passed; nothing is written, so that a connector writes only then.
 if ($action -ceq 'ready') {
@@ -325,7 +331,7 @@ if ($tracker.mode -ceq 'folder') {
     $how = "outbox/tracker/$id.md"
     $said = "Change $id applied: written to $how"
 }
-elseif ($tracker.mode -ceq 'connector' -and $tracker.writes -eq $true) {
+elseif ($tracker.mode -ceq 'connector' -and $tracker.writes -is [bool] -and $tracker.writes) {
     $how = 'through the connector'
     $said = "Change $id recorded as applied through the connector"
 }
