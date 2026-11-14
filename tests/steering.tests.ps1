@@ -209,6 +209,20 @@ Test 'a list slide holds the rows their estimated height allows, not a fixed num
     Assert-DeckWhole $ws $deck
 }
 
+Test 'a run of letters longer than a line counts as the lines it fills once wrapped: four risks each holding an identifier of 140 letters go on to a continued slide' {
+    $ws = New-SteeringWorkspace
+    $run = 'EXAMPLEBANK' * 13 -replace '^(.{140}).*', '$1'
+    Set-Proposal $ws @{ operations = @(1..4 | ForEach-Object { New-RecordOperation risk @{ title = "Risk $_ $run" } }) }
+    Assert-Equal 0 (Invoke-Register $ws apply -Today 2026-03-02).ExitCode 'exit code when recording the records'
+
+    $result = Invoke-Register $ws steering $Committee -Now $SteeringNow
+
+    Assert-Equal 0 $result.ExitCode "exit code, with output: $($result.Output)"
+    $deck = Read-Deck $ws
+    Assert-True ((Get-SlideCount $deck 'risks') -gt 1) 'the risks slide continued'
+    Assert-DeckWhole $ws $deck
+}
+
 Test 'the commentary of a slide counts in what it holds: eight risks share a slide with a sentence of commentary, and go on to a continued slide under a commentary of four lines' {
     $ws = New-SteeringWorkspace
     Set-Proposal $ws @{ operations = @(for ($i = 1; $i -le 6; $i++) { New-RecordOperation risk @{ title = "Risk $i of the pilot" } }) }

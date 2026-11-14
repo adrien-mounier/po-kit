@@ -121,13 +121,17 @@ function New-Slide([string]$Id, [string]$Heading, [string[]]$Body, [string]$Clas
 # English and French: each is set below the least that was measured, and the room below 626, so
 # that a slide is estimated fuller than it is and the body's clip, kept as a safety net, is never
 # reached.
-$room = 610
+$room = 580
 function Get-Lines([string]$Html, [int]$PerLine) {
     # The lines the text of $Html takes in a column that holds $PerLine characters a line, its
-    # words wrapped as a browser wraps them: a word that does not fit goes to the next line whole.
+    # words wrapped as a browser wraps them: a word that does not fit goes to the next line whole,
+    # and one longer than a line is broken over as many lines as it fills, counted as if a line held
+    # two thirds of its characters: such a run, a link or an identifier, is often of capitals and
+    # digits, wider than the letters of a sentence.
     $lines = 1; $used = 0
     foreach ($word in ([Net.WebUtility]::HtmlDecode(($Html -replace '<[^>]+>', ' ')) -split '\s+' | Where-Object { $_ })) {
         if ($used -and $used + 1 + $word.Length -gt $PerLine) { $lines++; $used = 0 }
+        if ($word.Length -gt $PerLine) { $lines += [Math]::Ceiling($word.Length * 1.5 / $PerLine) - 1; $used = $PerLine; continue }
         $used += $(if ($used) { 1 } else { 0 }) + $word.Length
     }
     $lines
