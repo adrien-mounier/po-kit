@@ -59,7 +59,7 @@ The rule lives in `routines/collect/sources.md` and is proven by the `collect-ch
 
 - `{ "mode": "off" }`: not read;
 - `{ "mode": "folder", "folder": "exports/mail" }`: read from exported files;
-- `{ "mode": "connector", "connector": "<name>" }`: read through a connector the agent knows, read-only. `"drafts": true` on mail lets the agent leave the weekly synthesis as a draft; `"writes": true` on the tracker, set by the PO alone, lets it apply approved changes. Until issue #36 ships, the approval code is checked after a connector write, so leave `writes` off.
+- `{ "mode": "connector", "connector": "<name>" }`: read through a connector the agent knows, read-only. `"drafts": true` on mail lets the agent leave the weekly synthesis as a draft; `"writes": true` on the tracker, set by the PO alone, lets it apply approved changes. The approval code is checked before any such write (`backlog ready`); only a real `true` counts.
 
 ## Install or update
 
