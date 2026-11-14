@@ -24,6 +24,7 @@ Every example in this repository is fictional: Example Bank and its client banks
 | "morning" | collects what is new, records the plain facts, reads the calendar, and writes the morning page: today's meetings with a brief each, what to do first, messages awaiting a reply, what to start soon, the workload of the next ten working days, backlog alerts, reminders. Then offers a short briefing in numbered questions. | `morning` |
 | "collect", or pastes notes | turns the inbox, the pasted text, and the mail, tickets and chat messages within the watch lists into a proposal of commitments, decisions, risks and updates, shown before anything is recorded | `collect` |
 | "new subject", "change the subject…", "score it", "close it" | asks a few questions, then proposes the subject; brainstorms its benefits; scores it and writes the ranked portfolio | `subject` |
+| "which subjects lack an approval?", "what shows progress on my objectives?" | writes the governance checklist (every subject, the state of each mandatory gate, and those missing one or out of frame) or the objectives evidence (for each objective, the subjects, decisions taken, benefits, commitments and open risks that relate to it, naming no person) | `subject` |
 | "weekly" | writes the weekly synthesis for the sponsor, in the sponsor's language, checks every claim against the register, and leaves it as a mail draft when the mail connection can | `weekly` |
 | "steering pack" | drafts a six-slide deck for a steering committee of the calendar, from the register, for the PO to present and print to PDF | `steering` |
 | "reword ticket…", "draft the tickets from this note", "split…", "how should I order the backlog?" | proposes ticket texts, splits and an order; changes the tracker only after the PO approved each exact text with its approval code | `backlog` |
@@ -52,7 +53,7 @@ The rule lives in `routines/collect/sources.md` and is proven by the `collect-ch
 
 ## The PO's two files
 
-`settings.json` bounds what a record may say and tunes the views: the organisation's gates, the PO's objectives, the client banks, the kinds of task, working hours, the "start soon" margin, the words that mark a steering committee or a refinement session in a meeting title, how stale a ticket may get, the sponsor and the languages.
+`settings.json` bounds what a record may say and tunes the views: the organisation's gates and the PO's objectives (adapt both to your organisation: the governance checklist and the objectives evidence follow them), the client banks, the kinds of task, working hours, the "start soon" margin, the words that mark a steering committee or a refinement session in a meeting title, how stale a ticket may get, the sponsor and the languages.
 
 `connections.json` says how each source (`notes`, `mail`, `tracker`, `chat`, `calendar`) is read on this machine:
 
@@ -75,4 +76,4 @@ A new or empty folder becomes a workspace. Run again, it replaces only what the 
 
 ## Where the decisions are
 
-The specs and tickets are this repository's GitHub issues: tranche 1 (#1, the register, collect, weekly synthesis and check), tranche 2 (#16, the morning secretary), tranche 3 (#17, the portfolio and steering pack), tranche 4 (#18, the backlog). Open work carries the `ready-for-agent` or `ready-for-human` label.
+The specs and tickets are this repository's GitHub issues: tranche 1 (#1, the register, collect, weekly synthesis and check), tranche 2 (#16, the morning secretary), tranche 3 (#17, the portfolio and steering pack), tranche 4 (#18, the backlog), tranche 5 (#38, the governance checklist and objectives evidence). Open work carries the `ready-for-agent` or `ready-for-human` label.

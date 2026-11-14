@@ -86,6 +86,35 @@
     "high_risk": "**⚠ High-risk**",
     "not_high_risk": "No"
   },
+  "governance": {
+    "title": "Governance checklist",
+    "note": "Every active subject with the state of each gate settings.json lists; \"-\" is a gate the subject does not state.",
+    "gates": "Gates",
+    "no_gate": "settings.json lists no gate under \"gates\": add the organisation's gates there.",
+    "states": { "done": "Done", "planned": "Planned", "missing": "**Missing**", "not required": "Not required", "unknown": "Unknown" },
+    "attention": "Needs attention",
+    "out_of_frame": "out of frame",
+    "missing": "missing: {0}",
+    "nothing": "Nothing needs attention."
+  },
+  "objectives": {
+    "title": "Objectives evidence",
+    "note": "A record counts for an objective when it names it or its subject does. Superseded, dropped, closed and pending records are left out.",
+    "no_objective": "settings.json lists no objective under \"objectives\": add your objectives there.",
+    "no_evidence": "No evidence recorded yet.",
+    "subjects": "Subjects",
+    "decisions": "Decisions taken",
+    "benefits_achieved": "Benefits achieved",
+    "benefits_open": "Benefits open",
+    "commitments_done": "Commitments done",
+    "commitments_open": "Commitments open",
+    "risks": "Open risks",
+    "measured": "{0} on {1}",
+    "not_measured": "not measured yet",
+    "baseline": "baseline {0}",
+    "target": "target {0}",
+    "due": "due {0}"
+  },
   "steering": {
     "title": "Steering pack, {0}, {1}",
     "date": "dddd d MMMM yyyy",

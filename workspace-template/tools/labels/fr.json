@@ -86,6 +86,35 @@
     "high_risk": "**⚠ Haut risque**",
     "not_high_risk": "Non"
   },
+  "governance": {
+    "title": "Contrôle de gouvernance",
+    "note": "Chaque sujet actif avec l'état de chaque validation que settings.json liste ; « - » est une validation que le sujet n'indique pas.",
+    "gates": "Validations",
+    "no_gate": "settings.json ne liste aucune validation sous \"gates\" : ajoutez-y celles de l'organisation.",
+    "states": { "done": "Fait", "planned": "Prévu", "missing": "**Manquant**", "not required": "Non requis", "unknown": "Inconnu" },
+    "attention": "À traiter",
+    "out_of_frame": "hors cadre",
+    "missing": "manque : {0}",
+    "nothing": "Rien à traiter."
+  },
+  "objectives": {
+    "title": "Preuves par objectif",
+    "note": "Un enregistrement compte pour un objectif quand il le nomme ou que son sujet le nomme. Ce qui est remplacé, abandonné, clos ou en attente est laissé de côté.",
+    "no_objective": "settings.json ne liste aucun objectif sous \"objectives\" : ajoutez-y vos objectifs.",
+    "no_evidence": "Aucune preuve enregistrée pour l'instant.",
+    "subjects": "Sujets",
+    "decisions": "Décisions prises",
+    "benefits_achieved": "Bénéfices atteints",
+    "benefits_open": "Bénéfices en cours",
+    "commitments_done": "Engagements tenus",
+    "commitments_open": "Engagements ouverts",
+    "risks": "Risques ouverts",
+    "measured": "{0} le {1}",
+    "not_measured": "pas encore mesuré",
+    "baseline": "départ {0}",
+    "target": "cible {0}",
+    "due": "échéance {0}"
+  },
   "steering": {
     "title": "Dossier du comité, {0}, {1}",
     "date": "dddd d MMMM yyyy",

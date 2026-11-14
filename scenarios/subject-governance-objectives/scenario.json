@@ -1,0 +1,11 @@
+{
+  "routine": "subject",
+  "prompt": "Before my review, show me which of my subjects lack an approval, and what in the register shows progress on my objectives.",
+  "expect": [
+    { "file": "views/governance.md", "lines": ["# Governance checklist", "Mobile onboarding [mobile-onboarding]", "## Needs attention", "Nothing needs attention."] },
+    { "verified": "views/governance.md" },
+    { "file": "views/objectives.md", "lines": ["# Objectives evidence", "## 1. Halve the time a retail customer needs to open an account", "- Mobile onboarding [mobile-onboarding]", "[C-{year}-001]", "## 2. Give every retail customer a view of their savings options", "No evidence recorded yet."] },
+    { "verified": "views/objectives.md" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}
