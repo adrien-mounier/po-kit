@@ -448,7 +448,10 @@ foreach ($added in '<script>alert(1)</script>', '<SCRIPT src="brand.js"></SCRIPT
         '<link rel="stylesheet" href="data:text/css;base64,Ym9keXtiYWNrZ3JvdW5kOnVybChodHRwczovL2Nkbi5leGFtcGxlLmNvbS94LnBuZyl9">',
         # image-set() takes an address from a variable or behind a comment: it is refused whole.
         '<style>body { --u: "https://cdn.example.com/v.png"; background-image: image-set(var(--u)); }</style>', '<style>body { background-image: -webkit-image-set(var(--u) 1x); }</style>',
-        '<style>body { background-image: image-set(/*"data:image/x*/''https://cdn.example.com/k.png''); }</style><!-- " ) -->', '<style>body { background: IMAGE-SET("data:image/png;base64,iVBORw0KGgo=" 1x); }</style>') {
+        '<style>body { background-image: image-set(/*"data:image/x*/''https://cdn.example.com/k.png''); }</style><!-- " ) -->', '<style>body { background: IMAGE-SET("data:image/png;base64,iVBORw0KGgo=" 1x); }</style>',
+        # A frame runs an embedded image as a page; a link reads an embedded image as a style sheet.
+        '</head><frameset rows="*"><frame src="data:image/svg+xml;base64,PHN2Zy8+"></frameset><head>', '<link rel="stylesheet" href="data:image/png;base64,Ym9keXt9">',
+        '<LINK rel="icon" href="data:image/png;base64,iVBORw0KGgo=">', '<style>div { background-image: attr(data-u type(<url>)); }</style>') {
     Test "a deck template of the organisation that could run a script or call the network is refused and writes nothing: $added" {
         # One workspace for every template of this table: each leaves it as it found it.
         if (-not $script:GuardWorkspace) { $script:GuardWorkspace = New-SteeringWorkspace; New-Item -ItemType Directory -Path (Join-Path $script:GuardWorkspace 'templates') | Out-Null }
