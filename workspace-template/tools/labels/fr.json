@@ -376,7 +376,8 @@
     "after": "Texte après :",
     "fields": { "title": "Titre", "description": "Description", "acceptance criteria": "Critères d'acceptation" },
     "paste_edit": "À coller dans l'outil de suivi : dans le ticket {0}, remplacez le texte avant du champ {1} par le texte après. Puis dites-moi que c'est fait.",
-    "paste_create": "À coller dans l'outil de suivi : créez ce ticket dans le projet {0}, chaque texte dans son champ. Puis dites-moi que c'est fait."
+    "paste_create": "À coller dans l'outil de suivi : créez ce ticket dans le projet {0}, chaque texte dans son champ. Puis dites-moi que c'est fait.",
+    "code": "Code d'approbation : {0}. Pour approuver ce texte exact, répondez avec ce code."
   },
   "backlog_order": {
     "title": "Ordre proposé du backlog",

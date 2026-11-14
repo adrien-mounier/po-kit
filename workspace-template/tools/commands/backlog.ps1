@@ -3,7 +3,8 @@
 #
 #   backlog check          validates the change proposal and lists its changes
 #   backlog show <id>      one change as the exact text before and after, for the PO to review
-#   backlog apply <id>     applies one approved change, once (see Invoke-Apply below)
+#   backlog apply <id> <code>
+#                          applies one approved change, once, with the approval code the PO gave
 #   backlog alerts         checks the backlog alerts, state\backlog-alerts.json, and names the
 #                          refinement sessions near
 #   backlog order          writes the order the agent proposes for the top of the backlog as a view
@@ -20,8 +21,9 @@
 # A change may name in "subject" the subject of the register it serves.
 # The agent moves a change from proposed to accepted (the PO said yes) and to approved (the PO
 # approved the exact change it showed), or to refused. Only this command sets applied.
-# backlog show writes in "shown" the fingerprint of the text it printed: apply refuses a change
-# whose text is no longer that one, so that the PO approves only what they saw.
+# backlog show writes in "shown" the fingerprint of the text it printed, and prints its first six
+# characters as the approval code. The PO approves by giving that code back; apply refuses a change
+# without it, or whose text is no longer the one shown, so that the PO approves only what they saw.
 
 $ChangesPath = Join-Path $Workspace 'state\backlog-changes.json'
 $TicketTexts = 'title', 'description', 'acceptance criteria'
@@ -37,7 +39,8 @@ $ChangeDefinition = @'
     "after": { "type": "any", "required": true },
     "reason": { "type": "text", "required": true },
     "state": { "type": "text", "required": true, "allowed": ["proposed", "accepted", "approved", "applied", "refused"] },
-    "shown": { "type": "text" }
+    "shown": { "type": "text" },
+    "given": { "type": "text" }
 } }
 '@ | ConvertFrom-Json
 $ChangeDefinition.fields.field | Add-Member allowed $TicketTexts
@@ -248,14 +251,19 @@ function Get-TicketText([string]$Read, [string]$Field) {
     if ($Field -ceq 'acceptance criteria' -and $text -eq 'none') { '' } else { $text }
 }
 
-$id = if ($words.Count -eq 2 -or ($action -ceq 'apply' -and $words.Count -eq 3 -and $words[2] -ceq 'done')) { $words[1] }
+$id = if ($words.Count -eq 2 -or ($action -ceq 'apply' -and $words.Count -eq 3)) { $words[1] }
+$saidDone = $words.Count -eq 3 -and $words[2] -ceq 'done'
+$code = if ($words.Count -eq 3 -and -not $saidDone) { $words[2] }
 $change = @($changes | Where-Object { $_.id -ceq $id }) | Select-Object -First 1
 if (-not $change) { Stop-Run "The change proposal holds no change '$id'. backlog $action takes the identifier of one change: backlog $action 1." }
 
 if ($action -ceq 'show') {
     Format-BacklogChange $change
+    $fingerprint = Get-Fingerprint $change
+    ''
+    (Get-Labels $Settings.languages.default).backlog.code -f $fingerprint.Substring(0, 6).ToUpper()
     $file = Read-JsonFile $ChangesPath
-    @($file.changes | Where-Object { $_.id -ceq $id })[0] | Add-Member shown (Get-Fingerprint $change) -Force
+    @($file.changes | Where-Object { $_.id -ceq $id })[0] | Add-Member shown $fingerprint -Force
     Write-JsonFile $ChangesPath $file
     return
 }
@@ -266,8 +274,9 @@ if ($action -ceq 'show') {
 #   never in the tracker, once the field of the ticket as last read, <folder>\<ticket>.txt, is still
 #   the text before of an edit, whole (see Get-TicketText);
 # - connector with "writes": true: the routine has applied it through the connector; this records it;
-# - otherwise: this prints the text to paste and where it goes, and records nothing. Once the PO
-#   says it is done, "backlog apply <id> done" records it.
+# - otherwise: this prints the text to paste and where it goes, keeps in "given" the fingerprint of
+#   the text it gave, and records nothing. Once the PO says it is done, "backlog apply <id> done"
+#   records it, while the change is still that text.
 # Each change recorded as applied is added to the applied-change log, state\backlog-log.json, which
 # the next apply of the register commits with the rest of the state.
 $logPath = Join-Path $Workspace 'state\backlog-log.json'
@@ -279,6 +288,15 @@ if ($change.state -cne 'approved') {
 }
 if ($change.shown -cne (Get-Fingerprint $change)) {
     Stop-Run "Change $id is not applied: it is not the text backlog show last gave the PO. Nothing was done. Show it again with backlog show $id, and apply it only once the PO approved that exact text."
+}
+if ($saidDone) {
+    if ($change.given -cne $change.shown) { Stop-Run "Change $id is not recorded: its text to paste was not given with the PO's approval code, or it changed since. Nothing was done. Show the change to the PO again with backlog show $id." }
+}
+elseif (-not $code) {
+    Stop-Run "Change $id is not applied: no approval code. The PO approves a change by answering with the code backlog show printed for it: backlog apply $id <code>. Nothing was done. Show the change to the PO again with backlog show $id."
+}
+elseif ($code.ToUpper() -cne $change.shown.Substring(0, 6).ToUpper()) {
+    Stop-Run "Change $id is not applied: the approval code $code is not the code of its text as it stands. Nothing was done. Show the change to the PO again with backlog show $id, and apply it only with the code the PO gives back."
 }
 
 $tracker = $Connections.tracker
@@ -301,7 +319,7 @@ elseif ($tracker.mode -ceq 'connector' -and $tracker.writes -eq $true) {
     $how = 'through the connector'
     $said = "Change $id recorded as applied through the connector"
 }
-elseif ($words.Count -eq 3 -and $words[2] -ceq 'done') {
+elseif ($saidDone) {
     $how = 'pasted by the PO'
     $said = "Change $id recorded as pasted by the PO"
 }
@@ -313,6 +331,9 @@ else {
     if ($change.kind -ceq 'edit') { $labels.paste_edit -f $change.ticket, $labels.fields.($change.field) } else { $labels.paste_create -f $change.project }
     ''
     "Not recorded: the tracker does not let the agent write. Give the PO this text to paste, word for word; once the PO says it is done, record it: backlog apply $id done"
+    $file = Read-JsonFile $ChangesPath
+    @($file.changes | Where-Object { $_.id -ceq $id })[0] | Add-Member given $change.shown -Force
+    Write-JsonFile $ChangesPath $file
     return
 }
 

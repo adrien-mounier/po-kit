@@ -376,7 +376,8 @@
     "after": "Text after:",
     "fields": { "title": "Title", "description": "Description", "acceptance criteria": "Acceptance criteria" },
     "paste_edit": "To paste in the tracker: in ticket {0}, replace the text before of the field {1} with the text after. Then tell me it is done.",
-    "paste_create": "To paste in the tracker: create this ticket in project {0}, with each text in its field. Then tell me it is done."
+    "paste_create": "To paste in the tracker: create this ticket in project {0}, with each text in its field. Then tell me it is done.",
+    "code": "Approval code: {0}. To approve this exact text, answer with this code."
   },
   "backlog_order": {
     "title": "Proposed order of the backlog",

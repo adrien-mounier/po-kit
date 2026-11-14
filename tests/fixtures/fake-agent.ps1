@@ -26,8 +26,8 @@
 #   -Changes <file>   leaves this change proposal for the tracker
 #   -BacklogShow <id> has the register tool show this change of the change proposal, as the routine does
 #                     before the PO approves it
-#   -BacklogApply <id>
-#                     has the register tool apply this change of the change proposal
+#   -BacklogApply "<id> <code>"
+#                     has the register tool apply this change of the change proposal, with this code
 #   -Order <file>     leaves this order for the top of the backlog, dated as the notes on the
 #                     meetings, then has the register tool write it as a view
 #   -Weekly <file>    stores this text as the weekly synthesis of the day, with the stamp and the
@@ -68,7 +68,7 @@ foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'stat
 }
 if ($Changes) { Copy-Item -LiteralPath $Changes -Destination 'state\backlog-changes.json' }
 if ($BacklogShow) { & powershell.exe -NoProfile -File tools\register.ps1 backlog show $BacklogShow }
-if ($BacklogApply) { & powershell.exe -NoProfile -File tools\register.ps1 backlog apply $BacklogApply }
+if ($BacklogApply) { & powershell.exe -NoProfile -File tools\register.ps1 backlog apply @($BacklogApply -split ' ') }
 if ($Order) { & powershell.exe -NoProfile -File tools\register.ps1 backlog order }
 if ($Check) { & powershell.exe -NoProfile -File tools\register.ps1 check }
 if ($Morning) { & powershell.exe -NoProfile -File tools\register.ps1 morning $(if ($Now) { '-Now'; $Now }) }

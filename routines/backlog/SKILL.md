@@ -54,16 +54,16 @@ Done when each need of the note is a draft proposed, covered by a ticket you nam
 An answer the PO gave ahead counts only for what it names: a yes to the proposal is not an approval of the exact text.
 
 1. Set each change the PO said yes to as `accepted`; one the PO said no to as `refused`.
-2. Run the register tool's `backlog show <id>`, and copy what it prints into your answer, unchanged: the exact text the team will see. It records on the change the fingerprint of the text it printed, in `shown`.
-3. Ask the PO to approve that exact change.
+2. Run the register tool's `backlog show <id>`, and copy what it prints into your answer, unchanged: the exact text the team will see, then its approval code. It records on the change the fingerprint of the text it printed, in `shown`.
+3. Ask the PO to approve that exact change by answering with its approval code, then stop: wait for the PO's next message.
 
-Done when the PO has the exact text of each change accepted.
+Done when the PO has the exact text and the approval code of each change accepted.
 
 ## 4. Record the PO's approval
 
-The PO approves a change `accepted` whose exact text you showed, or approves it ahead in so many words ("I approve change 1 as you showed it"): set it as `approved`. A change still `proposed` is shown first, as step 3 says, whatever the PO said. A change the PO wants reworded is changed and shown again, still `accepted`.
+The PO approves a change when, in a message after the one that showed it, the PO gives back the approval code `backlog show` printed for it: set it as `approved`, then go to step 5 with that code. An approval given before the change was shown, or without its code ("I approve change 1 as you showed it"), is no approval: show the change as step 3 says and stop. You never type a code the PO did not give, and never guess or work one out. **Never show and apply a change in the same turn.** A change the PO wants reworded is changed and shown again, still `accepted`.
 
-Keep `shown` as `backlog show` wrote it when you rewrite the change proposal. Change nothing else in a change once it is shown: `backlog apply` refuses a change that is no longer the text `backlog show` last printed. The order is always: `backlog show`, the PO's yes to that text, `approved`, then step 5.
+Keep `shown` as `backlog show` wrote it when you rewrite the change proposal. Change nothing else in a change once it is shown: `backlog apply` refuses a change that is no longer the text `backlog show` last printed, and a code that is not the code of its text as it stands. The order is always: `backlog show`, the PO's code for that text in their next message, `approved`, then step 5.
 
 Done when each change the PO approved is `approved`, and no other is.
 
@@ -71,11 +71,13 @@ Done when each change the PO approved is `approved`, and no other is.
 
 One change at a time, each only from `approved`. The `mode` of `tracker` in `connections.json` decides how:
 
-- **`folder`**: run `backlog apply <id>`. It writes the change in the outbox of the workspace, `outbox/tracker/<id>.md`, never in the tracker, and logs it.
-- **`connector` with `"writes": true`**: read the ticket again through the connector. When its field no longer holds the text `before`, apply nothing: go to "A ticket that changed". Otherwise apply that one change through the connector: that ticket, that field, the text `after`, or that new ticket in that project; nothing else. Then run `backlog apply <id>`: it records the change as applied and logs it.
-- **any other**: run `backlog apply <id>`. It prints the change and where it goes, and records nothing. Give the PO that text word for word, to paste in the tracker, and say that it counts as applied only once they tell you it is done: then step 1.
+Each `backlog apply <id> <code>` below takes the code the PO gave back, as the PO wrote it.
 
-`backlog apply` refuses a change not approved, or applied already: never apply one again. It refuses a change changed since `backlog show` printed it: show it again, as step 3 says, and wait for the PO's approval of that text.
+- **`folder`**: run `backlog apply <id> <code>`. It writes the change in the outbox of the workspace, `outbox/tracker/<id>.md`, never in the tracker, and logs it.
+- **`connector` with `"writes": true`**: read the ticket again through the connector. When its field no longer holds the text `before`, apply nothing: go to "A ticket that changed". Otherwise apply that one change through the connector: that ticket, that field, the text `after`, or that new ticket in that project; nothing else. Then run `backlog apply <id> <code>`: it records the change as applied and logs it.
+- **any other**: run `backlog apply <id> <code>`. It prints the change and where it goes, and records nothing. Give the PO that text word for word, to paste in the tracker, and say that it counts as applied only once they tell you it is done: then step 1.
+
+`backlog apply` refuses a change not approved, or applied already: never apply one again. It refuses a change without its code, with a code that is not the code of its text as it stands, or changed since `backlog show` printed it: show it again, as step 3 says, and wait for the PO's code for that text.
 
 **A ticket that changed.** When `backlog apply` says the ticket no longer holds the text before, or the connector shows it, nothing is applied. Tell the PO, set the change as `refused`, read the ticket again, and propose the change again from step 2, with a new identifier.
 

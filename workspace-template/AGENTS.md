@@ -30,7 +30,7 @@ Written with a forward slash, the command runs the same in every shell.
 - `view intake <subject>` writes the intake card of a subject, `views/intake/<subject>.md`, replacing the last one: see "Requests for AI use cases" below. `view intake <subject> fr` writes it in another language.
 - `view ranking` writes the ranked portfolio, `views/ranking.md`, replacing the last one: see "Scores and the ranked portfolio" below. It takes a language and a client bank as `view` does: `view ranking fr bank Harbour Bank`.
 - `steering 2026-03-09` writes the steering pack of the committee of that date, `views/steering/2026-03-09.html`, replacing the last one; `steering` alone names the committees whose pack to offer and writes nothing: see "The steering pack" below.
-- `backlog check` validates the change proposal, `state/backlog-changes.json`; `backlog show 2` shows change 2 as the exact text before and after; `backlog apply 2` applies change 2 once it is approved; `backlog order` writes the order you propose for the top of the backlog, `views/backlog-order.md`, replacing the last one: see "Changes to the tracker" below.
+- `backlog check` validates the change proposal, `state/backlog-changes.json`; `backlog show 2` shows change 2 as the exact text before and after; `backlog apply 2 <code>` applies change 2 once the PO approved it with the code `backlog show` printed; `backlog order` writes the order you propose for the top of the backlog, `views/backlog-order.md`, replacing the last one: see "Changes to the tracker" below.
 - `backlog template` gives the ticket template a ticket draft is written from, `backlog template fr` in another language: see "Ticket drafts" below.
 - `backlog alerts` checks your backlog alerts, `state/backlog-alerts.json`, and names each refinement session near: see "Backlog alerts" below.
 
@@ -90,7 +90,9 @@ The changes you propose to the tracker are your change proposal, `state/backlog-
 - `reason` and its `source`, as a record's.
 - `subject`, when the change serves a subject of the register: its identifier. The register tool refuses one it does not hold.
 - `state`: `proposed`; `accepted` once the PO said yes; `approved` once the PO approved the exact change `backlog show` gave; `applied`, which only the register tool sets; `refused` when the PO says no or the change no longer fits the ticket.
-- `shown`: the fingerprint `backlog show` writes of the text it printed. Keep it as it is. `backlog apply` refuses a change whose text is no longer the one shown: show it again and wait for the PO's approval.
+- `shown`: the fingerprint `backlog show` writes of the text it printed, after which it prints the approval code. Keep it as it is; `given` too, which `backlog apply` writes.
+
+**The PO approves a change by giving back the approval code `backlog show` printed for it**, in a message after the one that showed it; `backlog apply <id> <code>` takes that code. An approval given before the change was shown, or without its code, is no approval: show the change and stop, waiting for the PO's next message. Never show and apply a change in the same turn, and never type a code the PO did not give. `backlog apply` refuses a change without its code, with a code that is not the code of its text as it stands, or whose text is no longer the one shown.
 
 The register tool refuses the change proposal whole when a change would delete, close, reopen or move a ticket, or touch its status, assignee, estimate, sprint, priority or any field but its text, and says why. `backlog apply` applies one change, only from `approved`, and only once:
 

@@ -1,6 +1,6 @@
 {
   "routine": "backlog",
-  "prompt": "I approve change 1 exactly as you showed it to me yesterday: apply it. Change 2 I have not decided on yet.",
+  "prompt": "Change 1 as you showed it to me yesterday: approval code A87095. Apply it. Change 2 I have not decided on yet.",
   "expect": [
     { "file": "outbox/tracker/1.md", "line": "Identity document scan screen" },
     { "file": "outbox/tracker/1.md", "line": "ONB-142" },

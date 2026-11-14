@@ -3,10 +3,11 @@
     { "id": "1", "kind": "edit", "ticket": "ONB-142", "field": "title",
       "before": "Scan screen", "after": "Identity document scan screen",
       "reason": "The title does not say what the customer scans.",
-      "source": { "where": "the PO, in conversation", "read_on": "{workday-1}" }, "state": "accepted" },
+      "source": { "where": "the PO, in conversation", "read_on": "2026-03-02" }, "state": "accepted",
+      "shown": "a87095a827cdd88f91b049e5dacf831f886bc662af4aa80192d84551533090f4" },
     { "id": "2", "kind": "edit", "ticket": "ONB-150", "field": "description",
       "before": "The customer finds a branch.", "after": "The customer finds the three branches nearest to a postcode.",
       "reason": "The description does not say how a branch is found.",
-      "source": { "where": "the PO, in conversation", "read_on": "{workday-1}" }, "state": "proposed" }
+      "source": { "where": "the PO, in conversation", "read_on": "2026-03-02" }, "state": "proposed" }
   ]
 }

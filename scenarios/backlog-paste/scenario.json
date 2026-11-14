@@ -1,8 +1,9 @@
 {
   "routine": "backlog",
-  "prompt": "I approve change 1 exactly as you showed it to me yesterday: apply it.",
+  "prompt": "Change 1 as you showed it to me yesterday: approval code A87095. Apply it.",
   "expect": [
     { "file": "state/backlog-changes.json", "field": "changes[0].state", "is": "approved" },
+    { "file": "state/backlog-changes.json", "field": "changes[0].given", "is": "a87095a827cdd88f91b049e5dacf831f886bc662af4aa80192d84551533090f4" },
     { "file": "state/backlog-log.json", "absent": true },
     { "file": "outbox/tracker/1.md", "absent": true },
     { "file": "../agent-output.txt", "line": "Identity document scan screen" },

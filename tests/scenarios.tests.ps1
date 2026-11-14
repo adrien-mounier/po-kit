@@ -1253,7 +1253,7 @@ Test 'the Example Bank settings carry every setting of the template, so the regi
 }
 
 Test 'the scenario "backlog approved change" passes when the change the PO approved is written once to the outbox and logged, and the one not approved is left, and fails when nothing is applied' {
-    $run = Invoke-Scenarios -Agent "$FakeAgent -Changes `"$Fixtures\backlog-approved.json`" -BacklogShow 1 -BacklogApply 1" backlog-approved-change
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Changes `"$Fixtures\backlog-approved.json`" -BacklogShow 1 -BacklogApply `"1 A87095`"" backlog-approved-change
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output '  ok    file outbox/tracker/1\.md has a line containing "Identity document scan screen"' 'the change in the outbox'
@@ -1278,7 +1278,7 @@ Test 'the scenario "backlog refuse close" passes when the agent writes no change
 }
 
 Test 'the scenario "backlog paste" passes when, with a tracker that may not write, the approved change is given to the PO to paste and not logged, and fails when the agent gives no text' {
-    $run = Invoke-Scenarios -Agent "$FakeAgent -Changes `"$Fixtures\backlog-approved.json`" -BacklogShow 1 -BacklogApply 1 -Say `"Paste in ticket ONB-142, field Title: Identity document scan screen`"" backlog-paste
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Changes `"$Fixtures\backlog-approved.json`" -BacklogShow 1 -BacklogApply `"1 A87095`" -Say `"Paste in ticket ONB-142, field Title: Identity document scan screen`"" backlog-paste
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output '  ok    file state/backlog-log\.json is absent' 'not logged before the PO pastes it'
@@ -1287,6 +1287,18 @@ Test 'the scenario "backlog paste" passes when, with a tracker that may not writ
 
     Assert-Match $run.Output '  FAIL  file \.\./agent-output\.txt has a line containing "Identity document scan screen"' 'no text given'
     Assert-Equal 1 $run.ExitCode 'exit code when no text is given'
+}
+
+Test 'the scenario "backlog approval stale" passes when, for a change whose text changed since the PO saw it, the agent shows the new text with its new code and applies nothing, and fails when it applies the change' {
+    $run = Invoke-Scenarios -Agent "$FakeAgent -BacklogShow 1" backlog-approval-stale
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    Assert-Match $run.Output '  ok    file \.\./agent-output\.txt has a line containing "59B2AC"' 'the new code shown'
+
+    $run = Invoke-Scenarios -Agent "$FakeAgent -Changes `"$Fixtures\backlog-stale-approved.json`" -BacklogShow 1 -BacklogApply `"1 59B2AC`"" backlog-approval-stale
+
+    Assert-Match $run.Output '  FAIL  file outbox/tracker/1\.md is absent' 'the change applied'
+    Assert-Equal 1 $run.ExitCode 'exit code when the change is applied'
 }
 
 Test 'the scenario "morning refinement" passes when the tickets not ready for the refinement session near are listed with what each lacks, and the ready one is not, and fails when the agent lists none' {

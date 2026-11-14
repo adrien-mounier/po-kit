@@ -39,6 +39,12 @@ function Set-Changes([string]$Workspace, [object[]]$Changes, [switch]$Shown) {
     }
 }
 
+function Get-Code([string]$Workspace, [string]$Id = '1') {
+    # The approval code backlog show printed for a change, as the PO gives it back: the first six
+    # characters of its fingerprint, in upper case.
+    @((Read-Json (Join-Path $Workspace 'state\backlog-changes.json')).changes | Where-Object { $_.id -eq $Id })[0].shown.Substring(0, 6).ToUpper()
+}
+
 Test 'backlog check accepts a change proposal that creates a ticket and edits the text of another' {
     $ws = New-BacklogWorkspace
     Set-Changes $ws @(
@@ -69,10 +75,12 @@ Test 'backlog show gives one change as the exact text before and after, lines ke
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     $shown = "Change 1: edit ticket ONB-142, field Description`nWhy: The title does not say what is scanned.`nSource: the PO, in conversation, read on 2026-03-02`n`n" +
         "Text before:`nThe customer scans an identity document.`n`nText after:`nThe customer scans an identity document.`nThe scan is checked before the account opens."
-    Assert-Equal $shown $run.Output 'the change shown'
-    # The fingerprint is the SHA-256 of the text shown, so that apply knows the PO saw that text.
+    # The fingerprint is the SHA-256 of the text shown; its first six characters are the code the
+    # PO answers with to approve that exact text.
     $sha = [Security.Cryptography.SHA256]::Create()
     $fingerprint = -join @($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($shown)) | ForEach-Object { $_.ToString('x2') })
+    $code = $fingerprint.Substring(0, 6).ToUpper()
+    Assert-Equal "$shown`n`nApproval code: $code. To approve this exact text, answer with this code." $run.Output 'the change shown, then its approval code'
     Assert-Equal $fingerprint @((Read-Json $changesPath).changes)[0].shown 'the fingerprint recorded on the change'
 
     $run = Invoke-Register $ws backlog show 2
@@ -195,7 +203,7 @@ Test 'with the tracker read from a folder, backlog apply writes the approved cha
     $ws = New-BacklogWorkspace
     Set-Changes $ws @((New-Change), (New-Change @{ id = '2'; after = 'Document scan'; state = 'proposed' })) -Shown
 
-    $run = Invoke-Register $ws backlog apply 1 -Today 2026-03-03
+    $run = Invoke-Register $ws backlog apply 1 (Get-Code $ws) -Today 2026-03-03
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output 'Change 1 applied: written to outbox/tracker/1\.md, and logged in state/backlog-log\.json\.' 'output'
@@ -212,7 +220,7 @@ Test 'with the tracker read from a folder, backlog apply writes the approved cha
     Assert-Equal "Scan screen" (([IO.File]::ReadAllText((Join-Path $ws 'exports\tracker\ONB-142.txt')) -split "`n")[2] -replace '^Title: ') 'the ticket itself is left as it is'
 
     $before = Get-WorkspaceSnapshot $ws
-    $run = Invoke-Register $ws backlog apply 1 -Today 2026-03-03
+    $run = Invoke-Register $ws backlog apply 1 (Get-Code $ws) -Today 2026-03-03
 
     Assert-Equal 1 $run.ExitCode "exit code when applied again, with output: $($run.Output)"
     Assert-Match $run.Output 'Change 1 is applied already, on 2026-03-03: a change is applied once\. Nothing was done\.' 'output when applied again'
@@ -256,6 +264,47 @@ Test 'backlog apply refuses a change approved without being shown, or changed si
     }
 }
 
+Test 'backlog apply takes the approval code the PO gave back for the text backlog show printed, and refuses without it, with a wrong one or with the code of an older text' {
+    $ws = New-BacklogWorkspace
+    Set-Changes $ws @(New-Change @{ after = 'Document scan screen' }) -Shown
+    $old = Get-Code $ws
+    Set-Changes $ws @(New-Change) -Shown
+    $wrong = if ((Get-Code $ws) -ceq 'ABC123') { 'ABC124' } else { 'ABC123' }
+    $refused = @(
+        @{ why = 'without a code'; code = @(); reason = 'Change 1 is not applied: no approval code\. The PO approves a change by answering with the code backlog show printed for it: backlog apply 1 <code>\. Nothing was done\. Show the change to the PO again with backlog show 1\.' }
+        @{ why = 'with a wrong code'; code = @($wrong); reason = "Change 1 is not applied: the approval code $wrong is not the code of its text as it stands\. Nothing was done\. Show the change to the PO again with backlog show 1, and apply it only with the code the PO gives back\." }
+        @{ why = 'with the code of an older text'; code = @($old); reason = "Change 1 is not applied: the approval code $old is not the code of its text as it stands\." }
+    )
+    foreach ($case in $refused) {
+        $before = Get-WorkspaceSnapshot $ws
+
+        $words = @('backlog', 'apply', '1') + $case.code
+        $run = Invoke-Register $ws @words
+
+        Assert-Equal 1 $run.ExitCode "exit code $($case.why), with output: $($run.Output)"
+        Assert-Match $run.Output $case.reason "output $($case.why)"
+        Assert-Equal $before (Get-WorkspaceSnapshot $ws) "files of the workspace $($case.why)"
+    }
+
+    $run = Invoke-Register $ws backlog apply 1 (Get-Code $ws).ToLower()
+
+    Assert-Equal 0 $run.ExitCode "exit code with the right code, in any case, with output: $($run.Output)"
+
+    # The text to paste, given with the code, is recorded as done only while the change is that text.
+    $ws = New-BacklogWorkspace @{ mode = 'off' }
+    Set-Changes $ws @(New-Change) -Shown
+    $run = Invoke-Register $ws backlog apply 1 (Get-Code $ws)
+    Assert-Equal 0 $run.ExitCode "exit code of the text to paste, with output: $($run.Output)"
+    $changes = Read-Json (Join-Path $ws 'state\backlog-changes.json')
+    $changes.changes[0].after = 'Document scan screen'
+    Write-Json (Join-Path $ws 'state\backlog-changes.json') $changes
+
+    $run = Invoke-Register $ws backlog apply 1 done
+
+    Assert-Equal 1 $run.ExitCode "exit code of done for a change changed since, with output: $($run.Output)"
+    Assert-True (-not (Test-Path (Join-Path $ws 'state\backlog-log.json'))) 'a change changed since was logged'
+}
+
 Test 'backlog apply refuses an edit whose text before is not the whole field as the ticket now holds it, so that the agent proposes it again' {
     $ws = New-BacklogWorkspace
     $refused = @(
@@ -268,7 +317,7 @@ Test 'backlog apply refuses an edit whose text before is not the whole field as 
         Set-Changes $ws @(New-Change $case.change) -Shown
         $before = Get-WorkspaceSnapshot $ws
 
-        $run = Invoke-Register $ws backlog apply 1
+        $run = Invoke-Register $ws backlog apply 1 (Get-Code $ws)
 
         Assert-Equal 1 $run.ExitCode "exit code for $($case.why), with output: $($run.Output)"
         Assert-Match $run.Output 'Change 1 is not applied: ticket ONB-142, as last read in exports/tracker/ONB-142\.txt, no longer holds its text before\. Nothing was done\. Tell the PO, read the ticket again and propose the change again\.' "output for $($case.why)"
@@ -285,7 +334,7 @@ Test 'backlog apply refuses an edit whose text before is not the whole field as 
         $ws = New-BacklogWorkspace
         Set-Changes $ws @(New-Change $case.change) -Shown
 
-        $run = Invoke-Register $ws backlog apply 1
+        $run = Invoke-Register $ws backlog apply 1 (Get-Code $ws)
 
         Assert-Equal 0 $run.ExitCode "exit code for $($case.why), with output: $($run.Output)"
     }
@@ -300,7 +349,7 @@ Test 'backlog apply refuses an edit whose text before is not the whole field as 
         [IO.File]::WriteAllText((Join-Path $ws 'exports\tracker\ONB-142.txt'), "Key: ONB-142`nProject: ONB`nTitle: Scan screen`nStatus: In progress`n`nThe customer scans an identity document.`n`n$($case.held)", $Utf8)
         Set-Changes $ws @(New-Change @{ field = $case.field; before = $case.before; after = 'Reworded.' }) -Shown
 
-        $run = Invoke-Register $ws backlog apply 1
+        $run = Invoke-Register $ws backlog apply 1 (Get-Code $ws)
 
         Assert-Equal 0 $run.ExitCode "exit code for the $($case.field) of a ticket holding '$($case.held)', with output: $($run.Output)"
     }
@@ -310,7 +359,7 @@ Test 'with a tracker connector that may write, backlog apply records the change 
     $ws = New-BacklogWorkspace @{ mode = 'connector'; connector = 'tracker'; writes = $true }
     Set-Changes $ws @(New-Change) -Shown
 
-    $run = Invoke-Register $ws backlog apply 1 -Today 2026-03-03
+    $run = Invoke-Register $ws backlog apply 1 (Get-Code $ws) -Today 2026-03-03
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output 'Change 1 recorded as applied through the connector, and logged' 'output'
@@ -324,13 +373,22 @@ Test 'with a tracker that may not write, backlog apply gives the text to paste a
         Set-Changes $ws @(New-Change) -Shown
         $before = Get-WorkspaceSnapshot $ws
 
-        $run = Invoke-Register $ws backlog apply 1 -Today 2026-03-03
+        # Done is recorded only once the text to paste was given with the PO's code.
+        $run = Invoke-Register $ws backlog apply 1 done -Today 2026-03-03
+
+        Assert-Equal 1 $run.ExitCode "exit code of done before the text was given, with output: $($run.Output)"
+        Assert-Match $run.Output 'Change 1 is not recorded: its text to paste was not given with the PO''s approval code, or it changed since\. Nothing was done\. Show the change to the PO again with backlog show 1\.' 'output of done before the text was given'
+        Assert-Equal $before (Get-WorkspaceSnapshot $ws) "files of the workspace after done before the text was given, tracker $($tracker.mode) $($tracker.writes)"
+
+        $run = Invoke-Register $ws backlog apply 1 (Get-Code $ws) -Today 2026-03-03
 
         Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
         Assert-Match $run.Output "(?m)^Text after:`n^Identity document scan screen$" 'the text to paste'
         Assert-Match $run.Output '(?m)^To paste in the tracker: in ticket ONB-142, replace the text before of the field Title with the text after\.' 'where it goes'
         Assert-Match $run.Output 'once the PO says it is done, record it: backlog apply 1 done' 'how it is recorded'
-        Assert-Equal $before (Get-WorkspaceSnapshot $ws) "files of the workspace before the PO pasted it, tracker $($tracker.mode) $($tracker.writes)"
+        $others = { param($Snapshot) $Snapshot -replace '(?m)^\\state\\backlog-changes\.json .*$' }
+        Assert-Equal (& $others $before) (& $others (Get-WorkspaceSnapshot $ws)) "files of the workspace but the change proposal before the PO pasted it, tracker $($tracker.mode) $($tracker.writes)"
+        Assert-Equal 'approved' @((Read-Json (Join-Path $ws 'state\backlog-changes.json')).changes)[0].state 'state of the change before the PO pasted it'
 
         $run = Invoke-Register $ws backlog apply 1 done -Today 2026-03-04
 
@@ -345,7 +403,7 @@ Test 'the applied-change log is committed with the next apply of the register' {
     git -C $ws add -A
     git -C $ws commit -q -m 'The tracker, read from a folder'
     Set-Changes $ws @(New-Change) -Shown
-    $run = Invoke-Register $ws backlog apply 1 -Today 2026-03-03
+    $run = Invoke-Register $ws backlog apply 1 (Get-Code $ws) -Today 2026-03-03
     Assert-Equal 0 $run.ExitCode "exit code of backlog apply, with output: $($run.Output)"
     Assert-True (@(git -C $ws status --porcelain) -match 'state/backlog-log.json') 'backlog apply committed the log itself: the next apply of the register commits it'
 
@@ -367,8 +425,8 @@ Test 'the workspace rules, the backlog routine and the collect routine state the
     $routine = Get-Content -LiteralPath (Join-Path $KitRoot 'routines\backlog\SKILL.md') -Raw -Encoding UTF8
     Assert-Match $routine 'Only after the PO approved that exact change, one change at a time' 'the approval in the backlog routine'
     Assert-Match $routine 'never delete, close, reopen or move a ticket, and you never change another field' 'the limits in the backlog routine'
-    Assert-Match $routine '(?s)## 3\. Show.+`backlog show <id>`.+records on the change the fingerprint of the text it printed.+## 4\. Record.+Keep `shown`.+## 5\. Apply' 'the fingerprint in the backlog routine'
-    Assert-Match $rules '`shown`: the fingerprint `backlog show` writes' 'the fingerprint in the workspace rules'
+    Assert-Match $routine '(?s)## 3\. Show.+`backlog show <id>`.+approval code.+then stop: wait for the PO''s next message.+## 4\. Record.+gives back the approval code.+never type a code the PO did not give.+Never show and apply a change in the same turn.+## 5\. Apply.+`backlog apply <id> <code>`' 'the approval code in the backlog routine'
+    Assert-Match $rules '(?s)`shown`: the fingerprint `backlog show` writes.+approval code.+An approval given before the change was shown, or without its code, is no approval' 'the approval code in the workspace rules'
 }
 
 Test 'backlog check refuses a change that would delete, close, reopen or move a ticket, or touch any field but its text, and says why, writing nothing' {
