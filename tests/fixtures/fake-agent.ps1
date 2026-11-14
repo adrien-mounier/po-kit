@@ -24,6 +24,8 @@
 #                     leaves this commentary of the steering pack, dated as the notes on the meetings
 #   -Steering         has the register tool write the steering pack of the first committee it names
 #   -Changes <file>   leaves this change proposal for the tracker
+#   -BacklogShow <id> has the register tool show this change of the change proposal, as the routine does
+#                     before the PO approves it
 #   -BacklogApply <id>
 #                     has the register tool apply this change of the change proposal
 #   -Order <file>     leaves this order for the top of the backlog, dated as the notes on the
@@ -39,7 +41,7 @@
 #                     of the result, which gives the text of -Say as its final answer
 #   -Read <file>      with -Stream, shows this file in the transcript, as a file the agent opened
 param([string]$Note, [string]$Connections, [string]$Proposal, [switch]$Pending, [switch]$Plain, [switch]$Check, [switch]$Morning, [string]$Weekly, [string]$Snapshot, [string]$MeetingNotes, [string]$Questions, [switch]$ByHand,
-    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [switch]$Ranking, [string]$SteeringNotes, [switch]$Steering, [string]$Read, [string]$Changes, [string]$BacklogApply, [string]$Order, [string]$Alerts, [string]$Now)
+    [string]$Report, [string]$Say, [int]$ExitCode, [switch]$Stream, [string]$Intake, [switch]$Ranking, [string]$SteeringNotes, [switch]$Steering, [string]$Read, [string]$Changes, [string]$BacklogShow, [string]$BacklogApply, [string]$Order, [string]$Alerts, [string]$Now)
 
 $prompt = [Console]::In.ReadToEnd()
 $steps = {
@@ -65,6 +67,7 @@ foreach ($given in @(@($Snapshot, 'state\calendar.json'), @($MeetingNotes, 'stat
     [IO.File]::WriteAllText($given[1], $text)
 }
 if ($Changes) { Copy-Item -LiteralPath $Changes -Destination 'state\backlog-changes.json' }
+if ($BacklogShow) { & powershell.exe -NoProfile -File tools\register.ps1 backlog show $BacklogShow }
 if ($BacklogApply) { & powershell.exe -NoProfile -File tools\register.ps1 backlog apply $BacklogApply }
 if ($Order) { & powershell.exe -NoProfile -File tools\register.ps1 backlog order }
 if ($Check) { & powershell.exe -NoProfile -File tools\register.ps1 check }

@@ -193,7 +193,7 @@
     "backlog": {
       "heading": "Alertes du backlog",
       "count_against": "{0} en contradiction avec une décision",
-      "count_not_ready": "{0} pas prêt(s) pour {1}, {2}",
+      "count_not_ready": "{0} pas prêt(s) pour {1}",
       "count_duplicates": "{0} doublon(s) possible(s)",
       "count_stale": "{0} sans mouvement",
       "against": "contre {0} : {1}",
@@ -384,6 +384,7 @@
     "rank": "Rang",
     "ticket": "Ticket",
     "ticket_title": "Titre",
-    "why": "Pourquoi"
+    "why": "Pourquoi",
+    "inferred": "déduit"
   }
 }

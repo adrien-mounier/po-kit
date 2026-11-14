@@ -27,8 +27,16 @@ function New-Change([hashtable]$Fields = @{}) {
     $change
 }
 
-function Set-Changes([string]$Workspace, [object[]]$Changes) {
+function Set-Changes([string]$Workspace, [object[]]$Changes, [switch]$Shown) {
+    # Leaves the change proposal; -Shown has backlog show give each change to the PO, as the routine
+    # does before the PO approves it.
     Write-Json (Join-Path $Workspace 'state\backlog-changes.json') @{ changes = $Changes }
+    if ($Shown) {
+        foreach ($change in $Changes) {
+            $run = Invoke-Register $Workspace backlog show $change.id
+            Assert-Equal 0 $run.ExitCode "exit code of backlog show $($change.id), with output: $($run.Output)"
+        }
+    }
 }
 
 Test 'backlog check accepts a change proposal that creates a ticket and edits the text of another' {
@@ -45,20 +53,27 @@ Test 'backlog check accepts a change proposal that creates a ticket and edits th
     Assert-Match $run.Output '(?m)^Change proposal: 2 change\(s\), valid\.' 'output'
 }
 
-Test 'backlog show gives one change as the exact text before and after, lines kept, and writes nothing' {
+Test 'backlog show gives one change as the exact text before and after, lines kept, and writes nothing but the fingerprint of that text on the change' {
     $ws = New-BacklogWorkspace
     Set-Changes $ws @(
         (New-Change @{ field = 'description'; before = "The customer scans an identity document."; after = "The customer scans an identity document.`nThe scan is checked before the account opens." }),
         (New-Change @{ id = '2'; kind = 'create'; ticket = $null; field = $null; before = $null; project = 'ONB'; state = 'proposed'
                 after = @{ title = 'Branch finder'; 'acceptance criteria' = 'Given a postcode, the three nearest branches are listed.' } })
     )
+    $changesPath = Join-Path $ws 'state\backlog-changes.json'
+    $proposed = (Read-Json $changesPath).changes | ConvertTo-Json -Depth 20
     $before = Get-WorkspaceSnapshot $ws
 
     $run = Invoke-Register $ws backlog show 1
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    Assert-Equal ("Change 1: edit ticket ONB-142, field Description`nWhy: The title does not say what is scanned.`nSource: the PO, in conversation, read on 2026-03-02`n`n" +
-        "Text before:`nThe customer scans an identity document.`n`nText after:`nThe customer scans an identity document.`nThe scan is checked before the account opens.") $run.Output 'the change shown'
+    $shown = "Change 1: edit ticket ONB-142, field Description`nWhy: The title does not say what is scanned.`nSource: the PO, in conversation, read on 2026-03-02`n`n" +
+        "Text before:`nThe customer scans an identity document.`n`nText after:`nThe customer scans an identity document.`nThe scan is checked before the account opens."
+    Assert-Equal $shown $run.Output 'the change shown'
+    # The fingerprint is the SHA-256 of the text shown, so that apply knows the PO saw that text.
+    $sha = [Security.Cryptography.SHA256]::Create()
+    $fingerprint = -join @($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($shown)) | ForEach-Object { $_.ToString('x2') })
+    Assert-Equal $fingerprint @((Read-Json $changesPath).changes)[0].shown 'the fingerprint recorded on the change'
 
     $run = Invoke-Register $ws backlog show 2
 
@@ -66,7 +81,12 @@ Test 'backlog show gives one change as the exact text before and after, lines ke
     Assert-Match $run.Output '(?m)^Change 2: create a ticket in project ONB$' 'the create shown'
     Assert-Match $run.Output "(?m)^Title:`n^Branch finder$" 'its title'
     Assert-Match $run.Output "(?m)^Acceptance criteria:`n^Given a postcode, the three nearest branches are listed\.$" 'its acceptance criteria'
-    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+    $changes = (Read-Json $changesPath).changes
+    Assert-True ($changes[1].shown -match '^[0-9a-f]{64}$') "no fingerprint on the create: $($changes[1].shown)"
+    foreach ($change in $changes) { $change.PSObject.Properties.Remove('shown') }
+    Assert-Equal $proposed ($changes | ConvertTo-Json -Depth 20) 'the changes but for their fingerprint'
+    $others = { param($Snapshot) $Snapshot -replace '(?m)^\\state\\backlog-changes\.json .*$' }
+    Assert-Equal (& $others $before) (& $others (Get-WorkspaceSnapshot $ws)) 'the other files of the workspace'
 
     $run = Invoke-Register $ws backlog show 3
 
@@ -173,7 +193,7 @@ Test 'the backlog routine drafts tickets from a note, the collect only offers to
 
 Test 'with the tracker read from a folder, backlog apply writes the approved change in the outbox, marks it applied and logs it, once, leaving the other changes as they are' {
     $ws = New-BacklogWorkspace
-    Set-Changes $ws @((New-Change), (New-Change @{ id = '2'; after = 'Document scan'; state = 'proposed' }))
+    Set-Changes $ws @((New-Change), (New-Change @{ id = '2'; after = 'Document scan'; state = 'proposed' })) -Shown
 
     $run = Invoke-Register $ws backlog apply 1 -Today 2026-03-03
 
@@ -213,21 +233,82 @@ Test 'backlog apply refuses a change the PO has not approved, writing nothing' {
     }
 }
 
-Test 'backlog apply refuses an edit whose text before the ticket no longer holds, so that the agent proposes it again' {
+Test 'backlog apply refuses a change approved without being shown, or changed since backlog show gave it, so that the PO approves only the text they saw' {
     $ws = New-BacklogWorkspace
-    Set-Changes $ws @(New-Change @{ before = 'Scan page' })
-    $before = Get-WorkspaceSnapshot $ws
+    $cases = @(
+        @{ why = 'never shown'; changes = @(New-Change); shown = $false }
+        @{ why = 'its text after changed since'; changes = @(New-Change @{ after = 'Identity document scan screen and selfie' }); shown = $true }
+        @{ why = 'its reason changed since'; changes = @(New-Change @{ reason = 'The team asked for it.' }); shown = $true }
+    )
+    foreach ($case in $cases) {
+        Set-Changes $ws @(New-Change @{ state = 'accepted' }) -Shown
+        $shown = @((Read-Json (Join-Path $ws 'state\backlog-changes.json')).changes)[0].shown
+        $change = $case.changes[0]
+        if ($case.shown) { $change.shown = $shown }
+        Set-Changes $ws @($change)
+        $before = Get-WorkspaceSnapshot $ws
 
-    $run = Invoke-Register $ws backlog apply 1
+        $run = Invoke-Register $ws backlog apply 1
 
-    Assert-Equal 1 $run.ExitCode "exit code, with output: $($run.Output)"
-    Assert-Match $run.Output 'Change 1 is not applied: ticket ONB-142, as last read in exports/tracker/ONB-142\.txt, no longer holds its text before\. Nothing was done\. Tell the PO, read the ticket again and propose the change again\.' 'output'
-    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace'
+        Assert-Equal 1 $run.ExitCode "exit code for a change $($case.why), with output: $($run.Output)"
+        Assert-Match $run.Output 'Change 1 is not applied: it is not the text backlog show last gave the PO\. Nothing was done\. Show it again with backlog show 1, and apply it only once the PO approved that exact text\.' "output for a change $($case.why)"
+        Assert-Equal $before (Get-WorkspaceSnapshot $ws) "files of the workspace for a change $($case.why)"
+    }
+}
+
+Test 'backlog apply refuses an edit whose text before is not the whole field as the ticket now holds it, so that the agent proposes it again' {
+    $ws = New-BacklogWorkspace
+    $refused = @(
+        @{ why = 'another text'; change = @{ before = 'Scan page' } }
+        @{ why = 'a part of the title'; change = @{ before = 'Scan' } }
+        @{ why = 'an empty text for a field that holds one'; change = @{ field = 'description'; before = ''; after = 'The customer scans a passport.' } }
+        @{ why = 'a part of the description'; change = @{ field = 'description'; before = 'The customer scans'; after = 'The customer scans a passport.' } }
+    )
+    foreach ($case in $refused) {
+        Set-Changes $ws @(New-Change $case.change) -Shown
+        $before = Get-WorkspaceSnapshot $ws
+
+        $run = Invoke-Register $ws backlog apply 1
+
+        Assert-Equal 1 $run.ExitCode "exit code for $($case.why), with output: $($run.Output)"
+        Assert-Match $run.Output 'Change 1 is not applied: ticket ONB-142, as last read in exports/tracker/ONB-142\.txt, no longer holds its text before\. Nothing was done\. Tell the PO, read the ticket again and propose the change again\.' "output for $($case.why)"
+        Assert-Equal $before (Get-WorkspaceSnapshot $ws) "files of the workspace for $($case.why)"
+    }
+
+    # The whole field passes, whatever the line endings and the spaces at its ends; an empty text
+    # passes for a field the ticket does not hold.
+    $accepted = @(
+        @{ why = 'the description with other line endings'; change = @{ field = 'description'; before = "  The customer scans an identity document.`r`n"; after = 'The customer scans a passport.' } }
+        @{ why = 'empty acceptance criteria for a ticket that has none'; change = @{ field = 'acceptance criteria'; before = ''; after = '- [ ] Given a passport, the scan is accepted.' } }
+    )
+    foreach ($case in $accepted) {
+        $ws = New-BacklogWorkspace
+        Set-Changes $ws @(New-Change $case.change) -Shown
+
+        $run = Invoke-Register $ws backlog apply 1
+
+        Assert-Equal 0 $run.ExitCode "exit code for $($case.why), with output: $($run.Output)"
+    }
+
+    # The acceptance criteria of a ticket follow its description, under their heading; "none" there
+    # is no criterion.
+    foreach ($case in @(
+            @{ held = "Acceptance criteria:`n- Given a passport, the scan is accepted.`n- Given a blurred image, the customer scans again.`n"; field = 'acceptance criteria'; before = "- Given a passport, the scan is accepted.`n- Given a blurred image, the customer scans again." }
+            @{ held = "Acceptance criteria:`n- Given a passport, the scan is accepted.`n"; field = 'description'; before = 'The customer scans an identity document.' }
+            @{ held = "Acceptance criteria: none`n"; field = 'acceptance criteria'; before = '' })) {
+        $ws = New-BacklogWorkspace
+        [IO.File]::WriteAllText((Join-Path $ws 'exports\tracker\ONB-142.txt'), "Key: ONB-142`nProject: ONB`nTitle: Scan screen`nStatus: In progress`n`nThe customer scans an identity document.`n`n$($case.held)", $Utf8)
+        Set-Changes $ws @(New-Change @{ field = $case.field; before = $case.before; after = 'Reworded.' }) -Shown
+
+        $run = Invoke-Register $ws backlog apply 1
+
+        Assert-Equal 0 $run.ExitCode "exit code for the $($case.field) of a ticket holding '$($case.held)', with output: $($run.Output)"
+    }
 }
 
 Test 'with a tracker connector that may write, backlog apply records the change the routine applied through it, and writes no outbox' {
     $ws = New-BacklogWorkspace @{ mode = 'connector'; connector = 'tracker'; writes = $true }
-    Set-Changes $ws @(New-Change)
+    Set-Changes $ws @(New-Change) -Shown
 
     $run = Invoke-Register $ws backlog apply 1 -Today 2026-03-03
 
@@ -240,7 +321,7 @@ Test 'with a tracker connector that may write, backlog apply records the change 
 Test 'with a tracker that may not write, backlog apply gives the text to paste and where it goes, and records the change only once the PO says it is done' {
     foreach ($tracker in @{ mode = 'connector'; connector = 'tracker' }, @{ mode = 'connector'; connector = 'tracker'; writes = $false }, @{ mode = 'off' }) {
         $ws = New-BacklogWorkspace $tracker
-        Set-Changes $ws @(New-Change)
+        Set-Changes $ws @(New-Change) -Shown
         $before = Get-WorkspaceSnapshot $ws
 
         $run = Invoke-Register $ws backlog apply 1 -Today 2026-03-03
@@ -263,10 +344,10 @@ Test 'the applied-change log is committed with the next apply of the register' {
     $ws = New-BacklogWorkspace
     git -C $ws add -A
     git -C $ws commit -q -m 'The tracker, read from a folder'
-    Set-Changes $ws @(New-Change)
+    Set-Changes $ws @(New-Change) -Shown
     $run = Invoke-Register $ws backlog apply 1 -Today 2026-03-03
     Assert-Equal 0 $run.ExitCode "exit code of backlog apply, with output: $($run.Output)"
-    Assert-True (@(git -C $ws status --porcelain) -match 'state/backlog-log.json') 'the log is committed by backlog apply itself'
+    Assert-True (@(git -C $ws status --porcelain) -match 'state/backlog-log.json') 'backlog apply committed the log itself: the next apply of the register commits it'
 
     Set-Proposal $ws @{ operations = @(New-SubjectOperation) }
     $run = Invoke-Register $ws apply -Today 2026-03-03
@@ -286,6 +367,8 @@ Test 'the workspace rules, the backlog routine and the collect routine state the
     $routine = Get-Content -LiteralPath (Join-Path $KitRoot 'routines\backlog\SKILL.md') -Raw -Encoding UTF8
     Assert-Match $routine 'Only after the PO approved that exact change, one change at a time' 'the approval in the backlog routine'
     Assert-Match $routine 'never delete, close, reopen or move a ticket, and you never change another field' 'the limits in the backlog routine'
+    Assert-Match $routine '(?s)## 3\. Show.+`backlog show <id>`.+records on the change the fingerprint of the text it printed.+## 4\. Record.+Keep `shown`.+## 5\. Apply' 'the fingerprint in the backlog routine'
+    Assert-Match $rules '`shown`: the fingerprint `backlog show` writes' 'the fingerprint in the workspace rules'
 }
 
 Test 'backlog check refuses a change that would delete, close, reopen or move a ticket, or touch any field but its text, and says why, writing nothing' {
@@ -321,7 +404,8 @@ Test 'backlog check refuses a change that would delete, close, reopen or move a 
 Test 'the backlog routine splits a ticket too large into two to four created tickets and an edit of the original, never closing it, and proposes an order of the top of the backlog that moves nothing' {
     $routine = Get-Content -LiteralPath (Join-Path $KitRoot 'routines\backlog\SKILL.md') -Raw -Encoding UTF8
     Assert-Match $routine '(?s)## Split a ticket too large.+estimate is above `split_estimate_above`.+several needs.+two to four smaller tickets.+`create` change.+written from the ticket template.+`backlog template`.+one `edit` change.+what remains.+never closed' 'the split'
-    Assert-Match $routine '(?s)## Propose an order for the top of the backlog.+Reordering is a move, which stays the PO.s.+`backlog_top`.+10 when it is not set.+cites by its identifier.+`backlog order`.+nothing was moved in the tracker' 'the order'
+    Assert-Match $routine '(?s)## Propose an order for the top of the backlog.+Reordering is a move, which stays the PO.s.+`backlog_top`.+10 when it is not set.+cites by its identifier.+`"inferred": true`.+`backlog order`.+nothing was moved in the tracker' 'the order'
+    Assert-Match (Get-Content -LiteralPath (Join-Path $KitRoot 'workspace-template\AGENTS.md') -Raw -Encoding UTF8) '(?s)"order": \[.+"inferred": true.+`inferred`' 'the inferred link in the workspace rules'
     Assert-Match (Get-Content -LiteralPath (Join-Path $KitRoot 'workspace-template\AGENTS.md') -Raw -Encoding UTF8) '(?s)`backlog_top`: as `10`.+`split_estimate_above`: as `8`' 'the settings in the workspace rules'
 }
 
@@ -333,7 +417,7 @@ Test 'backlog order writes the order the agent proposes for the top of the backl
     $ws = New-TestWorkspaceWithWeek
     Set-Order $ws @(
         @{ ticket = 'ONB-160'; title = 'Choose a pilot branch'; why = 'The pilot branches are awaited by 2026-03-27 [D-2026-002], and the subject is under Now [mobile-onboarding].' },
-        @{ ticket = 'ONB-142'; title = 'Identity document scan screen'; why = 'The subject is under Now [mobile-onboarding].' }
+        @{ ticket = 'ONB-142'; title = 'Identity document scan screen'; why = 'The subject is under Now [mobile-onboarding].'; inferred = $true }
     )
 
     $run = Invoke-Register $ws backlog order -Now 2026-03-11T09:00:00+01:00
@@ -344,7 +428,9 @@ Test 'backlog order writes the order the agent proposes for the top of the backl
     Assert-Match $view '(?m)^# Proposed order of the backlog' 'its title'
     Assert-Match $view '(?m)^> Generated: 2026-03-11T09:00:00\+01:00\.' 'its stamp'
     Assert-Match $view 'Nothing is moved in the tracker: reordering the backlog is yours, in the tracker\.' 'who reorders'
-    Assert-Match $view '(?s)\| 1 +\| ONB-160 \| Choose a pilot branch +\| The pilot branches are awaited by 2026-03-27 \[D-2026-002\].+\| 2 +\| ONB-142 \| Identity document scan screen \| The subject is under Now \[mobile-onboarding\]\. \|' 'the tickets in order, each with its reason'
+    Assert-Match $view '(?s)\| 1 +\| ONB-160 \| Choose a pilot branch +\| The pilot branches are awaited by 2026-03-27 \[D-2026-002\].+\| 2 +\| ONB-142 \| Identity document scan screen \| The subject is under Now \[mobile-onboarding\]\. \(inferred\) \|' 'the tickets in order, each with its reason, the one the agent inferred marked so'
+    Assert-True ($view -notmatch 'D-2026-002\][^|]*\(inferred\)') 'a reason read in the tracker is marked inferred'
+    Assert-Equal "d$([char]0xE9)duit" (Read-Json (Join-Path $KitRoot 'workspace-template\tools\labels\fr.json')).backlog_order.inferred 'the mark in French'
     $run = Invoke-Register $ws verify views\backlog-order.md
     Assert-Equal 0 $run.ExitCode "verify, with output: $($run.Output)"
 }

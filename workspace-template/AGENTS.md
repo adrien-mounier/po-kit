@@ -90,10 +90,11 @@ The changes you propose to the tracker are your change proposal, `state/backlog-
 - `reason` and its `source`, as a record's.
 - `subject`, when the change serves a subject of the register: its identifier. The register tool refuses one it does not hold.
 - `state`: `proposed`; `accepted` once the PO said yes; `approved` once the PO approved the exact change `backlog show` gave; `applied`, which only the register tool sets; `refused` when the PO says no or the change no longer fits the ticket.
+- `shown`: the fingerprint `backlog show` writes of the text it printed. Keep it as it is. `backlog apply` refuses a change whose text is no longer the one shown: show it again and wait for the PO's approval.
 
 The register tool refuses the change proposal whole when a change would delete, close, reopen or move a ticket, or touch its status, assignee, estimate, sprint, priority or any field but its text, and says why. `backlog apply` applies one change, only from `approved`, and only once:
 
-- the tracker read from a `folder`: the change is written as a file of the outbox, `outbox/tracker/<id>.md`, never in the tracker, and an edit whose text before the ticket no longer holds is not applied;
+- the tracker read from a `folder`: the change is written as a file of the outbox, `outbox/tracker/<id>.md`, never in the tracker, and an edit whose text before is no longer the whole field of the ticket is not applied;
 - a connector whose entry gives `"writes": true`, which the PO alone sets: you apply that one change through the connector, after reading the ticket again, then `backlog apply` records it;
 - any other tracker: `backlog apply` gives the text to paste and where it goes, for you to give the PO word for word, and records nothing; once the PO says it is done, `backlog apply <id> done` records it.
 
@@ -106,9 +107,9 @@ Each change recorded as applied goes to the applied-change log, `state/backlog-l
 **The order you propose for the top of the backlog** is no change: reordering is a move, which stays the PO's. You write it in `state/backlog-order.json`, written as UTF-8 without a byte order mark and replaced each time, the ticket to take first at the top:
 
     { "order": [ { "ticket": "ONB-160", "title": "Choose a pilot branch",
-                   "why": "The pilot branches are awaited by 2026-03-27 [D-2026-002]." } ] }
+                   "why": "The pilot branches are awaited by 2026-03-27 [D-2026-002].", "inferred": true } ] }
 
-Each `why` cites, as a view does, the record that places the ticket: the subject's horizon `[mobile-onboarding]`, a commitment's due date or a decision. `backlog order` writes it as the view `views/backlog-order.md`, stamped, and refuses it whole when a record it cites is missing or superseded, a `why` cites none, a ticket is placed twice, or it holds more tickets than `backlog_top`. Nothing is moved in the tracker; the PO reorders there.
+Each `why` cites, as a view does, the record that places the ticket: the subject's horizon `[mobile-onboarding]`, a commitment's due date or a decision. `inferred`, `true` or left out, says that you inferred the link from the ticket to that record rather than read it in the tracker: the view marks that reason inferred. `backlog order` writes it as the view `views/backlog-order.md`, stamped, and refuses it whole when a record it cites is missing or superseded, a `why` cites none, a ticket is placed twice, or it holds more tickets than `backlog_top`. Nothing is moved in the tracker; the PO reorders there.
 
 ### Ticket drafts
 

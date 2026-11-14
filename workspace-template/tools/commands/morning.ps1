@@ -762,14 +762,14 @@ function Get-MessagesBlock {
 function Get-BacklogBlock {
     # The backlog alerts of state\backlog-alerts.json: the tickets open for work a recorded decision
     # dropped, a line each in red, then the duplicates, the tickets not ready for the refinement
-    # session near, shown only while one is near, and the stale ones, folded. The tracker not read
-    # by the last collect, off included, is said not read.
+    # sessions near, shown only while one is near and counted against each of them, and the stale
+    # ones, folded. The tracker not read by the last collect, off included, is said not read.
     $said = $words.backlog
     $alerts = $Backlog.alerts
-    $session = @(Get-RefinementSessions)[0]
+    $sessions = @(Get-RefinementSessions)
     $against = @($alerts.contradictions | Where-Object { $null -ne $_ })
     $twins = @($alerts.duplicates | Where-Object { $null -ne $_ })
-    $notReady = @(if ($session) { $alerts.not_ready | Where-Object { $null -ne $_ } })
+    $notReady = @(if ($sessions) { $alerts.not_ready | Where-Object { $null -ne $_ } })
     $stale = @($alerts.stale | Where-Object { $null -ne $_ })
     $row = { param($Ticket, $Why, $Button, $Ask) New-Row '' "<b>$(Html $Ticket.ticket)</b>" $Ticket.title $Why '' $Button $Ask }
     # The date of a line sorts it: the contradictions first, then the duplicates, the tickets not
@@ -791,7 +791,7 @@ function Get-BacklogBlock {
     $counts = @(
         if ($against) { "<span class=`"late`">$(Html ($said.count_against -f $against.Count))</span>" }
         if ($twins) { Html ($said.count_duplicates -f $twins.Count) }
-        if ($notReady) { Html ($said.count_not_ready -f $notReady.Count, $session.title, (Format-Day $session.date)) }
+        if ($notReady) { Html ($said.count_not_ready -f $notReady.Count, (@($sessions | ForEach-Object { "$($_.title), $(Format-Day $_.date)" }) -join '; ')) }
         if ($stale) { Html ($said.count_stale -f $stale.Count) }
         if ($Backlog.problems) { "<span class=`"warn`">$(Icon warn) $(Html $words.refused_block)</span>" }
         elseif ($null -eq $alerts) { Html $words.not_written }

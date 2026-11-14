@@ -158,6 +158,14 @@ Test 'the morning page counts the backlog alerts: a red line per ticket open for
     Assert-Match $block 'data-ask="Compare ONB-163 with ONB-151 and tell me which to keep"' 'the PO decides on a duplicate'
     Assert-Match $run.Output '(?m)^Backlog alerts 1 contradict\(s\) a decision, 1 possible duplicate\(s\), 2 not ready for Onboarding refinement, Wed 4, 1 stale, not read: tracker$' 'what morning prints'
 
+    # With two refinement sessions near, the page names each.
+    Set-AlertsCalendar $ws @(
+        @{ start = '2026-03-04T10:00:00+01:00'; end = '2026-03-04T11:00:00+01:00'; title = 'Onboarding refinement'; attendees = @(); status = 'accepted' },
+        @{ start = '2026-03-06T10:00:00+01:00'; end = '2026-03-06T11:00:00+01:00'; title = 'Payments refinement'; attendees = @(); status = 'accepted' }
+    )
+    Invoke-Register $ws morning -Now $AlertsNow | Out-Null
+    Assert-Equal '1 contradict(s) a decision, 1 possible duplicate(s), 2 not ready for Onboarding refinement, Wed 4; Payments refinement, Fri 6, 1 stale, not read: tracker' (Get-AlertsCount (Get-AlertsBlock $ws)) 'counts with two sessions near'
+
     # With no refinement session near, the tickets not ready are left off.
     Set-AlertsCalendar $ws @()
     Invoke-Register $ws morning -Now $AlertsNow | Out-Null

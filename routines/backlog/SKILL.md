@@ -28,7 +28,7 @@ Done when you know which changes wait for the PO and what the PO now asks.
 The PO asks to reword a ticket's text, or to create a ticket they describe.
 
 1. **A request outside the limits is refused.** Closing, deleting, reopening or moving a ticket, changing its status, assignee, estimate, sprint, priority or any field but its text: tell the PO in one line that it stays theirs to do in the tracker, write no change for it, and go on with the rest of the request.
-2. **Read the ticket** to edit, as the collect's `sources.md` says: its text as it is now is the text `before`, word for word.
+2. **Read the ticket** to edit, as the collect's `sources.md` says: the whole field as it is now is the text `before`, word for word, never a part of it (`""` when the field is empty).
 3. **Write the change** in `state/backlog-changes.json`, keeping the changes already there: `state` `proposed`, a new `id` (one more than the highest of the proposal and of `state/backlog-log.json`), the `reason` in one sentence and its `source` (`{ "where": "the PO, in conversation", "read_on": "<today>" }` for a change the PO asked for). One change edits one field: a reworded title and description are two changes.
 4. Run the register tool's `backlog check`. When it refuses the proposal, correct it and check again.
 5. **Propose it**: one line per change, numbered by its `id`: the ticket, the field, what changes and why. Ask whether the PO wants it.
@@ -54,7 +54,7 @@ Done when each need of the note is a draft proposed, covered by a ticket you nam
 An answer the PO gave ahead counts only for what it names: a yes to the proposal is not an approval of the exact text.
 
 1. Set each change the PO said yes to as `accepted`; one the PO said no to as `refused`.
-2. Run the register tool's `backlog show <id>`, and copy what it prints into your answer, unchanged: the exact text the team will see.
+2. Run the register tool's `backlog show <id>`, and copy what it prints into your answer, unchanged: the exact text the team will see. It records on the change the fingerprint of the text it printed, in `shown`.
 3. Ask the PO to approve that exact change.
 
 Done when the PO has the exact text of each change accepted.
@@ -62,6 +62,8 @@ Done when the PO has the exact text of each change accepted.
 ## 4. Record the PO's approval
 
 The PO approves a change `accepted` whose exact text you showed, or approves it ahead in so many words ("I approve change 1 as you showed it"): set it as `approved`. A change still `proposed` is shown first, as step 3 says, whatever the PO said. A change the PO wants reworded is changed and shown again, still `accepted`.
+
+Keep `shown` as `backlog show` wrote it when you rewrite the change proposal. Change nothing else in a change once it is shown: `backlog apply` refuses a change that is no longer the text `backlog show` last printed. The order is always: `backlog show`, the PO's yes to that text, `approved`, then step 5.
 
 Done when each change the PO approved is `approved`, and no other is.
 
@@ -73,7 +75,7 @@ One change at a time, each only from `approved`. The `mode` of `tracker` in `con
 - **`connector` with `"writes": true`**: read the ticket again through the connector. When its field no longer holds the text `before`, apply nothing: go to "A ticket that changed". Otherwise apply that one change through the connector: that ticket, that field, the text `after`, or that new ticket in that project; nothing else. Then run `backlog apply <id>`: it records the change as applied and logs it.
 - **any other**: run `backlog apply <id>`. It prints the change and where it goes, and records nothing. Give the PO that text word for word, to paste in the tracker, and say that it counts as applied only once they tell you it is done: then step 1.
 
-`backlog apply` refuses a change not approved, or applied already: never apply one again.
+`backlog apply` refuses a change not approved, or applied already: never apply one again. It refuses a change changed since `backlog show` printed it: show it again, as step 3 says, and wait for the PO's approval of that text.
 
 **A ticket that changed.** When `backlog apply` says the ticket no longer holds the text before, or the connector shows it, nothing is applied. Tell the PO, set the change as `refused`, read the ticket again, and propose the change again from step 2, with a new identifier.
 
@@ -110,7 +112,7 @@ When the PO asks how to order the backlog, or what the team should take next. Re
 1. **Read the register**: run the register tool's `export` with the date four weeks before today. It prints the active subjects with their horizon, the open commitments with their due date, the pending decisions and the decisions taken since, each with its identifier.
 2. **Read the backlog**: search the tracker once for each tracker project of an active subject's watch list, as the collect's `sources.md` says, and open what the searches return. The tickets not done are the backlog.
 3. **Place at most `backlog_top` tickets** (`settings.json`, 10 when it is not set), the ticket to take first at the top: one that serves a subject under Now before Next before Later; among them, one that a commitment due soon or a decision awaited by a date waits on before one nothing waits on. A ticket for work a decision taken dropped is not placed: tell the PO. A ticket no record places is left out of the order.
-4. **Write `state/backlog-order.json`** as the workspace rules show: each ticket's key, its title and `why`, one sentence that cites by its identifier in square brackets the record that places it, as the export prints it: the subject `[mobile-onboarding]`, the commitment or the decision. A record the export does not print, or that is superseded, is never cited.
+4. **Write `state/backlog-order.json`** as the workspace rules show: each ticket's key, its title and `why`, one sentence that cites by its identifier in square brackets the record that places it, as the export prints it: the subject `[mobile-onboarding]`, the commitment or the decision. A record the export does not print, or that is superseded, is never cited. When the ticket does not itself name that record, its subject or its project, and you inferred the link from its words, add `"inferred": true`: the view marks that reason inferred, for the PO to check.
 5. Run the register tool's `backlog order`. It writes the view `views/backlog-order.md`. When it refuses the order, correct what it lists and run it again.
 
 Then tell the PO: the order, one line per ticket with its reason; the view to open; the tickets left out and why; and that nothing was moved in the tracker: reordering the backlog is theirs, there. You never move a ticket, nor change its rank, priority or sprint, whoever asks.

@@ -20,6 +20,8 @@
 # A change may name in "subject" the subject of the register it serves.
 # The agent moves a change from proposed to accepted (the PO said yes) and to approved (the PO
 # approved the exact change it showed), or to refused. Only this command sets applied.
+# backlog show writes in "shown" the fingerprint of the text it printed: apply refuses a change
+# whose text is no longer that one, so that the PO approves only what they saw.
 
 $ChangesPath = Join-Path $Workspace 'state\backlog-changes.json'
 $TicketTexts = 'title', 'description', 'acceptance criteria'
@@ -30,13 +32,15 @@ $ChangeDefinition = @'
     "ticket": { "type": "text" },
     "project": { "type": "text" },
     "subject": { "type": "text" },
-    "field": { "type": "text", "allowed": ["title", "description", "acceptance criteria"] },
+    "field": { "type": "text" },
     "before": { "type": "text" },
     "after": { "type": "any", "required": true },
     "reason": { "type": "text", "required": true },
-    "state": { "type": "text", "required": true, "allowed": ["proposed", "accepted", "approved", "applied", "refused"] }
+    "state": { "type": "text", "required": true, "allowed": ["proposed", "accepted", "approved", "applied", "refused"] },
+    "shown": { "type": "text" }
 } }
 '@ | ConvertFrom-Json
+$ChangeDefinition.fields.field | Add-Member allowed $TicketTexts
 # The source of a change is written as the source of a record.
 $ChangeDefinition.fields | Add-Member source (Read-JsonFile (Join-Path $Tools 'definitions\common.json')).fields.source
 
@@ -127,14 +131,17 @@ if ($action -ceq 'order') {
     # a view, views\backlog-order.md. It moves nothing in the tracker: reordering is the PO's.
     #   { "order": [ { "ticket": "ONB-160", "title": "...", "why": "... [D-2026-002]" } ] }
     # first the ticket to take first. Each one says why it stands there, citing a record as a view
-    # does. A record cited missing or superseded, a reason that cites none, a ticket placed twice or
-    # more tickets than backlog_top of settings.json (10 when not set) refuses the order whole.
+    # does; "inferred": true marks a reason whose link from the ticket to that record the agent
+    # inferred rather than read in the tracker, and the view says so beside it. A record cited
+    # missing or superseded, a reason that cites none, a ticket placed twice or more tickets than
+    # backlog_top of settings.json (10 when not set) refuses the order whole.
     Assert-RegisterCommitted
     $orderPath = Join-Path $Workspace 'state\backlog-order.json'
     if (-not (Test-Path -LiteralPath $orderPath)) { Stop-Run 'No order proposed: state\backlog-order.json does not exist.' }
     $file = try { Read-JsonFile $orderPath } catch { Stop-Run 'state\backlog-order.json cannot be read: it must hold JSON, saved as UTF-8. Nothing was written.' }
     $definition = '{ "type": "object", "fields": { "order": { "type": "list", "required": true, "items": { "type": "object", "fields": {
-        "ticket": { "type": "text", "required": true }, "title": { "type": "text" }, "why": { "type": "text", "required": true } } } } } }' | ConvertFrom-Json
+        "ticket": { "type": "text", "required": true }, "title": { "type": "text" }, "why": { "type": "text", "required": true },
+        "inferred": { "type": "boolean" } } } } } }' | ConvertFrom-Json
     $top = if ($Settings.backlog_top -is [int] -and $Settings.backlog_top -gt 0) { $Settings.backlog_top } else { 10 }
     $tickets = @($file.order | Where-Object { $null -ne $_ })
     $placed = @{}
@@ -152,7 +159,10 @@ if ($action -ceq 'order') {
     $labels = Get-Labels $Settings.languages.default
     $words = $labels.backlog_order
     $rank = 0
-    $rows = @(foreach ($ticket in $tickets) { , @("$((++$rank))", "$($ticket.ticket)", "$($ticket.title)", "$($ticket.why)" | ForEach-Object { ($_ -replace '\s*\r?\n\s*', ' ').Replace('|', '\|') }) })
+    $rows = @(foreach ($ticket in $tickets) {
+            $why = "$($ticket.why)" + $(if ($ticket.inferred -eq $true) { " ($($words.inferred))" })
+            , @("$((++$rank))", "$($ticket.ticket)", "$($ticket.title)", $why | ForEach-Object { ($_ -replace '\s*\r?\n\s*', ' ').Replace('|', '\|') })
+        })
     $lines = @("# $($words.title)", '') + @(Get-Stamp $labels) + @('', $words.note, '') + @(Write-Table $words.rank, $words.ticket, $words.ticket_title, $words.why $rows)
     Write-TextFile (Join-Path $Workspace 'views\backlog-order.md') (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
     "Proposed order written: views/backlog-order.md, $($tickets.Count) ticket(s). Nothing was moved in the tracker: reordering the backlog is the PO's, in the tracker."
@@ -216,20 +226,45 @@ function Format-BacklogChange($Change) {
     ) -join "`n"
 }
 
+function Get-Fingerprint($Change) {
+    # The SHA-256 of the change as backlog show prints it.
+    $sha = [Security.Cryptography.SHA256]::Create()
+    -join @($sha.ComputeHash($Utf8.GetBytes((Format-BacklogChange $Change))) | ForEach-Object { $_.ToString('x2') })
+}
+
+function Get-TicketText([string]$Read, [string]$Field) {
+    # One text of a ticket as its file in the tracker's folder holds it: the title on its line
+    # "Title:", the description after the first blank line, and the acceptance criteria after the
+    # line that opens with "Acceptance criteria:", which ends the description. "" when it holds none.
+    $head, $body = $Read.Split(@("`n`n"), 2, [StringSplitOptions]::None)
+    $description, $criteria = [regex]::Split("$body", '(?im)^Acceptance criteria:[ \t]*', 2)
+    $text = switch ($Field) {
+        'title' { if ($head -match '(?m)^Title:[ \t]*(.*)$') { $Matches[1] } }
+        'description' { $description }
+        'acceptance criteria' { $criteria }
+    }
+    $text = "$text".Trim()
+    # ponytail: an export that says "none" for no criterion reads as none; other words for it do not.
+    if ($Field -ceq 'acceptance criteria' -and $text -eq 'none') { '' } else { $text }
+}
+
 $id = if ($words.Count -eq 2 -or ($action -ceq 'apply' -and $words.Count -eq 3 -and $words[2] -ceq 'done')) { $words[1] }
 $change = @($changes | Where-Object { $_.id -ceq $id }) | Select-Object -First 1
 if (-not $change) { Stop-Run "The change proposal holds no change '$id'. backlog $action takes the identifier of one change: backlog $action 1." }
 
 if ($action -ceq 'show') {
     Format-BacklogChange $change
+    $file = Read-JsonFile $ChangesPath
+    @($file.changes | Where-Object { $_.id -ceq $id })[0] | Add-Member shown (Get-Fingerprint $change) -Force
+    Write-JsonFile $ChangesPath $file
     return
 }
 
 # --- apply ----------------------------------------------------------------------------------------
 # One approved change, once. How depends on the tracker's entry in connections.json:
 # - folder (the scenarios): the change is written as a file of the outbox, outbox\tracker\<id>.md,
-#   never in the tracker, once the ticket as last read, <folder>\<ticket>.txt, still holds the text
-#   before of an edit;
+#   never in the tracker, once the field of the ticket as last read, <folder>\<ticket>.txt, is still
+#   the text before of an edit, whole (see Get-TicketText);
 # - connector with "writes": true: the routine has applied it through the connector; this records it;
 # - otherwise: this prints the text to paste and where it goes, and records nothing. Once the PO
 #   says it is done, "backlog apply <id> done" records it.
@@ -242,6 +277,9 @@ if ($done) { Stop-Run "Change $id is applied already, on $($done.date): a change
 if ($change.state -cne 'approved') {
     Stop-Run "Change $id is $($change.state), not approved: a change is applied only once the PO has approved it as backlog show gives it. Nothing was done."
 }
+if ($change.shown -cne (Get-Fingerprint $change)) {
+    Stop-Run "Change $id is not applied: it is not the text backlog show last gave the PO. Nothing was done. Show it again with backlog show $id, and apply it only once the PO approved that exact text."
+}
 
 $tracker = $Connections.tracker
 if ($tracker.mode -ceq 'folder') {
@@ -249,7 +287,7 @@ if ($tracker.mode -ceq 'folder') {
         $shown = "$($tracker.folder)/$($change.ticket).txt".Replace('\', '/')
         $ticket = if ([IO.Path]::IsPathRooted($tracker.folder)) { Join-Path $tracker.folder "$($change.ticket).txt" } else { Join-Path $Workspace "$($tracker.folder)\$($change.ticket).txt" }
         $read = if (Test-Path -LiteralPath $ticket -PathType Leaf) { [IO.File]::ReadAllText($ticket, $Utf8).Replace("`r`n", "`n") }
-        if ($null -eq $read -or -not $read.Contains($change.before.Replace("`r`n", "`n"))) {
+        if ($null -eq $read -or (Get-TicketText $read $change.field) -cne $change.before.Replace("`r`n", "`n").Trim()) {
             Stop-Run "Change $id is not applied: ticket $($change.ticket), as last read in $shown, no longer holds its text before. Nothing was done. Tell the PO, read the ticket again and propose the change again."
         }
     }
