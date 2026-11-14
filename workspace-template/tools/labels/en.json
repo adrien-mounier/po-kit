@@ -88,14 +88,20 @@
   },
   "governance": {
     "title": "Governance checklist",
-    "note": "Every active subject with the state of each gate settings.json lists; \"-\" is a gate the subject does not state.",
+    "note": "Every active subject with the state of each gate settings.json lists; \"-\" is a gate the subject does not state. Missing: a gate missing, or out of frame. To confirm: under Now or Next, a pending clearance or a gate unknown or not stated.",
     "gates": "Gates",
     "no_gate": "settings.json lists no gate under \"gates\": add the organisation's gates there.",
     "states": { "done": "Done", "planned": "Planned", "missing": "**Missing**", "not required": "Not required", "unknown": "Unknown" },
     "attention": "Needs attention",
     "out_of_frame": "out of frame",
     "missing": "missing: {0}",
-    "nothing": "Nothing needs attention."
+    "nothing": "Nothing needs attention.",
+    "missing_tier": "Missing",
+    "confirm_tier": "To confirm",
+    "none": "None.",
+    "pending": "clearance pending",
+    "unknown": "unknown: {0}",
+    "not_stated": "not stated: {0}"
   },
   "objectives": {
     "title": "Objectives evidence",

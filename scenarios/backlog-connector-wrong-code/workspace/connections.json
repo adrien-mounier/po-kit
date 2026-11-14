@@ -1,0 +1,7 @@
+{
+  "notes": { "mode": "folder" },
+  "mail": { "mode": "off" },
+  "tracker": { "mode": "connector", "connector": "tracker", "writes": true },
+  "chat": { "mode": "off" },
+  "calendar": { "mode": "off" }
+}

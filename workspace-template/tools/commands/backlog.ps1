@@ -5,6 +5,8 @@
 #   backlog show <id>      one change as the exact text before and after, for the PO to review
 #   backlog apply <id> <code>
 #                          applies one approved change, once, with the approval code the PO gave
+#   backlog ready <id> <code>
+#                          checks what apply checks and does nothing: run before a connector writes
 #   backlog alerts         checks the backlog alerts, state\backlog-alerts.json, and names the
 #                          refinement sessions near
 #   backlog order          writes the order the agent proposes for the top of the backlog as a view
@@ -172,7 +174,7 @@ if ($action -ceq 'order') {
     return
 }
 
-if ('check', 'show', 'apply', 'template' -cnotcontains $action) { Stop-Run 'backlog takes check, show <id>, apply <id>, order, alerts or template.' }
+if ('check', 'show', 'apply', 'ready', 'template' -cnotcontains $action) { Stop-Run 'backlog takes check, show <id>, ready <id> <code>, apply <id> <code>, order, alerts or template.' }
 
 if ($action -ceq 'template') {
     # The ticket template, for a ticket draft: templates\ticket-<language>.md in the workspace when the
@@ -251,9 +253,10 @@ function Get-TicketText([string]$Read, [string]$Field) {
     if ($Field -ceq 'acceptance criteria' -and $text -eq 'none') { '' } else { $text }
 }
 
-$id = if ($words.Count -eq 2 -or ($action -ceq 'apply' -and $words.Count -eq 3)) { $words[1] }
-$saidDone = $words.Count -eq 3 -and $words[2] -ceq 'done'
-$code = if ($words.Count -eq 3 -and -not $saidDone) { $words[2] }
+$id = if ($words.Count -eq 2 -or ('apply', 'ready' -ccontains $action -and $words.Count -eq 3)) { $words[1] }
+$saidDone = $action -ceq 'apply' -and $words.Count -eq 3 -and $words[2] -ceq 'done'
+# The code as the PO gave it back, spaces around it left out.
+$code = if ($words.Count -eq 3 -and -not $saidDone) { "$($words[2])".Trim() }
 $change = @($changes | Where-Object { $_.id -ceq $id }) | Select-Object -First 1
 if (-not $change) { Stop-Run "The change proposal holds no change '$id'. backlog $action takes the identifier of one change: backlog $action 1." }
 
@@ -273,7 +276,8 @@ if ($action -ceq 'show') {
 # - folder (the scenarios): the change is written as a file of the outbox, outbox\tracker\<id>.md,
 #   never in the tracker, once the field of the ticket as last read, <folder>\<ticket>.txt, is still
 #   the text before of an edit, whole (see Get-TicketText);
-# - connector with "writes": true: the routine has applied it through the connector; this records it;
+# - connector with "writes": true: the routine has run backlog ready, then applied it through the
+#   connector; this records it;
 # - otherwise: this prints the text to paste and where it goes, keeps in "given" the fingerprint of
 #   the text it gave, and records nothing. Once the PO says it is done, "backlog apply <id> done"
 #   records it, while the change is still that text.
@@ -297,6 +301,12 @@ elseif (-not $code) {
 }
 elseif ($code.ToUpper() -cne $change.shown.Substring(0, 6).ToUpper()) {
     Stop-Run "Change $id is not applied: the approval code $code is not the code of its text as it stands. Nothing was done. Show the change to the PO again with backlog show $id, and apply it only with the code the PO gives back."
+}
+# ready: every check of apply has passed; nothing is written, so that a connector writes only then.
+if ($action -ceq 'ready') {
+    $what = if ($change.kind -ceq 'edit') { "ticket $($change.ticket), field $($change.field), the text after" } else { "a new ticket in project $($change.project), the texts after" }
+    "Change $id may be written through the connector now: $what and nothing else. Nothing was done. Once written, record it: backlog apply $id <code>"
+    return
 }
 
 $tracker = $Connections.tracker

@@ -44,12 +44,14 @@ $Gates = { param([string]$Architecture, [string]$Security)
         if ($Security) { @{ name = 'security review'; state = $Security } })
 }
 
-Test 'view governance shows every active subject with its clearance and the state of each gate the settings list, and lists apart those missing a gate or out of frame' {
+Test 'view governance shows every active subject with its clearance and the state of each gate the settings list, lists apart those missing a gate or out of frame, and those of Now and Next to confirm' {
     $ws = New-GovernanceWorkspace @(
         (New-SubjectOperation @{ title = 'Mobile onboarding'; clearance = 'out of frame'; gates = (& $Gates 'done' 'missing') }),
         (New-SubjectOperation @{ title = 'Credit memo drafting'; horizon = 'next'; clearance = 'cleared'; cleared_by = 'the sponsor'; cleared_on = '2026-02-20'; gates = (& $Gates 'done' 'planned') }),
         (New-SubjectOperation @{ title = 'Complaint triage assistant'; horizon = 'later'; clearance = 'pending'; gates = (& $Gates 'missing' $null) }),
-        (New-SubjectOperation @{ title = 'Paper statements'; horizon = 'later'; gates = (& $Gates 'not required' 'unknown') })
+        (New-SubjectOperation @{ title = 'Paper statements'; horizon = 'later'; gates = (& $Gates 'not required' 'unknown') }),
+        (New-SubjectOperation @{ title = 'Payments API contribution'; kind = 'contribution'; horizon = 'next'; clearance = 'pending'; gates = (& $Gates 'unknown' $null) }),
+        (New-SubjectOperation @{ title = 'Branch kiosks pilot'; clearance = 'cleared'; cleared_by = 'the sponsor'; cleared_on = '2026-02-20'; gates = (& $Gates 'done' $null) })
     )
 
     $run = Invoke-Register $ws view governance -Now $Morning
@@ -60,13 +62,19 @@ Test 'view governance shows every active subject with its clearance and the stat
     Assert-Match $view "^# Governance checklist\n\n> Generated: 2026-03-02T09:15:00\+01:00\.\n" 'title and stamp'
     Assert-Match $view '\| Subject +\| Clearance +\| architecture review \| security review \|' 'one column per gate of the settings'
     Assert-Equal (@(
+            'Branch kiosks pilot [branch-kiosks-pilot] | Cleared by the sponsor on 2026-02-20 | Done | -',
             'Complaint triage assistant [complaint-triage-assistant] | Pending | **Missing** | -',
             'Credit memo drafting [credit-memo-drafting] | Cleared by the sponsor on 2026-02-20 | Done | Planned',
             'Mobile onboarding [mobile-onboarding] | **Out of frame** | Done | **Missing**',
-            'Paper statements [paper-statements] | None | Not required | Unknown') -join "`n") ((Get-Section $view '## Gates') -join "`n") 'every subject by title, each gate in its column'
+            'Paper statements [paper-statements] | None | Not required | Unknown',
+            'Payments API contribution [payments-api-contribution] | Pending | Unknown | -') -join "`n") ((Get-Section $view '## Gates') -join "`n") 'every subject by title, each gate in its column'
     Assert-Equal (@(
+            '### Missing',
             '- Complaint triage assistant [complaint-triage-assistant]: missing: architecture review',
-            '- Mobile onboarding [mobile-onboarding]: out of frame; missing: security review') -join "`n") ((Get-Section $view '## Needs attention') -join "`n") 'the subjects missing a gate or out of frame'
+            '- Mobile onboarding [mobile-onboarding]: out of frame; missing: security review',
+            '### To confirm',
+            '- Branch kiosks pilot [branch-kiosks-pilot] (Now): not stated: security review',
+            '- Payments API contribution [payments-api-contribution] (Next): clearance pending; unknown: architecture review; not stated: security review') -join "`n") ((Get-Section $view '## Needs attention') -join "`n") 'missing a gate or out of frame, then Now and Next to confirm; Later never to confirm'
     Assert-True ([IO.File]::ReadAllBytes((Join-Path $ws 'views\governance.md'))[0] -ne 0xEF) 'the view opens with a byte order mark'
     $verify = Invoke-Register $ws verify views\governance.md
     Assert-Equal 0 $verify.ExitCode "verify of the view, with output: $($verify.Output)"
@@ -165,4 +173,26 @@ Test 'the workspace rules and the subject routine name both views' {
     Assert-Match $rules '`view objectives` writes the objectives evidence, `views/objectives\.md`' 'the workspace rules name the objectives evidence'
     $routine = Get-Content -LiteralPath (Join-Path $KitRoot 'routines\subject\SKILL.md') -Raw -Encoding UTF8
     foreach ($said in '`view governance`', '`view objectives`') { Assert-True $routine.Contains($said) "the subject routine does not say $said" }
+}
+
+Test 'view governance escapes a pipe in a gate name and keeps a title with a line break on one line, and says None under a tier with nothing in it' {
+    $ws = New-TestWorkspace
+    $settings = Read-Json (Join-Path $ws 'settings.json')
+    $settings.gates = @('data | privacy')
+    Write-Json (Join-Path $ws 'settings.json') $settings
+    git -C $ws commit -q -am 'A gate with a pipe'
+    Set-Proposal $ws @{ operations = @(New-SubjectOperation @{ title = "Mobile`nonboarding"; clearance = 'out of frame'; gates = @(@{ name = 'data | privacy'; state = 'missing' }) }) }
+    $run = Invoke-Register $ws apply -Today 2026-03-02
+    Assert-Equal 0 $run.ExitCode "exit code when recording, with output: $($run.Output)"
+
+    $run = Invoke-Register $ws view governance -Now $Morning
+
+    Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
+    $view = Read-View $ws 'governance.md'
+    $header = @($view -split "`n" | Where-Object { $_ -like '| Subject*' })[0]
+    $row = @($view -split "`n" | Where-Object { $_ -like '| Mobile*' })[0]
+    # A cell boundary is a pipe that no backslash escapes.
+    $boundaries = { param($Line) ($Line -replace '\\\|', '').Split('|').Count }
+    Assert-Equal (& $boundaries $row) (& $boundaries $header) "as many columns in the header as in a row: $header / $row"
+    Assert-Equal (@('### Missing', '- Mobile onboarding [mobile-onboarding]: out of frame; missing: data | privacy', '### To confirm', 'None.') -join "`n") ((Get-Section $view '## Needs attention') -join "`n") 'the title on one line, and None to confirm'
 }

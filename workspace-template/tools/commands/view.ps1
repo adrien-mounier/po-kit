@@ -98,19 +98,36 @@ function Write-GovernanceView($Labels, [string]$Bank) {
             }
             & $escape $cells
         })
-    $attention = @(foreach ($subject in $subjects) {
+    # A subject listed under "Needs attention", on one line, with what it lacks.
+    $entry = { param($Subject, [string]$After, [string[]]$Why) "- $(Format-Value $Subject.title) [$($Subject.id)]$($After): $(@($Why | Where-Object { $_ }) -join '; ')" }
+    # Missing: a gate stated missing, or out of frame, whatever the horizon.
+    $missingTier = @(foreach ($subject in $subjects) {
             $missing = @($subject.gates | Where-Object { $_.state -ceq 'missing' } | ForEach-Object { $_.name })
             $out = $subject.clearance -ceq 'out of frame'
-            if ($out -or $missing) {
-                $why = @($(if ($out) { $words.out_of_frame }), $(if ($missing) { $words.missing -f ($missing -join ', ') })) | Where-Object { $_ }
-                "- $($subject.title) [$($subject.id)]: $(@($why) -join '; ')"
+            if ($out -or $missing) { & $entry $subject '' @($(if ($out) { $words.out_of_frame }), $(if ($missing) { $words.missing -f ($missing -join ', ') })) }
+        })
+    # To confirm: under Now or Next only, a pending clearance, or a gate of the settings stated
+    # unknown or not stated. Under Later, pending is where every new request starts, and is no gap.
+    $confirmTier = @(foreach ($subject in $subjects | Where-Object { 'now', 'next' -ccontains $_.horizon }) {
+            $unknown = @($gates | Where-Object { $gate = $_; @($subject.gates | Where-Object { $_.name -ceq $gate })[0].state -ceq 'unknown' })
+            $unstated = @($gates | Where-Object { $gate = $_; -not @($subject.gates | Where-Object { $_.name -ceq $gate }) })
+            $pending = $subject.clearance -ceq 'pending'
+            if ($pending -or $unknown -or $unstated) {
+                & $entry $subject " ($($Labels.portfolio.horizons.($subject.horizon)))" @($(if ($pending) { $words.pending }),
+                    $(if ($unknown) { $words.unknown -f ($unknown -join ', ') }), $(if ($unstated) { $words.not_stated -f ($unstated -join ', ') }))
             }
         })
     $lines = @("# $($words.title)", '') + @(Get-Stamp $Labels $Bank) + @('', $words.note, '', "## $($words.gates)", '')
     if (-not $gates) { $lines += $words.no_gate, '' }
-    $lines += if ($rows) { Write-Table (@($Labels.portfolio.subject, $Labels.portfolio.clearance) + $gates) $rows } else { $Labels.portfolio.no_subject }
+    $lines += if ($rows) { Write-Table (& $escape (@($Labels.portfolio.subject, $Labels.portfolio.clearance) + $gates)) $rows } else { $Labels.portfolio.no_subject }
     $lines += '', "## $($words.attention)", ''
-    $lines += if ($attention) { $attention } else { $words.nothing }
+    if ($missingTier -or $confirmTier) {
+        $lines += "### $($words.missing_tier)", ''
+        $lines += if ($missingTier) { $missingTier } else { $words.none }
+        $lines += '', "### $($words.confirm_tier)", ''
+        $lines += if ($confirmTier) { $confirmTier } else { $words.none }
+    }
+    else { $lines += $words.nothing }
     Write-TextFile (Join-Path $Workspace 'views\governance.md') (($lines -join [Environment]::NewLine) + [Environment]::NewLine)
 }
 

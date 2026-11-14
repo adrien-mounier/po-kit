@@ -88,14 +88,20 @@
   },
   "governance": {
     "title": "Contrôle de gouvernance",
-    "note": "Chaque sujet actif avec l'état de chaque validation que settings.json liste ; « - » est une validation que le sujet n'indique pas.",
+    "note": "Chaque sujet actif avec l'état de chaque validation que settings.json liste ; « - » est une validation que le sujet n'indique pas. Manquant : une validation manquante, ou hors cadre. À confirmer : sous Maintenant ou Ensuite, un feu vert en attente ou une validation inconnue ou non indiquée.",
     "gates": "Validations",
     "no_gate": "settings.json ne liste aucune validation sous \"gates\" : ajoutez-y celles de l'organisation.",
     "states": { "done": "Fait", "planned": "Prévu", "missing": "**Manquant**", "not required": "Non requis", "unknown": "Inconnu" },
     "attention": "À traiter",
     "out_of_frame": "hors cadre",
     "missing": "manque : {0}",
-    "nothing": "Rien à traiter."
+    "nothing": "Rien à traiter.",
+    "missing_tier": "Manquant",
+    "confirm_tier": "À confirmer",
+    "none": "Aucun.",
+    "pending": "feu vert en attente",
+    "unknown": "inconnu : {0}",
+    "not_stated": "non indiqué : {0}"
   },
   "objectives": {
     "title": "Preuves par objectif",

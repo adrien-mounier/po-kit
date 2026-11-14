@@ -367,6 +367,49 @@ Test 'with a tracker connector that may write, backlog apply records the change 
     Assert-True (-not (Test-Path (Join-Path $ws 'outbox'))) 'an outbox was written'
 }
 
+Test 'backlog ready checks the approval code and the text shown before a connector writes, refusing without a code, with a wrong one or the code of an older text, and writes nothing' {
+    $ws = New-BacklogWorkspace @{ mode = 'connector'; connector = 'tracker'; writes = $true }
+    Set-Changes $ws @(New-Change @{ after = 'Document scan screen' }) -Shown
+    $old = Get-Code $ws
+    Set-Changes $ws @(New-Change) -Shown
+    $wrong = if ((Get-Code $ws) -ceq 'ABC123') { 'ABC124' } else { 'ABC123' }
+    $refused = @(
+        @{ why = 'without a code'; code = @(); reason = 'Change 1 is not applied: no approval code' }
+        @{ why = 'with a wrong code'; code = @($wrong); reason = "Change 1 is not applied: the approval code $wrong is not the code of its text as it stands" }
+        @{ why = 'with the code of an older text'; code = @($old); reason = "Change 1 is not applied: the approval code $old is not the code of its text as it stands" }
+        @{ why = 'with done'; code = @('done'); reason = 'Change 1 is not applied: the approval code done is not the code' }
+    )
+    foreach ($case in $refused) {
+        $before = Get-WorkspaceSnapshot $ws
+
+        $words = @('backlog', 'ready', '1') + $case.code
+        $run = Invoke-Register $ws @words
+
+        Assert-Equal 1 $run.ExitCode "exit code $($case.why), with output: $($run.Output)"
+        Assert-Match $run.Output $case.reason "output $($case.why)"
+        Assert-Equal $before (Get-WorkspaceSnapshot $ws) "files of the workspace $($case.why)"
+    }
+    $changes = Read-Json (Join-Path $ws 'state\backlog-changes.json')
+    $changes.changes[0].after = 'Document scan screen'
+    Write-Json (Join-Path $ws 'state\backlog-changes.json') $changes
+    $run = Invoke-Register $ws backlog ready 1 (Get-Code $ws)
+    Assert-Equal 1 $run.ExitCode "exit code for a text changed since it was shown, with output: $($run.Output)"
+    Assert-Match $run.Output 'it is not the text backlog show last gave the PO' 'output for a text changed since it was shown'
+
+    Set-Changes $ws @(New-Change) -Shown
+    $before = Get-WorkspaceSnapshot $ws
+
+    $run = Invoke-Register $ws backlog ready 1 " $(Get-Code $ws) "
+
+    Assert-Equal 0 $run.ExitCode "exit code with the right code, spaces around it, with output: $($run.Output)"
+    Assert-Match $run.Output 'Change 1 may be written through the connector now: ticket ONB-142, field title, the text after and nothing else\. Nothing was done\. Once written, record it: backlog apply 1 <code>' 'output'
+    Assert-Equal $before (Get-WorkspaceSnapshot $ws) 'files of the workspace once ready'
+    $routine = Get-Content -LiteralPath (Join-Path $KitRoot 'routines\backlog\SKILL.md') -Raw -Encoding UTF8
+    Assert-Match $routine 'run `backlog ready <id> <code>` first' 'the routine runs backlog ready before a connector write'
+    $rules = Get-Content -LiteralPath (Join-Path $KitRoot 'workspace-template\AGENTS.md') -Raw -Encoding UTF8
+    Assert-Match $rules '`backlog ready 2 <code>`' 'the workspace rules name backlog ready'
+}
+
 Test 'with a tracker that may not write, backlog apply gives the text to paste and where it goes, and records the change only once the PO says it is done' {
     foreach ($tracker in @{ mode = 'connector'; connector = 'tracker' }, @{ mode = 'connector'; connector = 'tracker'; writes = $false }, @{ mode = 'off' }) {
         $ws = New-BacklogWorkspace $tracker

@@ -120,7 +120,7 @@ For a subject a request created, run the register tool's `view intake <identifie
 
 When the PO asks for the ranked portfolio, run the register tool's `view ranking` once the scores are applied (`view ranking bank <client bank>` for one client bank) and tell the PO where it is: `views/ranking.md`.
 
-When the PO asks which subjects lack an approval, or for the governance checklist, run the register tool's `view governance` (`view governance bank <client bank>` for one client bank) and tell the PO where it is, `views/governance.md`, and which subjects it lists under "Needs attention". When the PO asks what shows progress on their objectives, run `view objectives` and tell the PO where it is: `views/objectives.md`. A record shows an objective once it, or its subject, names the objective's number in `objectives`: propose that link, interpreted, when the PO says what a subject serves.
+When the PO asks which subjects lack an approval, or for the governance checklist, run the register tool's `view governance` (`view governance bank <client bank>` for one client bank) and tell the PO where it is, `views/governance.md`, and which subjects it lists under "Needs attention": first those under "Missing", then those under "To confirm". When the PO asks what shows progress on their objectives, run `view objectives` and tell the PO where it is: `views/objectives.md`. A record shows an objective once it, or its subject, names the objective's number in `objectives`: propose that link, interpreted, when the PO says what a subject serves.
 
 Done when the register tool has answered `Applied and committed`, and you have told the PO which subject was recorded, with its identifier. Once a new subject is recorded, offer in one line to brainstorm its benefits: step 5.
 
