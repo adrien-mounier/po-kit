@@ -12,6 +12,7 @@
     "sponsor": "en"
   },
   "per_source_cap": 50,
+  "timezone": "",
   "working_hours": [
     { "from": "09:00", "to": "18:00" }
   ],

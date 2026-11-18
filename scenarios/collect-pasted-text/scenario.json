@@ -5,7 +5,7 @@
     { "record": "C-{year}-002", "field": "subject", "is": "branch-opening-hours-page" },
     { "record": "C-{year}-002", "field": "owner", "is": "the branch network manager" },
     { "record": "C-{year}-002", "field": "due_date", "is": "2026-03-31" },
-    { "record": "C-{year}-002", "field": "source.where", "is": "inbox/pasted-{today}.md" },
+    { "record": "C-{year}-002", "field": "source.where", "is": "inbox/done/{month}/pasted-{today}.md" },
     { "records": "commitments", "count": 2 },
     { "file": "inbox/done/{month}/pasted-{today}.md", "line": "corrected opening hours" },
     { "file": "inbox/pasted-{today}.md", "absent": true },

@@ -3,6 +3,8 @@ name: backlog
 description: Propose changes to tickets of the tracker - create a ticket, or reword the title, the description or the acceptance criteria of one - and apply each one only after the PO said yes and approved the exact text, one change at a time, logging each. Use when the PO asks to reword a ticket, to create a ticket they describe, to draft the tickets a meeting note calls for, to split a ticket too large, or how to order the top of the backlog, approves or refuses a change you proposed, or says a change they pasted is done. Also checks the backlog's health - tickets not ready for a refinement session near, duplicates, stale tickets, tickets still open for work a decision dropped - for the morning page, or when the PO asks.
 ---
 
+Before this routine, read [workspace resolution](../po-kit-workspace-resolution.md), resolve the declared PO workspace and read its local context. All paths below are relative to that workspace.
+
 # Backlog
 
 You propose changes to the tickets of the tracker; the PO says yes, reviews the exact change and approves it; only then is that one change applied, and the register tool logs it. This is the one exception to "you modify nothing in a source", and it has hard limits:

@@ -29,17 +29,23 @@ The source stays closed until you hold the watch lists. Then, in this order:
 
 1. Read the watch lists, from the records of the subjects, on their own: nothing of a source is listed or read in the same go.
 2. Search the source: mail once for each person and each keyword, the tracker once for each tracker project, chat once for each channel and group chat named, once for each person of a watch list and once for each keyword. Through a connector, ask it for the mail of the person, the mail that holds the keyword, the tickets of the project, the messages of the channel or the group chat, the one-to-one conversation of the PO with the person, the one-to-one messages that hold the keyword; anything else the connector shows of a one-to-one conversation is left closed. In a folder, search the content of its files for the word, with a search that answers with the names of the files holding it and shows nothing of the others. For a tracker project the word is its key, as `LOAN`: the search returns the tickets of that project, and those of every other project stay closed. For chat, ask for the names of the files of the folder of each channel or group chat named, as `channels/lending squad/`, and of the folder of the one-to-one chat of each person of a watch list, named as the watch list writes them, as `one-to-one/the lending analyst/`: these are their messages, and these folders are the only ones of chat you look into whole. A folder that is not there holds nothing for this collect: you do not look for it under another name. Then search the content of the files under `one-to-one/` for each keyword, as for mail, with a search that answers with the names of the files holding it and shows nothing of the others: the messages it names are matches too, and the others stay closed.
-3. What the searches returned are the matches: open these, and only these, each one by the name its search gave. Never open the files of a source through a pattern or a loop over its folder, as `exports/tracker/*` or `exports/chat/*`: that opens what no watch list matched.
+3. What the searches returned are the matches. For each one, keep what finds it again and when it is dated: through a connector, its identifier and its time as the connector's answer gives them; in a folder, the path the search gave and the date in the lines that open the file, up to the first empty line. You open no match whole yet, and never a file of a source through a pattern or a loop over its folder, as `exports/tracker/*` or `exports/chat/*`: that opens what no watch list matched.
 
 Whatever no search returned stays closed, in a folder of two files as in a mailbox of thousands: you do not list it, open it or mention it. It is the PO's own mail, another team's ticket or a private chat, and nothing of it reaches the proposal or your answer.
 
-Done when you hold the matches of the source, and have opened nothing else in it.
+Done when you hold, for each match, what finds it again and its date, and have opened nothing else in the source.
 
-## 3. Keep what is new, oldest first, up to the cap
+## 3. Have the register tool choose what to read
 
-1. A mail is dated when it was sent, a ticket when it was last updated, a chat message when it was posted. Keep the matches dated after the cutoff of their source: `state/last-collect.json` gives it as `sources.mail.cutoff`, `sources.tracker.cutoff` and `sources.chat.cutoff`. A source without a cutoff there was never read: its first read starts seven days before this collect, and you tell the PO so.
-2. Sort what you kept by date, oldest first.
-3. `per_source_cap`, in `settings.json`, is the most items a collect reads in one source. Read the oldest ones, up to that number. When more remain, the cap is reached: the rest waits for the next collect, and you tell the PO that the cap was reached for this source.
+1. Write the matches of the source in `state/<source>-matches.json`, as `state/mail-matches.json`, each one once: `[ { "id": "...", "when": "2026-03-10T08:00:00.1234567+01:00", "where": "..." } ]`.
+   - `id` names the item and its version, so that the same item is never read twice and a changed one is read again: the identifier the connector gives a mail or a chat message; for a ticket, its key and the time of its last update, as `LOAN-12@2026-03-10T08:00:00+01:00`; in a folder, the path of the file.
+   - `when` is its date as the source gives it, to the fraction of a second when it gives one, with its UTC offset: a mail is dated when it was sent, a ticket when it was last updated, a chat message when it was posted.
+   - `where` is what finds it again, as step 4 below says.
+
+   When a source gives no identifier or no date for its matches, it is not covered: tell the PO what it lacks.
+2. Run `select <source> state/<source>-matches.json`. It keeps the matches dated from the cutoff of the source on, `state/last-collect.json` giving it, leaves out those already read, sorts them by date, oldest first, and returns the oldest, up to `per_source_cap` of `settings.json`, in `selected`. A match dated after this run waits for the next one. A source never read before is read from seven days before this collect: tell the PO so. When more matches remain than the cap, `sources_read` says `"cap_reached": true`: the rest waits for the next collect, and you tell the PO that the cap was reached for this source.
+3. Open the matches of `selected`, and only them, each one by what finds it again.
+4. A person, a keyword, a channel or a tracker project added to a watch list is read from the cutoff of its source on: what it matched before was not read.
 
 ## 4. Treat each mail, ticket and chat message read as a note
 
@@ -54,13 +60,12 @@ The routine goes on with what you read as it does with a note, in the order read
 
 ## 5. Say in the proposal how far the source was read
 
-A source read has one entry in `sources_read`, even when it held nothing new:
+A source read has one entry in `sources_read`, even when it held nothing new: the one `select` returned, copied as it is, as
 
-    { "source": "mail", "cutoff": "2026-02-27T16:45:00+01:00", "items": 50, "cap_reached": true }
+    { "source": "mail", "cutoff": "2026-02-27T16:45:00+01:00", "items": 50, "cap_reached": true, "cursor_ids": ["..."] }
 
-- `items` is the number of mails, tickets or chat messages kept in step 3 and treated as notes. A match you opened only to find it dated before the cutoff is not counted: when nothing is newer than the cutoff, `items` is 0.
-- `cutoff` is how far the source is read: the time of this collect. When the cap was reached, it is the date of the last item read, written as `collected_at` is, and the entry states `"cap_reached": true`.
+You never change it: its `cutoff` and `cursor_ids` say where the next collect starts, and `apply` keeps them only once the PO's proposal is applied. A proposal dropped or never applied leaves the source where it was, and the next collect reads the same matches again.
 
 A source not covered has no entry there: `sources_not_covered` names it.
 
-Done when `mail`, `tracker` and `chat` are each either read, with every match dated after the cutoff taken up to the cap, or not covered, with the reason told to the PO.
+Done when `mail`, `tracker` and `chat` are each either read, with what `select` chose, or not covered, with the reason told to the PO.

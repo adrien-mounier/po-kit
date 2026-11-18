@@ -2,6 +2,10 @@
 
 This folder is the workspace of a Product Owner (PO): one register of the PO's subjects, and the views generated from it. The PO Kit owns this file, `CLAUDE.md` and `tools/`, and replaces them at every update: a change made there is lost.
 
+## Local context
+
+Before any task, read `workspace-context.md` when there is one, and what it says to read. It is the PO's own file, which the kit never writes, so it survives every update: the PO's role, who decides what, and the local rules of their organisation. Where it and a routine differ, it wins, and you say so when it changes what you do; the rules below hold whatever it says.
+
 ## Rules
 
 1. **The register tool is the only writer of `register/` and `views/`.** To change the register, leave a proposal in `state/proposal.json` and have the register tool apply it. The weekly synthesis, `views/weekly/<date>.md`, is the one view you draft: from what `export` prints, and it counts once `verify` passes on it.
@@ -26,6 +30,8 @@ Written with a forward slash, the command runs the same in every shell.
 - `morning` writes the morning page, `views/morning.html`, from the register, the calendar snapshot and your notes for it, replacing the last one, and prints the counts of each of its blocks; then, when a day ahead does not fit, the one way out it proposes; then each task to start today, each reminder and nudge to offer the PO, and each steering pack to offer. The PO opens it in a browser.
 - `brief` prints the brief of a meeting of the calendar snapshot: `brief 14:00` for today's, `brief 2026-03-04 14:00` for another day's, `brief` alone for every meeting of today, `brief 2026-03-03` for every meeting of that day. It lists the subjects the meeting concerns, their open commitments, the decisions awaited and your notes on it. It writes nothing.
 - `check` verifies the whole register and what has gone stale, and writes the check report, `views/check-report.md`. It fails on an error, not on a warning. `apply` runs it after every write and prints its summary, `Check: 0 error(s), 2 warning(s).`: when it counts anything, read the check report and tell the PO what it lists.
+- `verify views/weekly/2026-03-10.md` checks a view you drafted, or a steering pack: its stamp is whole, every record it cites is in the register and not superseded, and its register state is the register's now. A view written before the last change of the register fails: write it again from a new `export`. `verify <path> --historical` checks an old view against the register as it stood when it was written; it says nothing of the register now. Neither checks what the prose says: that is yours and the PO's.
+- `select mail state/mail-matches.json` takes what the searches of a collect matched in a source, by identifier and time, and returns the batch to open, oldest first, up to the cap, without one read before or one left out: see the collect's `sources.md`. It writes nothing.
 
 - `view intake <subject>` writes the intake card of a subject, `views/intake/<subject>.md`, replacing the last one: see "Requests for AI use cases" below. `view intake <subject> fr` writes it in another language.
 - `view ranking` writes the ranked portfolio, `views/ranking.md`, replacing the last one: see "Scores and the ranked portfolio" below. It takes a language and a client bank as `view` does: `view ranking fr bank Harbour Bank`.
@@ -151,6 +157,8 @@ The register tool checks the file as it checks your notes: a decision cited that
 - `task_kinds`: the kinds of task, kept short, as `["steering pack", "intake review"]`. A commitment the PO owns names its kind in `task_kind`, beside its `estimated_effort` and, once done, its `real_effort`, in days. From the done ones the register tool learns, per kind, the ratio of real to estimated effort, and `export` and the morning page show each estimate with the ratio it was adjusted by. Effort is recorded for the PO's own commitments only.
 
 When the PO names a gate, an objective, a client bank or a kind of task that is not listed, the PO adds it there first.
+
+`timezone`: the PO's time zone, as a Windows time zone name, as `"Tokyo Standard Time"`. Every time the register tool shows or counts, today's meetings, free time, due today, is in it, whatever offset a source gave. Empty, the register tool keeps the offset of the machine's clock, or of the time it was given.
 
 `working_hours`: the PO's working hours, as `[{ "from": "10:00", "to": "12:00" }, { "from": "14:00", "to": "18:00" }]`. The morning page counts the free time for work within them.
 

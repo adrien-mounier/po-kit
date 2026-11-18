@@ -4,7 +4,7 @@
   "expect": [
     { "record": "C-{year}-002", "field": "owner", "is": "the architect" },
     { "record": "C-{year}-002", "field": "due_date", "is": "2026-03-24" },
-    { "record": "C-{year}-002", "field": "source.where", "is": "inbox/call with the architect.md" },
+    { "record": "C-{year}-002", "field": "source.where", "is": "inbox/done/{month}/call with the architect.md" },
     { "records": "commitments", "count": 2 },
     { "file": "state/last-collect.json", "field": "not_covered", "is": ["mail", "tracker", "chat"] },
     { "file": "views/portfolio.md", "line": "> Sources not covered by the last collect: mail, tracker, chat." },

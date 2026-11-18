@@ -18,7 +18,8 @@
 
 # The verdict is on a committed register, the one a stamp names.
 Assert-RegisterCommitted
-$given = "$($Arguments | Select-Object -First 1)"
+$historical = @($Arguments | Where-Object { $_ -ceq '--historical' }).Count -gt 0
+$given = "$($Arguments | Where-Object { $_ -cne '--historical' } | Select-Object -First 1)"
 $path = if ($given -and (Split-Path -IsAbsolute $given)) { $given } else { Join-Path $Workspace $given }
 if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
     Stop-Run "verify takes the path of a stored view, from the workspace or absolute$(if ($given) { ", and there is no file at '$given'" }): verify views\weekly\2026-03-10.md"
@@ -26,7 +27,8 @@ if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
 $text = [IO.File]::ReadAllText($path)
 # A deck, views\steering\<date>.html, is read as its reader sees it, as Test-View says.
 $html = $path -match '\.html$'
-$problems = @(Test-View $text -Html:$html)
+$problems = @(Test-View $text -Html:$html -RequireCurrent:(-not $historical) -Historical:$historical)
 if ($problems) { Stop-Run (@("Not verified: $given") + @($problems | ForEach-Object { "- $_" })) }
 if ($html) { $text = [Net.WebUtility]::HtmlDecode(($text -replace '<[^>]*>', '')) }
-"Verified: $given carries its stamp, and the $(@(Get-Cited $text).Count) record(s) it cites are in the register and not superseded."
+if ($historical) { "Historical references verified: $given against its recorded register tree. This is not a current draft or a check of its prose." }
+else { "Verified: $given carries its stamp, and the $(@(Get-Cited $text).Count) record(s) it cites are in the register and not superseded." }

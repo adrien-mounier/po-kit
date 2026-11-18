@@ -3,6 +3,8 @@ name: subject
 description: Create, modify, score or close a subject of the PO's register by asking the PO a few questions, and brainstorm with the PO the benefits it promises. Use when the PO wants to add a subject, change one (horizon, client banks, clearance, gates, watch list, next step), have one scored, see the ranked portfolio, the governance checklist or the evidence for their objectives, close one, or define its benefits, gains or metrics.
 ---
 
+Before this routine, read [workspace resolution](../po-kit-workspace-resolution.md), resolve the declared PO workspace and read its local context. All paths below are relative to that workspace.
+
 # Create, modify or close a subject
 
 The PO answers in plain words, you turn the answers into a proposal, and the register tool writes the record. Your only write is `state/proposal.json`.

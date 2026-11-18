@@ -3,9 +3,11 @@ name: collect
 description: Turn the notes of the PO's inbox, any text the PO pastes, and the mail, tracker tickets and chat messages within the watch lists into a proposal of commitments, decisions, risks, subject updates and measured values of benefits, shown to the PO before anything is recorded. Use when the PO says "collect", has dropped notes in the inbox, or pastes notes to record.
 ---
 
+Before this routine, read [workspace resolution](../po-kit-workspace-resolution.md), resolve the declared PO workspace and read its local context. All paths below are relative to that workspace.
+
 # Collect
 
-You read the PO's notes, and the mail, the tickets and the chat messages within the watch lists, and say what they change in the register, the PO decides, and the register tool writes. Your only writes are a pasted text saved as a note in `inbox/`, the verification of a connector in `connections.json`, and `state/proposal.json`.
+You read the PO's notes, and the mail, the tickets and the chat messages within the watch lists, and say what they change in the register, the PO decides, and the register tool writes. Your only writes are a pasted text saved as a note in `inbox/`, the verification of a connector in `connections.json`, the matches of a source in `state/<source>-matches.json`, and `state/proposal.json`.
 
 Work in the PO's workspace, under its rules: read `AGENTS.md` there first when it is not already in your context. It says how to call the register tool.
 

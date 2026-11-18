@@ -3,6 +3,8 @@ name: morning
 description: Start the PO's day. Run a collect that records the plain facts at once and leaves the interpreted lines waiting, read the calendar into the calendar snapshot, write its notes for the page (today's meetings, the actions to do first, the messages awaiting the PO's reply) and the backlog alerts, have the register tool write the morning page, views/morning.html, then tell the PO in two lines what the page holds and offer the briefing: a walk through the page in rounds of numbered questions, each with a recommended answer, whose answers become one proposal. Also gives the brief of any meeting on request. Use when the PO says "morning", asks for the morning page, or asks "brief me for the 14:00".
 ---
 
+Before this routine, read [workspace resolution](../po-kit-workspace-resolution.md), resolve the declared PO workspace and read its local context. All paths below are relative to that workspace.
+
 # Morning
 
 You collect what arrived since the last collect without stopping to ask, read the calendar, then the register tool writes the page the PO reads to start the day. Your writes are those of the collect, the calendar snapshot and your notes for the page; the page is the register tool's, and you never edit it.
@@ -107,7 +109,7 @@ Each open question that `morning` printed is asked in the block of the record or
 **Today's meetings.** Yesterday's onboarding pilot review [mobile-onboarding] was to settle the pilot branches; the screens are due Thursday.
 
 ❓ Q1 - Pilot branches: Did the sponsor choose the pilot branches [D-2026-004]?
-➡️ Yes, Harbour Street and Market Square: I record the decision as taken by the sponsor.
+➡️ Not known yet: the decision stays pending. If they were chosen, tell me which.
 
 ❓ Q2 - Onboarding screens: Is the tech lead still delivering the screens [C-2026-007] on Thursday?
 ➡️ Yes: no change.
@@ -115,7 +117,7 @@ Each open question that `morning` printed is asked in the block of the record or
 
 The PO answers the round in one reply. `ok` accepts every recommendation. `2: ...` answers question 2 in the PO's words, and the others keep their recommended answer when the reply ends with `ok`, as `2: they now come on Monday, ok`; without it, ask once for those left. A reply that says neither is an answer to the round: read it against the questions, and ask again only what it leaves open.
 
-A recommendation the PO accepts is the PO's answer, worded as you recommended it: record it as said, with the PO as its source. Do not weigh it again against the notes, mail or calendar. A source that does not say it is the reason you asked, and the PO's answer settles it. If a recommendation needs a fact you do not have, write the fact into the recommended answer, as Q1 above does, so that "ok" confirms the fact.
+A recommended answer holds no fact that no source and no PO stated. When the answer is a fact you do not have, the outcome of a meeting, a choice, a date, an owner, progress, recommend keeping things as they are and ask for the fact, as Q1 does: `ok` then keeps them as they are, and never confirms a fact you guessed. A meeting's title or invitation is not its outcome. A fact the PO states, or corrects, is recorded as they said it, with the PO as its source; the history of the record keeps what it said before.
 
 **One proposal.** The answers build one proposal: the pending one when there is one, `state/proposal.json`, with its lines kept or dropped as the PO said, and each answer that changes the register added to it as an operation, as the collect writes them, with the source `{ "where": "the PO, at the morning briefing", "read_on": "<today's date>" }`. An answer that changes nothing (still due, no change) adds no line. Write the proposal as you go, and apply nothing before the end.
 

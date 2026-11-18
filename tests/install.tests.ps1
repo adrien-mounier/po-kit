@@ -208,7 +208,7 @@ Test 'every routine of the kit is copied into the skills folder given, beside th
         Assert-True (Test-Path (Join-Path $to.Skills "$routine\installed-by-po-kit.txt")) "the routine $routine does not carry the mark of the installer"
     }
     Assert-Equal $before (Get-WorkspaceSnapshot $own) "the PO's own skill"
-    Assert-Equal ((@('a-skill-of-the-po') + $routines | Sort-Object) -join ' ') ((Get-ChildItem $to.Skills -Force | Sort-Object Name | ForEach-Object { $_.Name }) -join ' ') 'content of the skills folder'
+    Assert-Equal ((@('a-skill-of-the-po', 'po-kit-workspace-resolution.md') + $routines | Sort-Object) -join ' ') ((Get-ChildItem $to.Skills -Force | Sort-Object Name | ForEach-Object { $_.Name }) -join ' ') 'content of the skills folder'
 }
 
 Test 'a folder of the skills folder that carries the name of a routine and was not installed by the kit is left as it is: the installer names it and changes nothing' {

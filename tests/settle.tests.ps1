@@ -289,7 +289,7 @@ Test 'a source that the connections do not declare is refused, whether read or n
     )
 }
 
-Test 'the collect state states every time one way, with its UTC offset' {
+Test 'the collect state keeps each UTC offset and native timestamp precision' {
     $ws = New-TestWorkspace
     Set-Proposal $ws (New-CollectProposal @{
             collected_at = '2026-03-02T07:30:00Z'
@@ -302,7 +302,7 @@ Test 'the collect state states every time one way, with its UTC offset' {
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     $state = Read-Json (Join-Path $ws 'state\last-collect.json')
     Assert-Equal '2026-03-02T07:30:00+00:00' $state.collected_at 'time of the collect'
-    Assert-Equal '2026-03-01T23:12:00-05:00' $state.sources.mail.cutoff 'cutoff of the mail'
+    Assert-Equal '2026-03-01T23:12:00.1234567-05:00' $state.sources.mail.cutoff 'cutoff of the mail'
     Assert-Equal '2026-03-02T07:30:00+00:00' $state.sources.mail.collected_at 'time of the collect that read the mail'
 }
 

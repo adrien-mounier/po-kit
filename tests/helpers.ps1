@@ -57,6 +57,8 @@ function New-TestWorkspace {
 }
 
 function Remove-TestWorkspaces {
+    $prefix = [IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\') + '\po-kit-tests-'
+    if (-not [IO.Path]::GetFullPath($TestRoot).StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) { throw 'Test cleanup is outside its temporary scope.' }
     if (Test-Path $TestRoot) { Remove-Item $TestRoot -Recurse -Force }
 }
 

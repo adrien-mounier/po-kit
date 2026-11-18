@@ -3,6 +3,8 @@ name: steering
 description: Draft the steering pack for a steering committee of the PO's calendar - one self-contained HTML deck of six slides, views/steering/<date>.html, that the register tool writes from the register and from your commentary, verified like the weekly synthesis, for the PO to present and print to PDF. Use when the PO says "steering pack", asks for the pack of a steering committee, or pastes the request the morning page's button copies ("Draft the steering pack for ... of 2026-03-09").
 ---
 
+Before this routine, read [workspace resolution](../po-kit-workspace-resolution.md), resolve the declared PO workspace and read its local context. All paths below are relative to that workspace.
+
 # Steering pack
 
 The register tool writes the deck from the register: the ranked portfolio, the benefits against their target, the decisions, the risks and the commitments late. You write its commentary, one sentence per slide and the next steps, from what the register tool exports and from nothing else. Your only write is `state/steering.json`; the deck is the register tool's, and you never edit it. You send nothing: the deck is a draft that counts for nothing until the PO uses it, and sharing its PDF is the PO's.

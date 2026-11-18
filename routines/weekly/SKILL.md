@@ -3,6 +3,8 @@ name: weekly
 description: Write the weekly synthesis for the sponsor from the PO's register, in the sponsor's language, have the register tool verify it, and leave it as a mail draft when the mail connection can create one. Use when the PO says "weekly" or asks for the weekly synthesis.
 ---
 
+Before this routine, read [workspace resolution](../po-kit-workspace-resolution.md), resolve the declared PO workspace and read its local context. All paths below are relative to that workspace.
+
 # Weekly synthesis
 
 You write the weekly synthesis for the sponsor from what the register tool exports, and from nothing else. It is the one view you draft: its stamp and its portfolio view are the register tool's, copied unchanged, and it counts once the register tool has verified it. Your only writes are the synthesis, `views/weekly/<today's date>.md`, and one mail draft when the connections allow it. You send nothing.

@@ -45,7 +45,13 @@ function Invoke-Git {
 function Copy-Replacing([string]$From, [string]$To) {
     # Puts a file or a folder of the kit in place of the one installed before. The old one goes
     # whole, so that a file the kit no longer ships does not linger.
-    if (Test-Path -LiteralPath $To) { Remove-Item -LiteralPath $To -Recurse -Force }
+    $resolved = [IO.Path]::GetFullPath($To)
+    $allowed = @($Workspace, $SkillsFolder | ForEach-Object { [IO.Path]::GetFullPath($_).TrimEnd('\') + '\' })
+    if (-not @($allowed | Where-Object { $resolved.StartsWith($_, [StringComparison]::OrdinalIgnoreCase) })) { Stop-Install 'Replacement target is outside the declared workspace and skills folder.' }
+    if (Test-Path -LiteralPath $To) {
+        if ((Get-Item -LiteralPath $To -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) { Stop-Install 'A kit replacement target is a link or junction. Inspect it before updating.' }
+        Remove-Item -LiteralPath $To -Recurse -Force
+    }
     Copy-Item -LiteralPath $From -Destination $To -Recurse
 }
 
@@ -130,6 +136,7 @@ foreach ($routine in $routines) {
     Copy-Replacing $routine.FullName $installed
     [IO.File]::WriteAllText((Join-Path $installed $Mark), "PO Kit $version installed this folder, and replaces it whole at every update.`r`n", $Utf8)
 }
+Copy-Item -LiteralPath (Join-Path $Kit 'routines\po-kit-workspace-resolution.md') -Destination (Join-Path $SkillsFolder 'po-kit-workspace-resolution.md') -Force
 
 # --- The register tool must run here ------------------------------------------------------------
 

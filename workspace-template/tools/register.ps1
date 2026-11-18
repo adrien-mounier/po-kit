@@ -128,8 +128,9 @@ function Read-Timestamp([string]$Text) {
 }
 
 function Format-Timestamp([DateTimeOffset]$Moment) {
-    # To the second, in the offset the moment was given in: 2026-03-02T08:30:00+01:00
-    $Moment.ToString("yyyy-MM-dd'T'HH:mm:sszzz", [Globalization.CultureInfo]::InvariantCulture)
+    # Retain subsecond precision when supplied; whole-second timestamps keep their old layout.
+    $format = if ($Moment.Ticks % [TimeSpan]::TicksPerSecond) { "yyyy-MM-dd'T'HH:mm:ss.fffffffzzz" } else { "yyyy-MM-dd'T'HH:mm:sszzz" }
+    $Moment.ToString($format, [Globalization.CultureInfo]::InvariantCulture)
 }
 
 # --- Record definitions -------------------------------------------------------------------------
@@ -563,7 +564,8 @@ $CollectDefinition = @'
         "source": { "type": "text", "required": true },
         "cutoff": { "type": "timestamp", "required": true },
         "items": { "type": "integer", "required": true },
-        "cap_reached": { "type": "boolean", "default": false } } } },
+        "cap_reached": { "type": "boolean", "default": false },
+        "cursor_ids": { "type": "list", "items": { "type": "text" } } } } },
     "sources_not_covered": { "type": "list", "items": { "type": "text" } },
     "notes_processed": { "type": "list", "items": { "type": "text" } },
     "unclassified": { "type": "list", "items": { "type": "object", "fields": {
@@ -602,6 +604,7 @@ function Test-PendingCollect {
     foreach ($source in $named | Where-Object { $_ -is [string] -and $declared -cnotcontains $_ }) {
         "source '$source' is not declared in connections.json, which declares: $($declared -join ', ')"
     }
+    foreach ($group in @($collect.sources_read | Group-Object source | Where-Object Count -gt 1)) { "source '$($group.Name)' occurs more than once in sources_read" }
     if ($collect.notes_processed -is [array]) {
         # A note is a file of the inbox itself: a name that is a path would reach outside it.
         foreach ($note in $collect.notes_processed | Where-Object { $_ -is [string] }) {
@@ -636,18 +639,25 @@ function Save-Collect {
         for ($n = 2; Test-Path -LiteralPath (Join-Path $done $name); $n++) {
             $name = [IO.Path]::GetFileNameWithoutExtension($note) + "-$n" + [IO.Path]::GetExtension($note)
         }
-        try { [IO.File]::Move((Join-Path $inbox $note), (Join-Path $done $name)) }
+        $original = [IO.Path]::GetFullPath((Join-Path $inbox $note))
+        $archived = [IO.Path]::GetFullPath((Join-Path $done $name))
+        $scope = [IO.Path]::GetFullPath($Workspace).TrimEnd('\') + '\'
+        if (-not $original.StartsWith($scope, [StringComparison]::OrdinalIgnoreCase) -or -not $archived.StartsWith($scope, [StringComparison]::OrdinalIgnoreCase)) { Stop-Run 'A note archive path is outside the workspace.' }
+        try { [IO.File]::Move($original, $archived) }
         catch {
             # All the notes or none: the notes are filed before anything else is written, and apply
             # puts those already filed back in the inbox, so that it can simply be run again.
             Stop-Run "The note '$note' could not be filed, so nothing was written: $($_.Exception.GetBaseException().Message) Close it if it is open in another program, then apply again."
         }
-        $script:FiledNotes[(Join-Path $inbox $note)] = Join-Path $done $name
+        $script:FiledNotes[$original] = $archived
         "file note $note$(if ($name -ne $note) { " as $name" })"
     }
 
     foreach ($read in $collect.sources_read) {
-        $state.sources[$read.source] = [ordered]@{ cutoff = $read.cutoff; items = $read.items; collected_at = $collect.collected_at; cap_reached = $read.cap_reached }
+        $prior = $state.sources[$read.source]
+        $cursor = @($read.cursor_ids)
+        if ($prior -and (Read-Timestamp $prior.cutoff) -eq (Read-Timestamp $read.cutoff)) { $cursor = @($prior.cursor_ids) + $cursor }
+        $state.sources[$read.source] = [ordered]@{ cutoff = $read.cutoff; items = $read.items; collected_at = $collect.collected_at; cap_reached = $read.cap_reached; cursor_ids = @($cursor | Where-Object { $_ } | Select-Object -Unique) }
         "read $($read.source) up to $($read.cutoff): $($read.items) item(s)$(Format-CapReached $read)"
     }
     Write-JsonFile $statePath $state
@@ -657,7 +667,8 @@ function Save-Collect {
         # The list is added to and never rewritten, so that what the PO wrote in it stays as it is.
         $listPath = Join-Path $Workspace 'state\unclassified.md'
         $items = @($collect.unclassified | ForEach-Object {
-                "- $($collect.collected_at.Substring(0, 10)) | $(($_.source -replace '\s+', ' ').Trim()) | $(($_.text -replace '\s+', ' ').Trim())"
+                $reference = Resolve-ArchivedSourcePath "$($_.source)"
+                "- $($collect.collected_at.Substring(0, 10)) | $(($reference -replace '\s+', ' ').Trim()) | $(($_.text -replace '\s+', ' ').Trim())"
             })
         $text = ($items -join [Environment]::NewLine) + [Environment]::NewLine
         $list = if (Test-Path -LiteralPath $listPath) { [IO.File]::ReadAllText($listPath) }
@@ -852,7 +863,7 @@ function Test-Cited([string[]]$Ids) {
     }
 }
 
-function Test-View([string]$Text, [switch]$Html) {
+function Test-View([string]$Text, [switch]$Html, [switch]$RequireCurrent, [switch]$Historical) {
     # What is wrong with a view, as verify reads it: one line when its stamp is absent or not whole,
     # then one per record it cites that is missing or superseded. Nothing when it is verified. A
     # deck (-Html) is read as its reader sees it: its text without its tags, each line trimmed, and
@@ -868,7 +879,9 @@ function Test-View([string]$Text, [switch]$Html) {
         if ($lines -cmatch "(?m)^$generated\n$state\n(?:$noCollect|$collect\n$notCovered)$") { $stamped = $true }
     }
     if (-not $stamped) { 'The stamp is absent, or not whole as the register tool gives it. export prints the stamp of the view to write from it.' }
-    Test-Cited @(Get-Cited $Text)
+    if ($RequireCurrent -and $stamped) { Test-CurrentViewRevision $Text -Html:$Html }
+    if ($Historical) { Test-HistoricalCited @(Get-Cited $Text) (Get-ViewRegisterRevision $Text -Html:$Html) }
+    else { Test-Cited @(Get-Cited $Text) }
 }
 
 # --- Calendar -----------------------------------------------------------------------------------
@@ -895,7 +908,7 @@ function Test-View([string]$Text, [switch]$Html) {
 function Read-CalendarSnapshot {
     # The calendar snapshot, or nothing when the calendar is off or was never read.
     $path = Join-Path $Workspace 'state\calendar.json'
-    if ($Connections.calendar -and $Connections.calendar.mode -cne 'off' -and (Test-Path -LiteralPath $path)) { Read-JsonFile $path }
+    if ($Connections.calendar -and $Connections.calendar.mode -cne 'off' -and (Test-Path -LiteralPath $path)) { Convert-CalendarSnapshot (Read-JsonFile $path) }
 }
 
 function Get-DayMeetings($Snapshot, [string]$Date) {
@@ -939,7 +952,7 @@ function Get-SteeringCommittees {
     if (-not $snapshot -or -not "$($snapshot.read_at)".StartsWith($Today)) { return }
     $last = Add-WorkingDays $Today 5
     @($snapshot.meetings | Where-Object { (Read-Timestamp $_.start) -and (Test-SteeringTitle "$($_.title)") } | Sort-Object start, title |
-            Group-Object { $_.start.Substring(0, 10) } | Where-Object { $_.Name -ge $Today -and $_.Name -le $last -and -not (Test-Path -LiteralPath (Join-Path $Workspace "views\steering\$($_.Name).html")) } |
+            Group-Object { $_.start.Substring(0, 10) } | Where-Object { $_.Name -ge $Today -and $_.Name -le $last -and -not (Test-UsableSteeringDeck (Join-Path $Workspace "views\steering\$($_.Name).html")) } |
             ForEach-Object { @{ date = $_.Name; title = "$($_.Group[0].title)" } })
 }
 
@@ -1092,7 +1105,7 @@ function Get-MeetingBrief($Meeting, $Records, $Notes) {
         banks       = $(if ($named) { $named } else { @($subjects | ForEach-Object { $_.banks } | Where-Object { $_ } | Select-Object -Unique) })
         commitments = @($Records | Where-Object { $_.type -ceq 'commitment' -and $_.status -ceq 'open' -and $ids -ccontains $_.subject } | Sort-Object { & $dated $_.due_date }, id)
         decisions   = @($Records | Where-Object { $_.type -ceq 'decision' -and $_.status -ceq 'pending' -and $ids -ccontains $_.subject } | Sort-Object { & $dated $_.needed_by }, id)
-        note        = @($Notes | Where-Object { $_.start -ceq $Meeting.start -and $_.title -ceq $Meeting.title }) | Select-Object -First 1
+        note        = @($Notes | Where-Object { (Read-Timestamp $_.start) -eq (Read-Timestamp $Meeting.start) -and $_.title -ceq $Meeting.title }) | Select-Object -First 1
     }
 }
 
@@ -1397,11 +1410,16 @@ function Write-CheckReport($Labels) {
 
 # --- Run the command ----------------------------------------------------------------------------
 
-# $Now is the moment of the run, as a timestamp, and $Today its date: the clock's, unless -Now sets
-# the moment or -Today its date alone. A run never reads the clock anywhere else.
-$moment = if ($Now) { Read-Timestamp $Now } else { [DateTimeOffset]::Now }
+. (Join-Path $Tools 'workspace-reliability.ps1')
+# The settings are read first: their time zone is the one of the run.
+$Settings = Read-PoFile 'settings.json'
+
+# $Now is the moment of the run, as a timestamp, and $Today its date: the clock's, to the second,
+# unless -Now sets the moment or -Today its date alone. A run never reads the clock anywhere else.
+$clock = [DateTimeOffset]::Now
+$moment = if ($Now) { Read-Timestamp $Now } else { $clock.AddTicks(-($clock.Ticks % [TimeSpan]::TicksPerSecond)) }
 if ($null -eq $moment) { Stop-Run "The moment given as now must be a date and time with its UTC offset (as 2026-03-02T08:30:00+01:00), not '$Now'." }
-$Now = Format-Timestamp $moment
+$Now = Format-Timestamp (Convert-WorkspaceMoment $moment)
 if (-not $Today) { $Today = $Now.Substring(0, 10) }
 elseif (-not (Test-IsoDate $Today)) { Stop-Run "The date given as today must be an ISO date (yyyy-mm-dd), not '$Today'." }
 else { $Now = $Today + $Now.Substring(10) }
@@ -1411,7 +1429,6 @@ if ($Command -cnotmatch '^[a-z]+$' -or -not (Test-Path -LiteralPath $commandFile
     $known = (Get-ChildItem (Join-Path $Tools 'commands\*.ps1') | ForEach-Object { $_.BaseName }) -join ', '
     Stop-Run "Unknown command '$Command'. Commands: $known."
 }
-$Settings = Read-PoFile 'settings.json'
 $Connections = Read-PoFile 'connections.json'
 # The validation mode says what a routine has applied without asking the PO: nothing (all), or the
 # plain facts of a proposal (interpreted). A routine reads it in what preview prints.

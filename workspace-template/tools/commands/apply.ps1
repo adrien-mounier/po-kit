@@ -61,6 +61,8 @@ function Assert-CommitterKnown {
 
 Assert-RegisterCommitted
 Assert-CommitterKnown
+$staged = @(Invoke-Git diff --cached --name-only)
+if ($staged) { Stop-Run (@('The Git index already holds staged changes. Commit or unstage them before apply; nothing was changed.') + $staged) }
 # The portfolio view is regenerated in the default language. Its labels are read before anything
 # is written, so that a language without labels refuses the run whole.
 $labels = Get-Labels $Settings.languages.default
@@ -117,6 +119,8 @@ try {
     # The notes are filed first, all or none, so that a note that cannot be moved stops the run
     # before anything else is written.
     $settled = @(Save-Collect)
+    # The same evidence now lives at its actual archived path, including pending lines.
+    Set-ArchivedSourcePaths $operations
 
     # A line keeps the number preview gave it, whatever the selection.
     $line = 0
@@ -180,7 +184,7 @@ finally {
             elseif (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path }
         }
         # Nothing stays staged, and the register is again the one of the last commit.
-        & git -C $Workspace reset -q
+        & git -C $Workspace reset -q -- register inbox state settings.json connections.json views
         & git -C $Workspace checkout -q -- register
         & git -C $Workspace clean -fdq -- register
         Write-Host 'Nothing was applied: the register, the notes, the collect state and the views are as they were before this run, and the proposal is still pending. Apply again once the cause is settled.'

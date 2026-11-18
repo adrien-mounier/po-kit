@@ -12,8 +12,9 @@ Every example in this repository is fictional: Example Bank and its client banks
   - `inbox/`: the notes the PO drops for the agent; `inbox/done/` once processed;
   - `views/`: what the agent writes for the PO to read: the portfolio, the morning page, the weekly synthesis, the steering packs, the check report;
   - `state/`: the agent's work in progress: the pending proposal, its open questions, the calendar snapshot, the backlog changes and alerts;
-  - `settings.json` and `connections.json`: the PO's, edited by hand (below).
-- **The register tool**, `tools/register.ps1` in the workspace, is the only writer of the register and the views. The agent never edits a record itself: it leaves a proposal, and the tool checks it, refuses it whole if anything is wrong, and writes it once the PO agreed. A record is updated, superseded or closed, never deleted.
+  - `settings.json` and `connections.json`: the PO's, edited by hand (below);
+  - `workspace-context.md`, when the PO writes one: their role, who decides what, and the local rules of their organisation. The agent reads it before any task; where it and a routine differ it wins, but never over the workspace rules. The kit never writes it.
+- **The register tool**, `tools/register.ps1` in the workspace, is the only writer of the register and the views. It also chooses what a collect opens in a source: the matches of its searches, oldest first, up to the cap, none read twice and none left out (`select`). The agent never edits a record itself: it leaves a proposal, and the tool checks it, refuses it whole if anything is wrong, and writes it once the PO agreed. A record is updated, superseded or closed, never deleted.
 - **The routines**, under `routines/`, are the skills the agent follows. The installer copies them to the folder where the agent looks for its skills.
 - **The workspace rules**, `AGENTS.md` (and `CLAUDE.md`, the same for another agent), sit in the workspace and bind the agent whatever the routine.
 
@@ -51,9 +52,9 @@ Decided by the owner on 2026-11-13, replacing user story 32 of the tranche 2 spe
 
 The rule lives in `routines/collect/sources.md` and is proven by the `collect-chat` scenario.
 
-## The PO's two files
+## The PO's files
 
-`settings.json` bounds what a record may say and tunes the views: the organisation's gates and the PO's objectives (adapt both to your organisation: the governance checklist and the objectives evidence follow them), the client banks, the kinds of task, working hours, the "start soon" margin, the words that mark a steering committee or a refinement session in a meeting title, how stale a ticket may get, the sponsor and the languages.
+`settings.json` bounds what a record may say and tunes the views: the organisation's gates and the PO's objectives (adapt both to your organisation: the governance checklist and the objectives evidence follow them), the client banks, the kinds of task, working hours, the "start soon" margin, the words that mark a steering committee or a refinement session in a meeting title, how stale a ticket may get, the sponsor and the languages. `timezone`, a Windows time zone name, puts every hour the views show in the PO's time zone, whatever offset a source gave.
 
 `connections.json` says how each source (`notes`, `mail`, `tracker`, `chat`, `calendar`) is read on this machine:
 
