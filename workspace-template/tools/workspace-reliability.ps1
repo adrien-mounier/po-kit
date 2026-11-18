@@ -81,10 +81,16 @@ function Get-CollectWindow([string]$Source) {
     if (@('mail', 'tracker', 'chat') -cnotcontains $Source) { Stop-Run 'select takes mail, tracker or chat, then the JSON file of the matches of its searches.' }
     $path = Join-Path $Workspace 'state\last-collect.json'
     $prior = if (Test-Path -LiteralPath $path) { (Read-JsonFile $path).sources.$Source }
+    # Only the watch lists are read: a catch-up whose entry left every active subject since is not.
+    $watched = @(foreach ($file in @(Get-RecordFiles | Where-Object { $_.type -eq 'subject' })) {
+            $record = Read-JsonFile $file.path
+            if ($record.status -cne 'active') { continue }
+            foreach ($field in $WatchSources.Keys) { foreach ($value in @($record.watch_list.$field)) { "${field}: $value" } }
+        })
     @{
         prior    = $prior
         cutoff   = if ($prior.cutoff) { Read-Timestamp $prior.cutoff } else { (Read-Timestamp $Now).AddDays(-7) }
-        catch_up = @($prior.catch_up | Where-Object { $_ })
+        catch_up = @($prior.catch_up | Where-Object { $_ -and $watched -ccontains $_.entry })
     }
 }
 

@@ -162,6 +162,26 @@ Test 'a meeting the day before in UTC is on the day of the PO in their time zone
     Assert-Match $page 'Fictional timezone meeting' 'meeting retained'
 }
 
+Test 'the hour of a message and of the last collect are shown in the time zone of the PO' {
+    $ws = New-TestWorkspace
+    Set-ReliabilityCalendar $ws 'Tokyo Standard Time' '2026-03-10T01:00:00Z' '2026-03-10T03:00:00Z' '2026-03-10T04:00:00Z'
+    $connections = Read-Json (Join-Path $ws 'connections.json')
+    $connections.mail = @{ mode = 'folder'; folder = 'exports\mail' }
+    Write-Json (Join-Path $ws 'connections.json') $connections
+    Set-Proposal $ws @{ collected_at = '2026-03-10T00:40:00Z'; sources_read = @(@{ source = 'notes'; cutoff = '2026-03-10T00:40:00Z'; items = 0 }, @{ source = 'mail'; cutoff = '2026-03-10T00:40:00Z'; items = 0 }); sources_not_covered = @('tracker'); notes_processed = @(); operations = @() }
+    $run = Invoke-Register $ws apply -Today 2026-03-10
+    Assert-Equal 0 $run.ExitCode "collect, $($run.Output)"
+    Write-Json (Join-Path $ws 'state\morning.json') @{ messages = @(@{ source = 'mail'; from = 'the architect'; where = 'Hosting options'; sent = '2026-03-10T01:15:00Z'; text = 'Which hosting do you prefer?' }) }
+
+    $run = Invoke-Register $ws morning -Now '2026-03-10T11:00:00+09:00'
+
+    Assert-Equal 0 $run.ExitCode "morning, $($run.Output)"
+    $page = [IO.File]::ReadAllText((Join-Path $ws 'views\morning.html'))
+    Assert-Match $page '<b>10:15</b>' 'hour of the message in Tokyo'
+    Assert-Match $page 'Read by the collect of 09:40' 'hour of the last collect in Tokyo'
+    Assert-True ($page -notmatch '01:15|00:40') "an hour in UTC is shown: $([regex]::Matches($page, '.{0,60}(01:15|00:40).{0,60}') | ForEach-Object { $_.Value -replace '[\r\n]', ' ' })"
+}
+
 Test 'a time zone with summer time uses its summer offset, and an unknown time zone stops the run before it writes' {
     $ws = New-TestWorkspace
     Set-ReliabilityCalendar $ws 'GMT Standard Time' '2026-03-30T07:00:00Z' '2026-03-30T10:00:00Z' '2026-03-30T11:00:00Z'

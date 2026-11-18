@@ -74,8 +74,8 @@ function Format-Day([string]$Date) {
 }
 
 function Format-Moment([string]$Timestamp) {
-    # The time of a moment of today, or its day and time.
-    $moment = Read-Timestamp $Timestamp
+    # The time of a moment of today, or its day and time, in the PO's time zone.
+    $moment = Convert-WorkspaceMoment (Read-Timestamp $Timestamp)
     $time = $moment.ToString('HH:mm', $invariant)
     $date = $moment.ToString('yyyy-MM-dd', $invariant)
     if ($date -eq $Today) { $time } else { "$(Format-Day $date) $time" }

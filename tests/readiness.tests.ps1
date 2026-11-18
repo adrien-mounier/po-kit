@@ -137,6 +137,23 @@ Test 'an entry added to a watch list is read back seven days in each source it c
     Assert-Equal '2026-03-10T10:00:00+01:00' $state.sources.mail.cutoff 'the cutoff of mail'
 }
 
+Test 'a catch-up whose entry left the watch list before the next collect is not searched' {
+    $ws = New-ReadinessWorkspace
+    Set-MailRead $ws
+    Set-Proposal $ws @{ operations = @((New-UpdateOperation 'mobile-onboarding' @{ watch_list = @{ people = @('the tech lead', 'the architect') } })) }
+    $run = Invoke-Register $ws apply -Now '2026-03-10T09:00:00+01:00'
+    Assert-Equal 0 $run.ExitCode "apply of the addition, with output: $($run.Output)"
+    Set-Proposal $ws @{ operations = @((New-UpdateOperation 'mobile-onboarding' @{ watch_list = @{ people = @('the tech lead') } })) }
+    $run = Invoke-Register $ws apply -Now '2026-03-10T09:30:00+01:00'
+    Assert-Equal 0 $run.ExitCode "apply of the removal, with output: $($run.Output)"
+
+    $window = (Invoke-Register $ws select mail -Now '2026-03-10T10:00:00+01:00').Output | ConvertFrom-Json
+    Assert-Equal 0 @($window.catch_up | Where-Object { $_ }).Count "the catch-up of the person no longer watched: $($window.catch_up | ConvertTo-Json -Compress)"
+    Write-Json (Join-Path $ws 'state\mail-matches.json') @(@{ id = 'm-back'; when = '2026-03-05T11:00:00+01:00'; where = 'exports/mail/received/back.txt'; matched_by = @('people: the architect') })
+    $batch = (Invoke-Register $ws select mail state\mail-matches.json -Now '2026-03-10T10:00:00+01:00').Output | ConvertFrom-Json
+    Assert-Equal 0 @($batch.selected | Where-Object { $_ }).Count 'a mail of the person no longer watched, from before the cutoff'
+}
+
 Test 'a catch-up stopped at the cap never moves the cutoff back, and goes on from where it stopped' {
     $ws = New-ReadinessWorkspace
     $settings = Read-Json (Join-Path $ws 'settings.json')
@@ -173,7 +190,7 @@ Test 'a catch-up stopped at the cap never moves the cutoff back, and goes on fro
 Test 'a question that waits for its day is not shown before it, nor is the watch gap of its subject, and one whose day is not a date refuses the list' {
     $ws = New-ReadinessWorkspace
     Write-Json (Join-Path $ws 'state\questions.json') @{ questions = @(
-            @{ about = 'mobile-onboarding'; question = 'Which ticket should I follow?'; recommended = 'Not known yet: I ask again next week.'; added = '2026-03-02'; ask_on = '2026-03-16' },
+            @{ about = 'mobile-onboarding'; question = 'Which ticket should I follow?'; recommended = 'Not known yet: ask me again next week.'; added = '2026-03-02'; ask_on = '2026-03-16' },
             @{ about = 'mobile-onboarding'; question = 'Who leads the pilot?'; recommended = 'The tech lead.'; added = '2026-03-09' }
         ) }
     $run = Invoke-Register $ws morning -Now '2026-03-10T09:00:00+01:00'

@@ -88,4 +88,4 @@ A new or empty folder becomes a workspace. Run again, it replaces only what the 
 
 ## Where the decisions are
 
-The specs and tickets are this repository's GitHub issues: tranche 1 (#1, the register, collect, weekly synthesis and check), tranche 2 (#16, the morning secretary), tranche 3 (#17, the portfolio and steering pack), tranche 4 (#18, the backlog), tranche 5 (#38, the governance checklist and objectives evidence). Open work carries the `ready-for-agent` or `ready-for-human` label.
+The specs and tickets are this repository's GitHub issues: tranche 1 (#1, the register, collect, weekly synthesis and check), tranche 2 (#16, the morning secretary), tranche 3 (#17, the portfolio and steering pack), tranche 4 (#18, the backlog), tranche 5 (#38, the governance checklist and objectives evidence), tranche 6 (#41, source readiness). Open work carries the `ready-for-agent` or `ready-for-human` label.

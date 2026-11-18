@@ -286,6 +286,26 @@ Test 'an update commits the kit-owned files it replaced, and nothing else' {
     Assert-Equal $story.StatusBefore "$(git -C $ws status --porcelain)" 'changes the PO has not saved yet'
 }
 
+Test 'an update refuses a kit folder of the workspace that is a junction, and leaves the folder it points to as it was' {
+    $kit = New-TestKit
+    Save-TestKit $kit 'v1'
+    $to = New-InstallTarget
+    $run = Invoke-Install $kit -Workspace $to.Workspace -SkillsFolder $to.Skills
+    Assert-Equal 0 $run.ExitCode "first installation, with output: $($run.Output)"
+    $outside = Join-Path $TestRoot ([Guid]::NewGuid().ToString('N').Substring(0, 8) + '-outside')
+    Move-Item (Join-Path $to.Workspace 'tools') $outside
+    New-Item -ItemType Junction -Path (Join-Path $to.Workspace 'tools') -Target $outside | Out-Null
+    $before = Get-WorkspaceSnapshot $outside
+    Set-TestFile (Join-Path $kit 'workspace-template\tools\commands\added.ps1') "# Added`n"
+    Save-TestKit $kit 'v2'
+
+    $run = Invoke-Install $kit -Workspace $to.Workspace -SkillsFolder $to.Skills
+
+    Assert-Equal 1 $run.ExitCode 'exit code of the update'
+    Assert-Match $run.Output 'A kit replacement target is a link or junction' 'the reason'
+    Assert-Equal $before (Get-WorkspaceSnapshot $outside) 'files of the folder the junction points to'
+}
+
 Test 'run twice in a row, the second run changes nothing' {
     $kit = New-TestKit
     Set-TestFile (Join-Path $kit 'routines\collect\SKILL.md') "# Collect`n"

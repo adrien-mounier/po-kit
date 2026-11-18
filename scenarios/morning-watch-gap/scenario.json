@@ -12,6 +12,7 @@
   "expect": [
     { "printed": "morning", "line": "Nothing to follow: Credit memo assistant [credit-memo-assistant] in tracker." },
     { "file": "state/questions.json", "line": "credit-memo-assistant" },
+    { "file": "state/questions.json", "line": "ask_on", "absent": true },
     { "record": "credit-memo-assistant", "field": "watch_list.tracker_projects", "is": [] },
     { "record": "credit-memo-assistant", "field": "watch_list.tracker_tickets", "is": [] }
   ]
