@@ -1,0 +1,12 @@
+Key: CRD-7
+Project: CRD
+Title: Wording of the card dispute form
+Status: To do
+Assignee: the cards analyst
+Reporter: the head of cards
+Updated: 2026-03-11T11:05:00+01:00
+
+The wording of the card dispute form is rewritten for the new card range.
+
+Comment by the cards analyst, 11 March 2026:
+I will deliver the new wording to the head of cards by 10 April 2026.

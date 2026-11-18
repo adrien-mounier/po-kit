@@ -1,0 +1,11 @@
+{
+  "routine": "morning",
+  "prompt": "Morning.",
+  "expect": [
+    { "record": "payments-api-contribution", "field": "watch_list.tracker_tickets", "is": [] },
+    { "file": "state/proposal.json", "field": "operations[0].id", "is": "payments-api-contribution" },
+    { "file": "state/proposal.json", "field": "operations[0].fields.watch_list.tracker_tickets", "is": ["CORE-88"] },
+    { "file": "inbox/done/{month}/call with the head of payments.md" },
+    { "file": "views/morning.html" }
+  ]
+}

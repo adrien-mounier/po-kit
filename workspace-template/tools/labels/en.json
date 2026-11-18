@@ -35,7 +35,9 @@
       "source_stale": "Source not read for more than {0} day(s)",
       "unclassified_old": "Unclassified items older than {0} day(s)",
       "intake_incomplete": "Subject under Later, pending, with an incomplete intake",
-      "benefit_stale": "Open benefit without a measured value for more than {0} day(s)"
+      "benefit_stale": "Open benefit without a measured value for more than {0} day(s)",
+      "watch_list_gap": "Subject under Now or Next with nothing to follow in a source that is on",
+      "source_search_missing": "Search a connection cannot make, or never tested"
     },
     "details": {
       "owner": "owner: {0}",
@@ -48,7 +50,15 @@
       "never_read": "never read",
       "missing": "missing: {0}",
       "measured": "last measured: {0}",
-      "never_measured": "never measured, recorded {0}"
+      "never_measured": "never measured, recorded {0}",
+      "nothing_to_follow": "nothing to follow in: {0}",
+      "cannot_search": "cannot search {0}",
+      "not_tested": "never tested: {0}"
+    },
+    "searches": {
+      "mail": { "person": "the mail of a person", "keyword": "the mail that holds a keyword" },
+      "tracker": { "project": "the tickets of a project or a queue", "ticket": "one ticket by its key" },
+      "chat": { "channel": "the messages of a channel or a group chat", "person": "the one-to-one chat with a person", "keyword": "the other one-to-one messages that hold a keyword" }
     }
   },
   "portfolio": {

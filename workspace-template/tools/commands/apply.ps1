@@ -108,6 +108,8 @@ if ($left.Count -eq $lines.Count -and -not (Get-PendingCollect)) {
 # no note is lost, and the last commit is the recovery point. The register is as its last commit
 # when the run starts (Assert-RegisterCommitted). What the run rewrites outside the register is
 # kept here as it is before the first write, a file that is absent as nothing.
+# What each line applied adds to a watch list, read before any record is rewritten.
+$watchAdded = @(for ($line = 1; $line -le $operations.Count; $line++) { if ($left -notcontains $line) { Get-WatchAdded $operations[$line - 1] $operations } })
 $rewritten = @{}
 foreach ($file in 'state\last-collect.json', 'state\unclassified.md', 'views\portfolio.md', 'views\check-report.md') {
     $path = Join-Path $Workspace $file
@@ -159,6 +161,8 @@ try {
             }
             $said
         }) + $settled
+    # An entry added to a watch list is read back seven days by the next collect.
+    $applied += @(Add-CatchUp $watchAdded)
 
     # The proposal stays pending until the commit is made, so that a failed run can be applied again
     # from the last commit. The commit holds all that the run wrote: the records, the notes filed, the

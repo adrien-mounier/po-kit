@@ -141,7 +141,7 @@ The folder where the PO drops raw notes for the next collect.
 _Avoid_: drop zone, staging
 
 **Watch list**:
-The people, keywords, tracker projects and chat channels attached to a subject. It bounds what a collect may read. A chat channel is a channel or a group chat. A one-to-one chat is read whole with a person of a watch list; in any other, only the messages that hold a keyword of a watch list are read, and the rest is never read. No routine lists a source's folder as a whole: it opens only what the watch lists match, by its path.
+The people, keywords, tracker projects (or queues), single tickets and chat channels attached to a subject. It bounds what a collect may read. A chat channel is a channel or a group chat. A one-to-one chat is read whole with a person of a watch list; in any other, only the messages that hold a keyword of a watch list are read, and the rest is never read. No routine lists a source's folder as a whole: it opens only what the watch lists match, by its path.
 _Avoid_: filter, scope, query
 
 **Unclassified**:
@@ -151,6 +151,14 @@ _Avoid_: misc, backlog, pending
 **Cutoff**:
 How far a collect has read a source: the next collect reads that source since its last cutoff.
 _Avoid_: checkpoint, cursor, watermark
+
+**Catch-up**:
+An entry added to a watch list after its source was read, which the next collect searches back seven days: the cutoff of the source does not cover what it matched before. The register tool records it and clears it once read.
+_Avoid_: backfill, replay
+
+**Watch gap**:
+A source that is on in which the watch list of a subject under Now or Next gives nothing to follow, as no ticket while the tracker is read. It becomes an open question.
+_Avoid_: missing config, unmapped source
 
 **Cap**:
 The most items a collect reads per source, set in the settings.

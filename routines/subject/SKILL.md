@@ -37,10 +37,12 @@ Creating a subject takes the eight answers below. Modifying one takes only the a
 | Which client banks it concerns | `banks` | the names of the client banks, as `settings.json` lists them under `banks`; an empty list when the PO says "none" or "all": the subject concerns the whole group, or every bank |
 | Its clearance, who gave it and when | `clearance`, `cleared_by`, `cleared_on` | `cleared` (with who and the date), `pending`, `out of frame` (work exists while a mandatory gate is missing) or `none` |
 | The state of each gate | `gates` | one `{ "name": ..., "state": ... }` per gate that `settings.json` lists; the state is `unknown`, `not required`, `missing`, `planned` or `done` |
-| Its watch list | `watch_list` | three lists: `people`, `keywords`, `tracker_projects` |
+| Its watch list | `watch_list` | four lists: `people`, `keywords`, `tracker_projects` (a project's key or a queue's name), `tracker_tickets` (single tickets, by their key or number) |
 | Its next step | `next_step`, `next_date`, `next_date_confirmed` | text; a date when the PO gives one; confirmed is `true` when the PO says the date is confirmed |
 
 Every answer comes from the PO's own words. "None", "not yet" and "nobody knows" are answers: record `none`, `unknown`, an empty list, or leave the field out. An answer the PO has not given is a question: ask for all the missing ones in one message, in the words of the left column, and stop there. The proposal waits for the PO's reply.
+
+**The watch list, recommended.** Ask for it with your recommendation, drawn from what you already read: the people of the meetings about the subject in the calendar snapshot, those its notes and records name, the ticket keys they cite, its title and any code name as keywords. As `Watch list: the head of payments and the integration architect, the keyword "payments API", ticket PAY-31. ok?` Following a person reads their one-to-one chat with the PO in full: say so when you recommend one. A list the PO cannot fill yet stays empty: the morning routine asks again, at most once a week, until it is filled.
 
 Record these too when the PO mentions them: `owning_entity`, `sponsor`, `decider`, `links`, `notes`, `objectives` (the numbers of the objectives the subject serves), and in the watch list `chat_channels` (the chat channels and group chats to read; the one-to-one chat with a person of the watch list, and a one-to-one message that holds one of its keywords, are read without being named here).
 

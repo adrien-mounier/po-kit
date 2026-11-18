@@ -1,0 +1,12 @@
+{
+  "routine": "collect",
+  "prompt": "Collect. I accept the proposal as your preview will show it: apply it without asking me again.",
+  "expect": [
+    { "record": "payments-api-contribution", "field": "watch_list.tracker_tickets", "is": ["CORE-88"] },
+    { "record": "payments-api-contribution", "field": "watch_list.tracker_projects", "is": ["PAY"] },
+    { "record": "payments-api-contribution", "field": "watch_list.people", "is": ["the head of payments"] },
+    { "file": "state/last-collect.json", "field": "sources.tracker.catch_up[0].entry", "is": "tracker_tickets: CORE-88" },
+    { "file": "inbox/done/{month}/call with the head of payments.md" },
+    { "file": "state/proposal.json", "absent": true }
+  ]
+}

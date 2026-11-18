@@ -75,31 +75,74 @@ function Set-ArchivedSourcePaths($Operations) {
     }
 }
 
-function Select-CollectionBatch([string]$Source, $Candidates) {
-    if (@('mail', 'tracker', 'chat') -cnotcontains $Source) { Stop-Run 'select takes mail, tracker or chat, and a JSON file of matched metadata.' }
+function Get-CollectWindow([string]$Source) {
+    # Where the searches of a source start: its cutoff, or seven days back for a source never read;
+    # and its catch-ups, the watch-list entries added since, each searched from its own day.
+    if (@('mail', 'tracker', 'chat') -cnotcontains $Source) { Stop-Run 'select takes mail, tracker or chat, then the JSON file of the matches of its searches.' }
     $path = Join-Path $Workspace 'state\last-collect.json'
     $prior = if (Test-Path -LiteralPath $path) { (Read-JsonFile $path).sources.$Source }
-    $cutoff = if ($prior.cutoff) { Read-Timestamp $prior.cutoff } else { (Read-Timestamp $Now).AddDays(-7) }
+    @{
+        prior    = $prior
+        cutoff   = if ($prior.cutoff) { Read-Timestamp $prior.cutoff } else { (Read-Timestamp $Now).AddDays(-7) }
+        catch_up = @($prior.catch_up | Where-Object { $_ })
+    }
+}
+
+function Select-CollectionBatch([string]$Source, $Candidates) {
+    # The batch a collect opens in a source, from the matches of its searches: those dated from the
+    # cutoff on, but those read at the cutoff itself, and those a catch-up matched from its own day;
+    # the catch-ups first, then the oldest, up to the cap. A capped catch-up never moves the cutoff
+    # back: the source goes on from where it stood, and the catch-up from where it stopped.
+    $window = Get-CollectWindow $Source
+    $prior, $cutoff, $catchUp = $window.prior, $window.cutoff, $window.catch_up
     $nowMoment = Read-Timestamp $Now
     $seen = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::Ordinal)
     foreach ($id in @($prior.cursor_ids)) { if ($id) { [void]$seen.Add($id) } }
     $ids = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::Ordinal)
-    $valid = @(foreach ($item in @($Candidates)) {
+    $new = @()
+    $older = @()
+    foreach ($item in @($Candidates)) {
         $when = Read-Timestamp $item.when
         if (-not "$($item.id)".Trim() -or -not $when -or -not $ids.Add("$($item.id)")) {
-            Stop-Run 'Each candidate needs a distinct stable id and a timestamp with offset in when. Only matched metadata belongs in this file.'
+            Stop-Run 'Each match needs an id of its own and, in when, a date and time with its UTC offset. Only matches of the searches belong in this file.'
         }
-        if ($when -ge $cutoff -and $when -le $nowMoment -and -not ($when -eq $cutoff -and $seen.Contains("$($item.id)"))) { $item }
-    })
-    $cap = if ($Settings.per_source_cap -gt 0) { [int]$Settings.per_source_cap } else { 50 }
-    $selected = @($valid | Sort-Object @{ Expression = { (Read-Timestamp $_.when).UtcDateTime.Ticks } }, id | Select-Object -First $cap)
-    $capped = $valid.Count -gt $cap
-    $next = if ($capped) { "$($selected[-1].when)" } else { $Now }
-    $boundary = Read-Timestamp $next
-    $cursor = @($selected | Where-Object { (Read-Timestamp $_.when) -eq $boundary } | ForEach-Object { "$($_.id)" })
-    if ($cutoff -eq $boundary) { $cursor = @($prior.cursor_ids) + $cursor }
-    [ordered]@{
-        selected = $selected
-        sources_read = [ordered]@{ source = $Source; cutoff = $next; items = $selected.Count; cap_reached = $capped; cursor_ids = @($cursor | Where-Object { $_ } | Select-Object -Unique) }
+        if ($when -gt $nowMoment) { continue }
+        if ($when -ge $cutoff) { if (-not ($when -eq $cutoff -and $seen.Contains("$($item.id)"))) { $new += $item } }
+        elseif (@($catchUp | Where-Object { @($item.matched_by) -ccontains $_.entry -and $when -ge (Read-Timestamp $_.from) }).Count) { $older += $item }
     }
+    $byTime = @{ Expression = { (Read-Timestamp $_.when).UtcDateTime.Ticks } }, 'id'
+    $older = @($older | Sort-Object $byTime)
+    $new = @($new | Sort-Object $byTime)
+    $cap = if ($Settings.per_source_cap -gt 0) { [int]$Settings.per_source_cap } else { 50 }
+    $takenOld = @($older | Select-Object -First $cap)
+    $takenNew = @($new | Select-Object -First ($cap - $takenOld.Count))
+    $capped = $older.Count + $new.Count -gt $cap
+    foreach ($item in $takenOld) { $item | Add-Member -NotePropertyName catch_up -NotePropertyValue $true -Force }
+    if ($takenNew) {
+        $next = if ($capped) { "$($takenNew[-1].when)" } else { $Now }
+        $boundary = Read-Timestamp $next
+        $cursor = @($takenNew | Where-Object { (Read-Timestamp $_.when) -eq $boundary } | ForEach-Object { "$($_.id)" })
+        if ($cutoff -eq $boundary) { $cursor = @($prior.cursor_ids) + $cursor }
+    }
+    elseif ($capped) {
+        # The cap went to the catch-ups: the source stays at its cutoff.
+        $next = "$($prior.cutoff)"
+        $cursor = @($prior.cursor_ids)
+    }
+    else {
+        $next = $Now
+        $cursor = @(if ($cutoff -eq $nowMoment) { $prior.cursor_ids })
+    }
+    # ponytail: a capped catch-up goes on from the date of the first match left, so a match of the
+    # same date and time already taken is taken again. Keep cursor ids per catch-up if that matters.
+    $left = @($older | Select-Object -Skip $takenOld.Count)
+    $read = [ordered]@{ source = $Source; cutoff = $next; items = $takenOld.Count + $takenNew.Count; cap_reached = $capped; cursor_ids = @($cursor | Where-Object { $_ } | Select-Object -Unique) }
+    if ($catchUp) {
+        $read.caught_up = @($catchUp | Where-Object { $entry = $_.entry; -not @($left | Where-Object { @($_.matched_by) -ccontains $entry }).Count } | ForEach-Object { $_.entry })
+        $read.catch_up = @(foreach ($entry in $catchUp) {
+                $first = @($left | Where-Object { @($_.matched_by) -ccontains $entry.entry }) | Select-Object -First 1
+                if ($first) { [ordered]@{ entry = $entry.entry; from = "$($first.when)" } }
+            })
+    }
+    [ordered]@{ selected = @($takenOld) + @($takenNew); sources_read = $read }
 }

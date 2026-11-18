@@ -21,6 +21,15 @@ $rows = @(foreach ($operation in $operations) {
                 Format-Fields $fields 'title', 'subject', 'evidence_level', 'supersedes'
             )
         }
+        # A line that adds to a watch list says so, and what following a person opens in chat.
+        $added = @(Get-WatchAdded $operation $operations)
+        if ($added) {
+            $details += "adds to the watch list, which waits for the PO even in apply plain: $($added -join ', ')"
+            $people = @($added | Where-Object { $_.StartsWith('people: ') } | ForEach-Object { $_.Substring(8) })
+            if ($people -and $Connections.chat -and $Connections.chat.mode -cne 'off') {
+                $details += "reads in full the one-to-one chat of the PO with: $($people -join ', ')"
+            }
+        }
         $cells = "$number", $operation.op, $type, (Format-Value $fields.title), (Format-Value $fields.subject),
             (Format-Value $fields.evidence_level), $(if ($operation.interpreted) { 'yes' } else { 'no' }),
             (@($details | Where-Object { $_ }) -join '; ')

@@ -1,0 +1,18 @@
+{
+  "routine": "morning",
+  "collected": {
+    "operations": [
+      { "op": "create", "type": "subject", "interpreted": false, "fields": {
+          "title": "Credit memo assistant", "kind": "product", "horizon": "next", "evidence_level": "fact",
+          "watch_list": { "people": ["the credit risk lead"], "keywords": ["credit memo"] },
+          "source": { "where": "conversation with the PO", "read_on": "{workday-1}" } } }
+    ]
+  },
+  "prompt": "Morning.",
+  "expect": [
+    { "printed": "morning", "line": "Nothing to follow: Credit memo assistant [credit-memo-assistant] in tracker." },
+    { "file": "state/questions.json", "line": "credit-memo-assistant" },
+    { "record": "credit-memo-assistant", "field": "watch_list.tracker_projects", "is": [] },
+    { "record": "credit-memo-assistant", "field": "watch_list.tracker_tickets", "is": [] }
+  ]
+}

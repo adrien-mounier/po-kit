@@ -52,6 +52,17 @@ Decided by the owner on 2026-11-13, replacing user story 32 of the tranche 2 spe
 
 The rule lives in `routines/collect/sources.md` and is proven by the `collect-chat` scenario.
 
+## How the sources stay set up
+
+The PO never has to remember to set up a source:
+
+- **Each connection says what it can search.** The first collect through a connector tests each search the rules need, as "the mail of a person" or "the other one-to-one messages that hold a keyword", and records the answers. A search it cannot make is never replaced by a wider read: what only it would find stays unread, and `check` says so.
+- **A subject with nothing to follow becomes a question.** A subject under Now or Next whose watch list gives nothing to follow in a source that is on, as no ticket while the tracker is read, becomes an open question for the next briefing or daily review, with a recommended answer drawn from what the agent already read. With nothing to recommend, it is asked again a week later, not every day.
+- **What the agent reads suggests new ways to follow a subject**: a ticket key in a mail, a person who keeps writing about it, a channel where it is discussed. Each suggestion waits for the PO's yes, even when plain facts are recorded at once, and says when following a person reads their one-to-one chat with the PO in full.
+- **A new entry is read back seven days** by the next collect, so that what it matched before is not missed. The register tool keeps track of it, not the agent.
+
+The agent can only spot what it may already read: the PO's notes, what the PO says, the calendar, and what the watch lists match. Start each subject with its name and code name as keywords and the people already known.
+
 ## The PO's files
 
 `settings.json` bounds what a record may say and tunes the views: the organisation's gates and the PO's objectives (adapt both to your organisation: the governance checklist and the objectives evidence follow them), the client banks, the kinds of task, working hours, the "start soon" margin, the words that mark a steering committee or a refinement session in a meeting title, how stale a ticket may get, the sponsor and the languages. `timezone`, a Windows time zone name, puts every hour the views show in the PO's time zone, whatever offset a source gave.

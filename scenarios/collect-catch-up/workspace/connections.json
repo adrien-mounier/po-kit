@@ -1,0 +1,7 @@
+{
+  "notes": { "mode": "folder" },
+  "mail": { "mode": "folder", "folder": "exports/mail" },
+  "tracker": { "mode": "off" },
+  "chat": { "mode": "off" },
+  "calendar": { "mode": "off" }
+}

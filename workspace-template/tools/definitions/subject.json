@@ -31,6 +31,7 @@
         "people": { "type": "list", "items": { "type": "text" } },
         "keywords": { "type": "list", "items": { "type": "text" } },
         "tracker_projects": { "type": "list", "items": { "type": "text" } },
+        "tracker_tickets": { "type": "list", "items": { "type": "text" } },
         "chat_channels": { "type": "list", "items": { "type": "text" } }
       }
     },

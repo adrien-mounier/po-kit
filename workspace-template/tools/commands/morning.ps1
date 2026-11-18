@@ -194,6 +194,8 @@ $notes = Read-MorningNotes
 $items = $notes.items
 # The agent's open questions, state\questions.json: none when there is none or it is refused.
 $asked = Read-OpenQuestions
+# A question that waits for a day is neither shown nor asked before it.
+$asked.questions = @($asked.questions | Where-Object { -not "$($_.ask_on)".Trim() -or "$($_.ask_on)" -le $Today })
 # The agent's backlog alerts, state\backlog-alerts.json: none when there is none or it is refused.
 $Backlog = Read-BacklogAlerts
 # A commitment of the PO enters Start soon when its latest start falls within the lead; one owed
@@ -903,6 +905,15 @@ foreach ($question in @($asked.questions | Sort-Object { "$($_.added)" })) {
     $on = if ("$($question.about)".Trim()) { " on [$("$($question.about)".Trim())]" }
     $drop = if ($age -ge 5 -and $question.drop_asked -ne $true) { ' Ask once whether to drop it.' }
     "Open question$on, $(if ($age) { "open $age working day(s)" } else { 'new today' }): $(Format-Value $question.question) Recommended: $(Format-Value $question.recommended)$drop"
+}
+# Each subject under Now or Next with nothing to follow in a source that is on, for the routine to
+# ask how to follow it; then each search a connection cannot make, or never tested.
+$findings = @(Get-CheckFindings $labels)
+foreach ($gap in @($findings | Where-Object { $_.rule -eq 'watch_list_gap' })) {
+    "Nothing to follow: $($gap.title) [$($gap.id)] in $($gap.sources -join ', ')."
+}
+foreach ($limit in @($findings | Where-Object { $_.rule -eq 'source_search_missing' })) {
+    "Search limit of $($limit.about): $($limit.detail)."
 }
 if ($asked.problems) { @('Not verified: state\questions.json. Your open questions are left off the page; correct them, then run morning again.') + @($asked.problems | ForEach-Object { "- $_" }) }
 if ($notes.problems) { @('Not verified: state\morning.json. Your notes are left off the page; correct them, then run morning again.') + @($notes.problems | ForEach-Object { "- $_" }) }

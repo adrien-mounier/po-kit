@@ -1,0 +1,11 @@
+From: the integration architect <integration.architect@example.com>
+To: the PO <po@example.com>
+Date: {workday-3}T10:00:00+01:00
+Subject: Rate limits of the payments API
+
+Hello,
+
+I will send you the rate limit figures of the payments API by {workday+4}.
+
+Regards,
+The integration architect

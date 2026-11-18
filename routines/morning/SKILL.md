@@ -58,6 +58,10 @@ Done when `state/morning.json` holds the four parts, the backlog alerts are writ
 
 Run the register tool's `morning`. It writes `views/morning.html`, replacing the page of the day before, and prints one line per block of the page: its heading, then its counts; then each task to start today, each reminder and nudge to offer, and each open question with its age. When it prints `Not verified: state\morning.json`, your notes cite a record that is missing or superseded, or an action lacks its button: correct them and run `morning` again. `Not verified: state\questions.json` is the same for your open questions, and `Not verified: state\backlog-alerts.json` for your backlog alerts.
 
+It prints too `Nothing to follow: <subject> [<identifier>] in <sources>.` for each subject under Now or Next whose watch list gives nothing to follow in a source that is on, and `Search limit of <source>: ...` for each search a connection cannot make, or never tested.
+
+**A subject with nothing to follow.** For each `Nothing to follow` line, keep one open question about that subject, unless one already asks it: how to follow it in that source, with the answer you recommend from what you already read, the people of its meetings in the calendar snapshot, those its notes and records name, a ticket key they cite. As `Payments API contribution: which ticket should I follow in the tracker? Recommended: PAY-31, which the mail of the head of payments of 18 March names.` When nothing you read points to one, recommend asking again in a week: `Not known yet: I ask again next week.` When the PO accepts that, or says not yet, give the question `ask_on` seven days later: it is neither shown nor asked before. An answer that names a person, a keyword, a channel, a project or a ticket is an update of the subject's `watch_list`, previewed and applied as any other.
+
 Done when it ends without error and prints no `Not verified`.
 
 ## 5. Tell the PO

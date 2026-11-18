@@ -105,7 +105,8 @@ Test 'the workspace rules say how the connections declare a source: off, read fr
     Assert-Match $rules '\{ "mode": "off" \}' 'a source that is off'
     Assert-Match $rules '\{ "mode": "folder", "folder": "[^"]+" \}' 'a source read from a folder'
     Assert-Match $rules '\{ "mode": "connector", "connector": "[^"]+" \}' 'a source read through a connector'
-    Assert-Match $rules '"verified": \{ "result": "ok", "on": "\d{4}-\d\d-\d\d" \}' 'what the verification of a connector gave, and when'
+    Assert-Match $rules '"verified": \{ "result": "ok", "on": "\d{4}-\d\d-\d\d", "connector": "[^"]+", "searches": \{ "[a-z_]+": (true|false)(, "[a-z_]+": (true|false))* \} \}' 'what the verification of a connector gave, when, with which connector, and which searches it can make'
+    Assert-Match $rules 'A search it cannot make is never made another way' 'a search the connector cannot make'
     Assert-Match $rules '"result": "failed"' 'a verification that failed'
 }
 

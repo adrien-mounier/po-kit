@@ -329,10 +329,32 @@ function Test-Subject([string]$Subject, [int]$Line, $Operations) {
     if (-not $exists) { "subject '$Subject' exists neither in the register nor earlier in this proposal (the subject that line N creates is named 'line N')" }
 }
 
+# The fields of a watch list, each with the sources it is searched in.
+$WatchSources = [ordered]@{ people = 'mail', 'chat'; keywords = 'mail', 'chat'; chat_channels = 'chat'; tracker_projects = 'tracker'; tracker_tickets = 'tracker' }
+
+function Get-WatchAdded($Operation, $Operations) {
+    # The entries a line of a proposal adds to the watch list of a subject, as "people: the tech
+    # lead": all those of a subject it creates, and those an update gives that the subject did not
+    # hold, in the register or in the line of the proposal that creates it.
+    $given = $Operation.fields.watch_list
+    if (-not $given -or ($Operation.op -cne 'update' -and $Operation.type -cne 'subject')) { return }
+    $had = $null
+    if ($Operation.op -ceq 'update') {
+        $named = Get-LineNamed $Operation.id
+        $had = if ($named) { $Operations[$named - 1].fields.watch_list } else { (Find-Record $Operation.id).record.watch_list }
+    }
+    foreach ($field in $WatchSources.Keys) {
+        foreach ($value in @($given.$field | Where-Object { "$_".Trim() })) {
+            if (@($had.$field) -cnotcontains $value) { "${field}: $value" }
+        }
+    }
+}
+
 function Get-WaitingLines($Operations) {
     # The lines of a valid proposal that wait for the PO when the plain facts are applied without
     # asking ("apply plain"), in the order of the proposal:
     # - an interpreted line;
+    # - a line that adds to a watch list: it widens what the collects read, which is the PO's call;
     # - a record attached to the subject that a waiting line creates, or an update of the record
     #   that a waiting line creates;
     # - a line that updates or supersedes a record of the register which a waiting line also updates
@@ -349,7 +371,7 @@ function Get-WaitingLines($Operations) {
         for ($line = 1; $line -le $Operations.Count; $line++) {
             $operation = $Operations[$line - 1]
             if ($waiting -contains $line) { continue }
-            $waits = $operation.interpreted -or $waiting -contains (Get-LineNamed $operation.fields.subject) -or
+            $waits = $operation.interpreted -or @(Get-WatchAdded $operation $Operations).Count -or $waiting -contains (Get-LineNamed $operation.fields.subject) -or
                 ($operation.op -ceq 'update' -and $waiting -contains (Get-LineNamed $operation.id))
             if (-not $waits -and $records -ccontains (& $changed $operation)) {
                 $alone = @(for ($other = 1; $other -le $Operations.Count; $other++) { if ($waiting -notcontains $other -and $Operations[$other - 1].op -ceq 'update' -and $Operations[$other - 1].id -ceq $operation.id) { $other } })
@@ -565,7 +587,11 @@ $CollectDefinition = @'
         "cutoff": { "type": "timestamp", "required": true },
         "items": { "type": "integer", "required": true },
         "cap_reached": { "type": "boolean", "default": false },
-        "cursor_ids": { "type": "list", "items": { "type": "text" } } } } },
+        "cursor_ids": { "type": "list", "items": { "type": "text" } },
+        "caught_up": { "type": "list", "items": { "type": "text" } },
+        "catch_up": { "type": "list", "items": { "type": "object", "fields": {
+            "entry": { "type": "text", "required": true },
+            "from": { "type": "timestamp", "required": true } } } } } } },
     "sources_not_covered": { "type": "list", "items": { "type": "text" } },
     "notes_processed": { "type": "list", "items": { "type": "text" } },
     "unclassified": { "type": "list", "items": { "type": "object", "fields": {
@@ -658,6 +684,14 @@ function Save-Collect {
         $cursor = @($read.cursor_ids)
         if ($prior -and (Read-Timestamp $prior.cutoff) -eq (Read-Timestamp $read.cutoff)) { $cursor = @($prior.cursor_ids) + $cursor }
         $state.sources[$read.source] = [ordered]@{ cutoff = $read.cutoff; items = $read.items; collected_at = $collect.collected_at; cap_reached = $read.cap_reached; cursor_ids = @($cursor | Where-Object { $_ } | Select-Object -Unique) }
+        # A catch-up select read whole leaves; one it stopped at the cap goes on from where it stopped;
+        # one added since that select stays as it is.
+        $catchUp = @(foreach ($entry in @($prior.catch_up | Where-Object { $_ })) {
+                if (@($read.caught_up) -ccontains $entry.entry) { continue }
+                $moved = @($read.catch_up | Where-Object { $_.entry -ceq $entry.entry }) | Select-Object -First 1
+                if ($moved) { [ordered]@{ entry = $entry.entry; from = $moved.from } } else { $entry }
+            })
+        if ($catchUp) { $state.sources[$read.source].catch_up = $catchUp }
         "read $($read.source) up to $($read.cutoff): $($read.items) item(s)$(Format-CapReached $read)"
     }
     Write-JsonFile $statePath $state
@@ -994,6 +1028,7 @@ function Read-MorningNotes {
 # agent has asked, which are the agent's alone.
 #   { "last_briefing": "2026-03-02", "meetings_asked": [ { "start": "...", "title": "..." } ],
 #     "questions": [ { "about": "C-2026-004", "question": "...", "recommended": "...", "added": "2026-03-02" } ] }
+# A question may wait for a day, ask_on: it is not asked, nor shown, before it.
 
 function Read-OpenQuestions {
     # The open questions (questions, nothing without the file) and what is wrong with the file
@@ -1011,6 +1046,7 @@ function Read-OpenQuestions {
             $number++
             $lacks = @('question', 'recommended' | Where-Object { -not "$($question.$_)".Trim() }) + @(if (-not (Test-IsoDate "$($question.added)")) { 'added' })
             if ($lacks) { "Question $number lacks: $($lacks -join ', ')." }
+            if ($null -ne $question.ask_on -and -not (Test-IsoDate "$($question.ask_on)")) { "Question $number gives ask_on '$($question.ask_on)', which is not a date (yyyy-mm-dd)." }
         })
     if ($problems) { return @{ questions = @(); problems = $problems } }
     @{ questions = $questions; problems = @() }
@@ -1125,8 +1161,12 @@ $CheckRules = @{
         'cleared_without_name_and_date', 'missing_gate_not_out_of_frame', 'taken_decision_without_author', 'effort_of_another_person', 'score_without_reason',
         'value_without_date'
     warning = 'commitment_without_owner', 'commitment_without_due_date', 'commitment_overdue', 'decision_past_its_date', 'subject_stale',
-        'inbox_note_old', 'source_stale', 'unclassified_old', 'intake_incomplete', 'benefit_stale'
+        'inbox_note_old', 'source_stale', 'unclassified_old', 'intake_incomplete', 'benefit_stale', 'watch_list_gap', 'source_search_missing'
 }
+
+# The searches a collect makes in each source, as the collect's sources.md says: a connector
+# records in verified.searches which of them it can make.
+$SourceSearches = [ordered]@{ mail = 'person', 'keyword'; tracker = 'project', 'ticket'; chat = 'channel', 'person', 'keyword' }
 
 # The five parts of the intake card of a subject, in the order the card and the check name them.
 # The client bank is the field banks: a subject that names no bank has not given it.
@@ -1266,6 +1306,40 @@ function Get-RecordFiles {
     }
 }
 
+function Get-WatchGaps($Subject) {
+    # The sources that are on in which the watch list of a subject gives nothing to follow: mail
+    # without a person or a keyword, chat without a channel either, the tracker without a project
+    # or a ticket.
+    $watch = $Subject.watch_list
+    $has = { param($Fields) @($Fields | Where-Object { @($watch.$_ | Where-Object { "$_".Trim() }).Count }).Count -gt 0 }
+    $needs = [ordered]@{ mail = 'people', 'keywords'; chat = 'people', 'keywords', 'chat_channels'; tracker = 'tracker_projects', 'tracker_tickets' }
+    foreach ($source in $needs.Keys) {
+        if ($Connections.$source -and $Connections.$source.mode -cne 'off' -and -not (& $has $needs[$source])) { $source }
+    }
+}
+
+function Add-CatchUp([string[]]$Entries) {
+    # An entry added to a watch list once a source was read is searched back seven days there, by
+    # the next collect, until select has taken its matches: the cutoff of the source does not cover
+    # what it matched before. Says what it did, one line per entry and source.
+    $statePath = Join-Path $Workspace 'state\last-collect.json'
+    if (-not $Entries -or -not (Test-Path -LiteralPath $statePath)) { return }
+    $state = Read-JsonFile $statePath
+    $from = Format-Timestamp ((Read-Timestamp $Now).AddDays(-7))
+    $added = @(foreach ($entry in $Entries) {
+            foreach ($source in $WatchSources[$entry.Substring(0, $entry.IndexOf(':'))]) {
+                $read = $state.sources.$source
+                # A source never read is read seven days back at its first collect anyway.
+                if (-not $read -or -not $Connections.$source -or $Connections.$source.mode -ceq 'off') { continue }
+                if (@($read.catch_up | ForEach-Object { $_.entry }) -ccontains $entry) { continue }
+                $read | Add-Member -NotePropertyName catch_up -NotePropertyValue (@($read.catch_up | Where-Object { $_ }) + [ordered]@{ entry = $entry; from = $from }) -Force
+                "read $source back to $($from.Substring(0, 10)) at the next collect for $entry"
+            }
+        })
+    if ($added) { Write-JsonFile $statePath $state }
+    $added
+}
+
 function Get-CheckFindings($Labels) {
     # Every finding of the check on the register as it is on disk.
     $details = $Labels.check.details
@@ -1342,6 +1416,11 @@ function Get-CheckFindings($Labels) {
                 @{ rule = 'benefit_stale'; about = $about; detail = $(if ($record.measured_on) { $details.measured } else { $details.never_measured }) -f $last }
             }
         }
+        # A subject under Now or Next needs something to follow in each source that is on.
+        if ($file.type -eq 'subject' -and $record.status -ceq 'active' -and 'now', 'next' -ccontains $record.horizon) {
+            $gaps = @(Get-WatchGaps $record | ForEach-Object { $_ })
+            if ($gaps) { @{ rule = 'watch_list_gap'; about = $about; detail = $details.nothing_to_follow -f ($gaps -join ', '); id = $file.id; title = (Format-Value $record.title); sources = $gaps } }
+        }
         if ($record.subject -and $record.date_updated -gt $touched[$record.subject]) { $touched[$record.subject] = $record.date_updated }
         if ($file.type -eq 'subject' -and $record.status -ceq 'active' -and $record.horizon -ceq 'now') {
             $underNow += @{ id = $file.id; title = (Format-Value $record.title); about = $about; updated = $record.date_updated }
@@ -1367,6 +1446,18 @@ function Get-CheckFindings($Labels) {
         $read = $source.read.collected_at
         if (-not $read) { @{ rule = 'source_stale'; about = $source.source; detail = $details.never_read } }
         elseif ((Get-DaysSince $read) -gt $delays.source_stale) { @{ rule = 'source_stale'; about = $source.source; detail = $details.read -f $read } }
+    }
+
+    # A connector verified says which searches it can make: one it cannot make, or never tested,
+    # leaves unread what only that search would find.
+    foreach ($source in $SourceSearches.Keys) {
+        $entry = $Connections.$source
+        if (-not $entry -or $entry.mode -cne 'connector' -or $entry.verified.result -cne 'ok') { continue }
+        $words = $Labels.check.searches.$source
+        $cannot = @($SourceSearches[$source] | Where-Object { $entry.verified.searches.$_ -is [bool] -and -not $entry.verified.searches.$_ } | ForEach-Object { $words.$_ })
+        $untested = @($SourceSearches[$source] | Where-Object { $entry.verified.searches.$_ -isnot [bool] } | ForEach-Object { $words.$_ })
+        $said = @(if ($cannot) { $details.cannot_search -f ($cannot -join ', ') }) + @(if ($untested) { $details.not_tested -f ($untested -join ', ') })
+        if ($said) { @{ rule = 'source_search_missing'; about = $source; detail = $said -join '; ' } }
     }
 
     # An unclassified item is a line of the list that opens with the date it was collected, as
