@@ -108,6 +108,10 @@ function Select-CollectionBatch([string]$Source, $Candidates) {
         }
         if ($when -gt $nowMoment) { continue }
         if ($when -ge $cutoff) { if (-not ($when -eq $cutoff -and $seen.Contains("$($item.id)"))) { $new += $item } }
+        # Without matched_by, a catch-up would count as read without its match.
+        elseif ($catchUp -and -not @($item.matched_by | Where-Object { "$_".Trim() }).Count) {
+            Stop-Run "Match $($item.id) is dated before the cutoff, $($prior.cutoff), and names no watch-list entry in matched_by: while a catch-up is pending, each such match says which entries returned it."
+        }
         elseif (@($catchUp | Where-Object { @($item.matched_by) -ccontains $_.entry -and $when -ge (Read-Timestamp $_.from) }).Count) { $older += $item }
     }
     $byTime = @{ Expression = { (Read-Timestamp $_.when).UtcDateTime.Ticks } }, 'id'

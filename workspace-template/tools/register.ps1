@@ -1312,9 +1312,9 @@ function Get-WatchGaps($Subject) {
     # or a ticket.
     $watch = $Subject.watch_list
     $has = { param($Fields) @($Fields | Where-Object { @($watch.$_ | Where-Object { "$_".Trim() }).Count }).Count -gt 0 }
-    $needs = [ordered]@{ mail = 'people', 'keywords'; chat = 'people', 'keywords', 'chat_channels'; tracker = 'tracker_projects', 'tracker_tickets' }
-    foreach ($source in $needs.Keys) {
-        if ($Connections.$source -and $Connections.$source.mode -cne 'off' -and -not (& $has $needs[$source])) { $source }
+    foreach ($source in 'mail', 'chat', 'tracker') {
+        $fields = @($WatchSources.Keys | Where-Object { $WatchSources[$_] -ccontains $source })
+        if ($Connections.$source -and $Connections.$source.mode -cne 'off' -and -not (& $has $fields)) { $source }
     }
 }
 
@@ -1344,6 +1344,8 @@ function Get-CheckFindings($Labels) {
     # Every finding of the check on the register as it is on disk.
     $details = $Labels.check.details
     $delays = Get-CheckDelays
+    # ponytail: any question about a subject that waits for a later day silences its watch gap.
+    $askedLater = @((Read-OpenQuestions).questions | Where-Object { "$($_.ask_on)".Trim() -gt $Today } | ForEach-Object { "$($_.about)" })
     $files = @(Get-RecordFiles)
     # The type of every record the register holds, by identifier: identifiers differ by their case.
     $held = New-Object Collections.Hashtable ([StringComparer]::Ordinal)
@@ -1416,8 +1418,9 @@ function Get-CheckFindings($Labels) {
                 @{ rule = 'benefit_stale'; about = $about; detail = $(if ($record.measured_on) { $details.measured } else { $details.never_measured }) -f $last }
             }
         }
-        # A subject under Now or Next needs something to follow in each source that is on.
-        if ($file.type -eq 'subject' -and $record.status -ceq 'active' -and 'now', 'next' -ccontains $record.horizon) {
+        # A subject under Now or Next needs something to follow in each source that is on, unless the
+        # PO was asked and a question about it waits for a later day.
+        if ($file.type -eq 'subject' -and $record.status -ceq 'active' -and 'now', 'next' -ccontains $record.horizon -and $askedLater -cnotcontains $file.id) {
             $gaps = @(Get-WatchGaps $record | ForEach-Object { $_ })
             if ($gaps) { @{ rule = 'watch_list_gap'; about = $about; detail = $details.nothing_to_follow -f ($gaps -join ', '); id = $file.id; title = (Format-Value $record.title); sources = $gaps } }
         }

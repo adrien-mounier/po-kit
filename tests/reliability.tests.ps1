@@ -43,7 +43,7 @@ Test 'an archive is checked at its old tree even after a cited commitment is sup
     Assert-Equal 1 $current.ExitCode 'old plan is not a current draft'
 }
 
-Test '51 equal-timestamp messages resume without loss or replay and keep fractional precision' {
+Test '51 equal-timestamp messages are all read once, none lost and none read twice, to the fraction of a second' {
     $ws = New-TestWorkspace
     $when = '2026-03-10T08:00:00.1234567+07:00'
     $now = '2026-03-10T09:00:00+07:00'
