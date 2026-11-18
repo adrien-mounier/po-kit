@@ -13,7 +13,7 @@
   "expect": [
     { "record": "B-{year}-001", "field": "current_value", "is": 31 },
     { "record": "B-{year}-001", "field": "measured_on", "is": "2026-03-06" },
-    { "record": "B-{year}-001", "field": "history[-1].source.where", "is": "inbox/pilot review.md" },
+    { "record": "B-{year}-001", "field": "history[-1].source.where", "is": "inbox/done/{month}/pilot review.md" },
     { "record": "B-{year}-001", "field": "target", "is": 20 },
     { "records": "benefits", "count": 1 },
     { "file": "inbox/done/{month}/pilot review.md" },

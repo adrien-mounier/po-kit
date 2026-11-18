@@ -111,7 +111,7 @@ Test 'the scenario "collect an action" passes when the note becomes a commitment
     $run = Invoke-Scenarios -Agent $agent collect-action
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    foreach ($fact in 'owner is "the tech lead"', 'due_date is "2026-03-20"', 'subject is "mobile-onboarding"', 'objectives is \[1\]', 'source\.where is "inbox/onboarding workshop\.md"') {
+    foreach ($fact in 'owner is "the tech lead"', 'due_date is "2026-03-20"', 'subject is "mobile-onboarding"', 'objectives is \[1\]', "source\.where is `"inbox/done/$Month/onboarding workshop\.md`"") {
         Assert-Match $run.Output "  ok    record C-$Year-002: $fact" 'expected fact reported as passed'
     }
     Assert-Match $run.Output "  ok    file inbox/done/$Month/onboarding workshop\.md is there" 'the note is filed as processed'
@@ -158,7 +158,7 @@ Test 'the scenario "collect a measured value" passes when the value the note giv
     $run = Invoke-Scenarios -Agent (New-CollectAgent $note @($update)) collect-benefit-value
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    foreach ($fact in 'current_value is 31', 'measured_on is "2026-03-06"', 'history\[-1\]\.source\.where is "inbox/pilot review\.md"') {
+    foreach ($fact in 'current_value is 31', 'measured_on is "2026-03-06"', "history\[-1\]\.source\.where is `"inbox/done/$Month/pilot review\.md`"") {
         Assert-Match $run.Output "  ok    record B-$Year-001: $fact" 'expected fact reported as passed'
     }
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
@@ -696,7 +696,7 @@ Test 'the scenario "collect a pasted text" passes when the text is saved as an i
     $run = Invoke-Scenarios -Agent $agent collect-pasted-text
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
-    Assert-Match $run.Output "  ok    record C-$Year-002: source\.where is `"inbox/pasted-$Day\.md`"" 'the record names the note'
+    Assert-Match $run.Output "  ok    record C-$Year-002: source\.where is `"inbox/done/$Month/pasted-$Day\.md`"" 'the record names the note, where it is filed'
     Assert-Match $run.Output "  ok    file inbox/done/$Month/pasted-$Day\.md has a line containing `"corrected opening hours`"" 'the note holds the pasted text, and is filed'
     Assert-True ($run.Output -cnotmatch 'FAIL') "a fact is reported as failed: $($run.Output)"
 }
