@@ -892,13 +892,16 @@ Test 'the scenario "collect chat" passes when the messages of a channel a watch 
     $named = New-ItemOperation 'exports/chat/channels/onboarding squad/2026-03-10 0915 the tech lead.txt' @{ title = 'Create the test accounts of the onboarding pilot'; owner = 'the tech lead'; due_date = '2026-03-25'; date_of_fact = '2026-03-10' }
     $keyword = New-ItemOperation 'exports/chat/one-to-one/the compliance officer/2026-03-10 1145 the compliance officer.txt' @{ title = 'Send the compliance sign-off of the onboarding pilot'; owner = 'the compliance officer'; owed_to = 'the PO'; due_date = '2026-03-20'; date_of_fact = '2026-03-10' }
     $watched = New-ItemOperation 'exports/chat/one-to-one/the tech lead/2026-03-10 1130 the tech lead.txt' @{ title = 'Send the test plan of the onboarding pilot'; owner = 'the tech lead'; owed_to = 'the PO'; due_date = '2026-03-27'; date_of_fact = '2026-03-10' }
+    # The new person the keyword brought in is proposed for the watch list of the subject.
+    $widen = New-UpdateOperation 'mobile-onboarding' @{ watch_list = @{ people = @('the tech lead', 'the architect', 'the compliance officer'); keywords = @('onboarding'); tracker_projects = @('ONB'); chat_channels = @('onboarding squad') } }
 
-    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named, $watched, $keyword -Do '-Pending -Stream' -Collect $ChatRead) collect-chat
+    $run = Invoke-Scenarios -Agent (New-CollectAgent @() $named, $watched, $keyword, $widen -Do '-Pending -Stream' -Collect $ChatRead) collect-chat
 
     Assert-Equal 0 $run.ExitCode "exit code, with output: $($run.Output)"
     Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[0\]\.fields\.source\.where is "exports/chat/channels/onboarding squad/2026-03-10 0915 the tech lead\.txt"' 'the message of the channel is the source of the record'
     Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[2\]\.fields\.source\.where is "exports/chat/one-to-one/the compliance officer/2026-03-10 1145 the compliance officer\.txt"' 'the message of a one-to-one chat that names a keyword is the source of the record'
     Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[1\]\.fields\.source\.where is "exports/chat/one-to-one/the tech lead/2026-03-10 1130 the tech lead\.txt"' 'the message of the one-to-one chat with a watched person is the source of the record'
+    Assert-Match $run.Output '  ok    file state/proposal\.json: operations\[3\]\.fields\.watch_list\.people\[-1\] is "the compliance officer"' 'the new person proposed for the watch list'
     Assert-Match $run.Output '  ok    file state/proposal\.json: sources_read\[1\]\.items is 3' 'three messages are read'
     Assert-Match $run.Output '  ok    the transcript of the agent has no line containing "vendor"' 'nothing of the other one-to-one chat in all that the agent did'
     Assert-Match $run.Output '  ok    the transcript of the agent has no line containing "one-to-one/the head of savings"' 'not even its folder'
