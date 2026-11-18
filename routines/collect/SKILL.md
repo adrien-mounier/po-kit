@@ -91,7 +91,7 @@ A person's position and a guess at their motives are two records, in that order:
 **Interpreted or plain fact.** Every operation states `"interpreted"`:
 
 - `true` when it holds your reading of the note: every decision, every change of a status, a clearance, a gate or a horizon, every record that supersedes another, every date or person you had to work out (`by Friday`, `the team`).
-- `false` when it says only what the note says in so many words: an action with the owner and the date the note gives.
+- `false` when it says only what the note says in so many words: an action with the owner and the date the note gives, attached to the subject the note names.
 
 In doubt, `true`.
 
@@ -219,7 +219,7 @@ Done when the proposal holds one operation per change found in step 4, and every
 1. Run the register tool's `preview`. When it refuses the proposal, it lists its reasons: correct the proposal and preview again. A reason the notes cannot settle is a question for the PO.
 2. An answer the PO gave ahead, with the request, counts: go to 4. It counts for your scores only when it accepts the proposal as `preview` shows it, or names the scores; otherwise run `apply plain` and show what waits. Otherwise the last line of `preview` states the validation mode the PO chose in the settings:
    - `Validation mode: all.` Every line waits for the PO, and the table to show is the one `preview` printed.
-   - `Validation mode: interpreted.` The PO accepted the plain facts ahead: run `apply plain`. It records them, files the notes, and prints under `Waiting for the PO` the table of the lines that still wait, numbered again from 1: that table is the one to show. Tell the PO first what was recorded without asking: each record with its identifier, the notes filed, what went to unclassified, what the check found. When it prints no such table, no line waits.
+   - `Validation mode: interpreted.` The PO accepted the plain facts ahead: run `apply plain`, even when every line waits. It records them, files the notes, saves how far each source was read, and prints under `Waiting for the PO` the table of the lines that still wait, numbered again from 1: that table is the one to show. Tell the PO first what was recorded without asking: each record with its identifier, the notes filed, what went to unclassified, what the check found. When it prints no such table, no line waits.
 3. Copy the table into your answer, unchanged, every line and every column: the PO reads there the evidence level and the interpreted mark of each line, and names lines by their number. Say that these lines wait for the PO, then wait for the answer.
 4. Do as the PO says:
    - The PO accepts: run `apply`.
