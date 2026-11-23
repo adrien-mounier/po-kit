@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly · B · Produit</title>
+<!-- PROTOTYPE, fictional content (Example Bank). One visual direction for the weekly presentation. No script, no network. -->
+<style>
+/* ---------- Shared mechanics: every direction keeps these ----------
+   One screen is one slide. The whole page scales as a slide does: 1rem is a fixed share of the
+   screen, so a 16:9 window is about 77rem wide and 43.5rem high whatever its size.
+   No script and no network: the slides snap with CSS, the arrow keys, the space bar and the
+   wheel move from one to the next, and the dots on the right are plain links. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: min(1.3vw, 2.3vh); scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--bg); color: var(--ink); line-height: 1.4; font-variant-numeric: tabular-nums; -webkit-print-color-adjust: exact; print-color-adjust: exact; timeline-scope: --s1, --s2, --s3, --s4, --s5, --s6; }
+ol, ul { list-style: none; }
+h1, h2, h3 { text-wrap: balance; }
+/* What the browser draws belongs to the deck too: no scrollbar on a shared screen (the dots say
+   where one is), a selection and a focus ring in the colours of the palette. */
+html { scrollbar-width: none; }
+::selection { background: var(--ink); color: var(--bg); }
+.dots a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; opacity: 1; }
+.deck { display: none; }
+i, cite { font-style: normal; }
+.slide { position: relative; height: 100vh; scroll-snap-align: start; scroll-snap-stop: always; overflow: clip; display: flex; flex-direction: column; padding: 2.4rem 4.5rem 0; }
+.head, .body, .foot { position: relative; }
+.body { flex: 1 1 auto; min-height: 0; }
+.foot { display: flex; justify-content: space-between; gap: 2rem; padding: .8rem 0 1rem; font-size: .62rem; }
+.id { font-size: .72em; font-weight: 400; white-space: nowrap; }
+.id::before { content: "["; } .id::after { content: "]"; }
+.cols { display: none; }
+.track { position: relative; display: block; }
+.track i { position: absolute; left: 0; top: 0; bottom: 0; }
+
+/* A movement is said in a word and a drawn sign, never by its colour alone. Each sign is an
+   embedded image used as a mask, so it takes the colour of its word. */
+.mv::before { content: ""; display: inline-block; width: 1em; height: 1em; margin-right: .4em; vertical-align: -.16em; background: currentColor; -webkit-mask: var(--g) center / contain no-repeat; mask: var(--g) center / contain no-repeat; }
+.mv.done { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E"); }
+.mv.adv { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17L17 7M9 7h8v8'/%3E%3C/svg%3E"); }
+.mv.new { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E"); }
+.mv.def { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M12 7.5V12l3 2'/%3E%3C/svg%3E"); }
+.mv.none { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12h12'/%3E%3C/svg%3E"); }
+.mv, .st, .when, .due { white-space: nowrap; }
+
+/* The dots: one link per slide, the current one longer. */
+.dots { position: fixed; right: 1.5rem; top: 50%; transform: translateY(-50%); z-index: 5; display: grid; gap: .5rem; justify-items: center; }
+.dots a { display: block; width: .45rem; height: .45rem; border-radius: 1rem; background: var(--dot, var(--ink)); opacity: .28; }
+#s1 { view-timeline-name: --s1; } #s2 { view-timeline-name: --s2; } #s3 { view-timeline-name: --s3; } #s4 { view-timeline-name: --s4; } #s5 { view-timeline-name: --s5; } #s6 { view-timeline-name: --s6; }
+
+/* Motion, where the browser can tie it to the scroll: each part of a slide rises as it comes in.
+   Elsewhere, and for whoever asked for less motion, everything is simply there. */
+@keyframes dot { 0%, 30%, 70%, 100% { opacity: .28; height: .45rem; } 50% { opacity: 1; height: 1.7rem; } }
+@keyframes rise { from { opacity: 0; transform: translateY(1.6rem); } to { opacity: 1; transform: none; } }
+@supports (animation-timeline: view()) {
+  .dots a { animation: dot linear both; animation-range: cover 0% cover 100%; }
+  .dots a:nth-child(1) { animation-timeline: --s1; } .dots a:nth-child(2) { animation-timeline: --s2; }
+  .dots a:nth-child(3) { animation-timeline: --s3; } .dots a:nth-child(4) { animation-timeline: --s4; }
+  .dots a:nth-child(5) { animation-timeline: --s5; } .dots a:nth-child(6) { animation-timeline: --s6; }
+  @media screen and (prefers-reduced-motion: no-preference) {
+    .head > *, .body > * { animation: rise linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+  }
+}
+
+/* Print to PDF: one slide per 16:9 page. */
+@page { size: 338mm 190mm; margin: 0; }
+@media print {
+  html { scroll-snap-type: none; }
+  .slide { break-after: page; break-inside: avoid; }
+  .slide:last-child { break-after: auto; }
+  .dots { display: none; }
+}
+
+/* ---------- Palette B, "Produit": cool grey, indigo, one colour per status ---------- */
+:root {
+  --bg: #f2f3f8; --glow: #e6e4ff; --surface: #ffffff; --shade: 20 23 42;
+  --ink: #14172a; --heading: #14172a; --muted: #5f6585; --line: #e2e5f0; --dash: #a9aecb;
+  --figure: #4b3fe4; --accent: #4b3fe4; --accent-2: #7d6bff; --on-accent: #ffffff; --tint: #ecebff;
+  --hero: linear-gradient(115deg, #4b3fe4, #7d6bff); --on-hero: #ffffff; --on-hero-soft: #e0ddff;
+  --done: #0a7d54; --done-bg: #dcf5e9; --adv: #1a56c9; --adv-bg: #e1ebff; --new: #7330cf; --new-bg: #eee3ff;
+  --def: #9a5300; --def-bg: #fdecd0; --none: #5f6585; --none-bg: #eaecf3;
+  --late: #cf2740; --late-bg: #ffe9ec; --late-line: #f8c6cd; --late-ink: #6b3940;
+  --font: "Segoe UI Variable Display", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+
+/* ---------- Layout "Produit": cards, pills, key figures. Every colour comes from the palette above. ---------- */
+.slide { background: radial-gradient(48rem 24rem at 100% 0, var(--glow) 0, transparent 70%), var(--bg); }
+.label, .k { font-size: .66rem; font-weight: 650; color: var(--muted); }
+.k { display: block; margin-bottom: .1rem; }
+.highlights li, .callout, .counts li, .subject, .measure, .decisions li, .deps, .capacity, .steps li, .coverage {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 1.1rem;
+  box-shadow: 0 .1rem .2rem rgb(var(--shade) / .04), 0 .9rem 1.8rem -1.1rem rgb(var(--shade) / .18);
+}
+
+.head { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: .5rem 2rem; padding-bottom: 1.3rem; }
+.kicker { grid-column: 1 / -1; justify-self: start; padding: .22rem .75rem; border-radius: 2rem; background: var(--tint); color: var(--accent); font-size: .66rem; font-weight: 650; }
+.kicker i { opacity: .5; margin: 0 .2em; }
+h1, h2 { font-size: 3.2rem; line-height: 1.02; font-weight: 700; letter-spacing: -.035em; }
+.lede { font-size: .95rem; font-weight: 600; color: var(--muted); padding: .35rem .9rem; border-radius: 2rem; background: var(--surface); border: 1px solid var(--line); margin-bottom: .3rem; }
+h1, h2, h3 { color: var(--heading); }
+h3 { font-weight: 650; letter-spacing: -.015em; }
+.foot { color: var(--muted); }
+
+.mv, .st, .when { display: inline-block; padding: .2rem .65rem; border-radius: 2rem; font-size: .68rem; font-weight: 650; }
+.mv.done { color: var(--done); background: var(--done-bg); } .mv.adv { color: var(--adv); background: var(--adv-bg); }
+.mv.new { color: var(--new); background: var(--new-bg); } .mv.def { color: var(--def); background: var(--def-bg); } .mv.none { color: var(--none); background: var(--none-bg); }
+
+/* 1. The week's essentials */
+.essentials { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto; gap: 1rem; grid-template-areas: "cnt cnt" "hl hl" "att dec"; }
+.counts { grid-area: cnt; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.counts li { display: flex; align-items: center; gap: .9rem; padding: .95rem 1.3rem; }
+.counts b { font-size: 2.9rem; line-height: 1; font-weight: 700; letter-spacing: -.04em; color: var(--figure); }
+.counts span { font-size: .82rem; font-weight: 600; color: var(--muted); line-height: 1.2; }
+.counts li:nth-child(2) b { color: var(--done); } .counts li:nth-child(4) b { color: var(--late); }
+.highlights { grid-area: hl; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.highlights li { display: flex; flex-direction: column; align-items: flex-start; padding: 1.4rem 1.5rem; }
+.highlights h3 { font-size: 1.7rem; line-height: 1.16; margin: 1rem 0 .6rem; }
+.highlights p { margin-top: auto; font-size: .8rem; color: var(--muted); }
+.callout { padding: 1.15rem 1.5rem 1.25rem; }
+.callout .t { font-size: 1.4rem; font-weight: 650; letter-spacing: -.015em; line-height: 1.2; margin: .25rem 0 .3rem; }
+.callout .d { font-size: .82rem; }
+.attention { grid-area: att; background: var(--late-bg); border-color: var(--late-line); }
+.attention .label { color: var(--late); } .attention .d { color: var(--late-ink); }
+.decision { grid-area: dec; background: var(--hero); border-color: transparent; color: var(--on-hero); }
+.decision .label, .decision .d { color: var(--on-hero-soft); }
+
+/* 2. Progress by subject: a wall of cards */
+.subjects { display: grid; grid-template-columns: repeat(3, 1fr); gap: .9rem; }
+.subject { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "who who" "chg chg" "nxt need"; position: relative; gap: .55rem 1rem; align-content: space-between; padding: 1.05rem 1.25rem 1rem; }
+.who { grid-area: who; padding-right: 8.5rem; } .subject .mv { position: absolute; top: 1rem; right: 1.2rem; } .chg { grid-area: chg; } .nxt { grid-area: nxt; } .need { grid-area: need; }
+.who h3 { font-size: 1.12rem; line-height: 1.2; }
+.bank { font-size: .68rem; color: var(--muted); }
+.chg { font-size: .88rem; min-height: 2.5rem; }
+.nxt, .need { font-size: .76rem; padding-top: .55rem; border-top: 1px solid var(--line); }
+.need.ask .k { color: var(--accent); } .need.ask { font-weight: 600; } .need.nil { color: var(--muted); }
+.measure { display: flex; align-items: center; gap: 1.5rem; margin-top: .9rem; padding: .8rem 1.3rem; }
+.m-t { font-size: 1rem; font-weight: 650; }
+.scale { flex: 1; display: flex; align-items: center; gap: .8rem; font-size: .76rem; color: var(--muted); }
+.scale b { color: var(--ink); }
+.track { flex: 1; height: .6rem; border-radius: 1rem; background: var(--none-bg); }
+.track i { border-radius: 1rem; background: linear-gradient(90deg, var(--accent-2), var(--accent)); }
+.m-v { font-size: .76rem; color: var(--muted); }
+.m-v b { font-size: 1.5rem; font-weight: 700; color: var(--accent); margin-right: .3rem; }
+
+/* 3. Decisions and dependencies */
+.decide { display: grid; grid-template-columns: 1.5fr 1fr; grid-template-rows: auto 1fr; gap: 1rem; grid-template-areas: "dec deps" "dec cap"; }
+.decisions { grid-area: dec; display: grid; gap: 1rem; }
+.decisions li { padding: 1.6rem 1.8rem; border-left: .45rem solid var(--accent); }
+.when { color: var(--on-accent); background: var(--accent); } .when.nodate { color: var(--none); background: var(--none-bg); }
+.decisions h3 { font-size: 1.85rem; line-height: 1.14; letter-spacing: -.025em; margin: .8rem 0 .8rem; }
+.cons { font-size: .95rem; } .cons .k { display: inline; margin-right: .4rem; }
+.decisions .meta { font-size: .78rem; color: var(--muted); margin-top: .35rem; }
+.deps { grid-area: deps; padding: 1.2rem 1.5rem .6rem; }
+.deps li { display: grid; grid-template-columns: 1fr auto; gap: 0 1rem; padding: .7rem 0; border-top: 1px solid var(--line); }
+.deps ul { margin-top: .7rem; }
+.deps b { font-size: 1.02rem; font-weight: 650; }
+.deps .by { grid-column: 1; font-size: .78rem; color: var(--muted); }
+.deps .due { grid-column: 2; grid-row: 1 / span 2; align-self: center; padding: .2rem .65rem; border-radius: 2rem; font-size: .7rem; font-weight: 650; background: var(--none-bg); }
+.due.late { color: var(--late); background: var(--late-bg); }
+.capacity { grid-area: cap; padding: 1.2rem 1.5rem; }
+.capacity .q { font-size: 1.3rem; font-weight: 600; letter-spacing: -.015em; line-height: 1.3; margin: .5rem 0 .6rem; }
+cite { font-size: .76rem; color: var(--muted); }
+
+/* 4. Next week */
+.nextweek { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; align-items: start; }
+.steps { counter-reset: n; display: grid; gap: .8rem; }
+.steps li { counter-increment: n; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0 1.2rem; padding: 1rem 1.4rem; }
+.steps li::before { content: counter(n); display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: .8rem; background: var(--tint); color: var(--accent); font-size: 1.25rem; font-weight: 700; }
+.steps h3 { font-size: 1.22rem; line-height: 1.2; }
+.res { font-size: .86rem; margin-top: .15rem; }
+.steps .meta { font-size: .74rem; color: var(--muted); margin-top: .15rem; }
+.st.agreed { color: var(--done); background: var(--done-bg); }
+.st.proposed { color: var(--muted); border: 1px dashed var(--dash); }
+.coverage { padding: 1.2rem 1.5rem .2rem; }
+.coverage p:not(.label) { font-size: .88rem; margin: .3rem 0 1.1rem; }
+</style>
+</head>
+<body>
+<nav class="dots" aria-label="Écrans">
+  <a href="#s1" title="L'essentiel de la semaine"></a>
+  <a href="#s2" title="Avancement par sujet"></a>
+  <a href="#s3" title="Décisions et dépendances"></a>
+  <a href="#s4" title="Semaine prochaine"></a>
+</nav>
+
+<main>
+
+<section class="slide" id="s1">
+  <header class="head">
+    <p class="kicker">Point hebdomadaire <i>·</i> Example Bank</p>
+    <h1>L'essentiel de la semaine</h1>
+    <p class="lede">Du 17 au 23 novembre 2026</p>
+  </header>
+  <div class="body essentials">
+    <ol class="highlights">
+      <li>
+        <span class="mv done">Terminé</span>
+        <h3>Le scan de pièce d'identité est livré en recette</h3>
+        <p>Onboarding mobile <span class="id">C-2026-003</span></p>
+      </li>
+      <li>
+        <span class="mv adv">Avancé</span>
+        <h3>Le périmètre du pilote est arrêté avec Harbour Bank</h3>
+        <p>Mémo de crédit <span class="id">D-2026-004</span></p>
+      </li>
+      <li>
+        <span class="mv new">Nouveau</span>
+        <h3>North Bank demande un assistant pour les litiges carte</h3>
+        <p>Litiges carte <span class="id">card-disputes</span></p>
+      </li>
+    </ol>
+    <div class="callout attention">
+      <p class="label">Point d'attention</p>
+      <p class="t">Les comptes de test ont 3 jours de retard</p>
+      <p class="d">Le pilote du mémo de crédit ne démarre pas sans eux. <span class="id">C-2026-005</span></p>
+    </div>
+    <div class="callout decision">
+      <p class="label">Décision demandée</p>
+      <p class="t">Choisir les agences pilotes</p>
+      <p class="d">Attendue pour le 27 novembre. <span class="id">D-2026-002</span></p>
+    </div>
+    <ul class="counts">
+      <li><b>6</b><span>sujets suivis</span></li>
+      <li><b>4</b><span>ont bougé</span></li>
+      <li><b>2</b><span>décisions attendues</span></li>
+      <li><b>1</b><span>engagement en retard</span></li>
+    </ul>
+  </div>
+  <footer class="foot"><span>Semaine du 17 au 23 nov. 2026 · registre au 23 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Point hebdomadaire · Example Bank</span><span class="pg">1 / 4</span></footer>
+</section>
+
+<section class="slide" id="s2">
+  <header class="head">
+    <p class="kicker">Point hebdomadaire <i>·</i> Example Bank</p>
+    <h2>Avancement par sujet</h2>
+    <p class="lede">4 sujets sur 6 ont bougé</p>
+  </header>
+  <div class="body progress">
+    <ol class="subjects">
+      <li class="cols" aria-hidden="true"><span>Sujet</span><span>Mouvement</span><span>Ce qui a changé</span><span>Ensuite</span><span>Attendu</span></li>
+      <li class="subject">
+        <div class="who"><h3>Onboarding mobile</h3><span class="bank">Toutes les banques</span></div>
+        <span class="mv done">Terminé</span>
+        <p class="chg">Le scan de pièce d'identité est livré en recette. <span class="id">C-2026-003</span></p>
+        <p class="nxt"><span class="k">Ensuite</span> Test en agence pilote</p>
+        <p class="need ask"><span class="k">Attendu du sponsor</span> Le choix des agences pilotes</p>
+      </li>
+      <li class="subject">
+        <div class="who"><h3>Mémo de crédit</h3><span class="bank">Harbour Bank</span></div>
+        <span class="mv adv">Avancé</span>
+        <p class="chg">Périmètre du pilote arrêté : deux équipes crédit. <span class="id">D-2026-004</span></p>
+        <p class="nxt"><span class="k">Ensuite</span> Ouvrir les comptes de test</p>
+        <p class="need dep"><span class="k">Dépend de</span> Le tech lead, en retard</p>
+      </li>
+      <li class="subject">
+        <div class="who"><h3>Litiges carte</h3><span class="bank">North Bank</span></div>
+        <span class="mv new">Nouveau</span>
+        <p class="chg">Demande reçue, fiche d'entrée rédigée. <span class="id">card-disputes</span></p>
+        <p class="nxt"><span class="k">Ensuite</span> Revue d'entrée le 26 nov.</p>
+        <p class="need ask"><span class="k">Attendu du sponsor</span> Un arbitrage de priorité</p>
+      </li>
+      <li class="subject">
+        <div class="who"><h3>Recherche d'agence</h3><span class="bank">Toutes les banques</span></div>
+        <span class="mv adv">Avancé</span>
+        <p class="chg">Maquettes validées, selon le tech lead. <span class="id">C-2026-007</span></p>
+        <p class="nxt"><span class="k">Ensuite</span> Découpage en tickets</p>
+        <p class="need nil"><span class="k">Attendu</span> Rien cette semaine</p>
+      </li>
+      <li class="subject">
+        <div class="who"><h3>Assistant conseiller</h3><span class="bank">Harbour Bank</span></div>
+        <span class="mv def">Reporté</span>
+        <p class="chg">Revue sécurité reportée au 4 décembre. <span class="id">C-2026-006</span></p>
+        <p class="nxt"><span class="k">Ensuite</span> Préparer le dossier sécurité</p>
+        <p class="need dep"><span class="k">Dépend de</span> L'architecte</p>
+      </li>
+      <li class="subject">
+        <div class="who"><h3>Tableau de bord qualité</h3><span class="bank">North Bank</span></div>
+        <span class="mv none">Sans changement</span>
+        <p class="chg">Aucun changement enregistré sur la période.</p>
+        <p class="nxt"><span class="k">Ensuite</span> Sans prochain pas connu</p>
+        <p class="need nil"><span class="k">Attendu</span> Rien cette semaine</p>
+      </li>
+    </ol>
+    <div class="measure">
+      <p class="label">Valeur mesurée cette semaine</p>
+      <p class="m-t">Délai d'ouverture de compte <span class="id">B-2026-001</span></p>
+      <div class="scale">
+        <span class="from">Départ <b>9 jours</b></span>
+        <span class="track"><i style="width:71%"></i></span>
+        <span class="to">Cible <b>2 jours</b></span>
+      </div>
+      <p class="m-v"><b>4 jours</b> mesuré le 18 nov.</p>
+    </div>
+  </div>
+  <footer class="foot"><span>Semaine du 17 au 23 nov. 2026 · registre au 23 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Point hebdomadaire · Example Bank</span><span class="pg">2 / 4</span></footer>
+</section>
+
+<section class="slide" id="s3">
+  <header class="head">
+    <p class="kicker">Point hebdomadaire <i>·</i> Example Bank</p>
+    <h2>Décisions et dépendances</h2>
+    <p class="lede">2 décisions attendues du sponsor</p>
+  </header>
+  <div class="body decide">
+    <ol class="decisions">
+      <li>
+        <p class="when">Pour le 27 nov.</p>
+        <h3>Choisir les agences pilotes de l'onboarding mobile</h3>
+        <p class="cons"><span class="k">Sans décision</span> Le test en agence glisse à janvier.</p>
+        <p class="meta">Attendue du sponsor <span class="id">D-2026-002</span></p>
+      </li>
+      <li>
+        <p class="when nodate">Sans date fixée</p>
+        <h3>Arbitrer la priorité entre Litiges carte et Assistant conseiller</h3>
+        <p class="cons"><span class="k">Sans décision</span> Les deux sujets se partagent la même équipe en décembre.</p>
+        <p class="meta">Attendue du sponsor <span class="id">D-2026-005</span></p>
+      </li>
+    </ol>
+    <div class="deps">
+      <p class="label">Dépendances</p>
+      <ul>
+        <li><b>Comptes de test</b><span class="by">attendus du tech lead <span class="id">C-2026-005</span></span><span class="due late">3 jours de retard</span></li>
+        <li><b>Revue sécurité</b><span class="by">attendue de l'architecte <span class="id">C-2026-006</span></span><span class="due">4 déc.</span></li>
+      </ul>
+    </div>
+    <blockquote class="capacity">
+      <p class="label">Capacité de l'équipe</p>
+      <p class="q">L'équipe perd un développeur du 30 novembre au 4 décembre.</p>
+      <cite>Selon le PO</cite>
+    </blockquote>
+  </div>
+  <footer class="foot"><span>Semaine du 17 au 23 nov. 2026 · registre au 23 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Point hebdomadaire · Example Bank</span><span class="pg">3 / 4</span></footer>
+</section>
+
+<section class="slide" id="s4">
+  <header class="head">
+    <p class="kicker">Point hebdomadaire <i>·</i> Example Bank</p>
+    <h2>Semaine prochaine</h2>
+    <p class="lede">Des propositions, à valider ensemble</p>
+  </header>
+  <div class="body nextweek">
+    <ol class="steps">
+      <li>
+        <div class="s-main">
+          <h3>Relancer le tech lead pour les comptes de test</h3>
+          <p class="res">Résultat attendu : les comptes ouverts avant jeudi.</p>
+          <p class="meta">Le PO · lundi 24 nov. <span class="id">C-2026-005</span></p>
+        </div>
+        <span class="st agreed">Convenu</span>
+      </li>
+      <li>
+        <div class="s-main">
+          <h3>Tenir la revue d'entrée de Litiges carte</h3>
+          <p class="res">Résultat attendu : une demande acceptée, ou refusée avec son motif.</p>
+          <p class="meta">Le PO · jeudi 26 nov. <span class="id">card-disputes</span></p>
+        </div>
+        <span class="st agreed">Convenu</span>
+      </li>
+      <li>
+        <div class="s-main">
+          <h3>Lancer le test en agence pilote</h3>
+          <p class="res">Résultat attendu : deux agences équipées. Sous réserve du choix des agences.</p>
+          <p class="meta">Sans responsable · sans échéance <span class="id">D-2026-002</span></p>
+        </div>
+        <span class="st proposed">Proposé</span>
+      </li>
+      <li>
+        <div class="s-main">
+          <h3>Préparer le dossier de la revue sécurité</h3>
+          <p class="res">Résultat attendu : un dossier complet avant le 4 décembre.</p>
+          <p class="meta">L'architecte · sans échéance <span class="id">C-2026-006</span></p>
+        </div>
+        <span class="st proposed">Proposé</span>
+      </li>
+    </ol>
+    <aside class="coverage">
+      <p class="label">Non couvert cette semaine</p>
+      <p>Le chat n'a été lu qu'en partie : la collecte s'est arrêtée à son plafond.</p>
+      <p class="label">Pour le détail</p>
+      <p>La synthèse complète et vérifiée : <b>views/weekly/2026-11-23.md</b></p>
+    </aside>
+  </div>
+  <footer class="foot"><span>Semaine du 17 au 23 nov. 2026 · registre au 23 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Point hebdomadaire · Example Bank</span><span class="pg">4 / 4</span></footer>
+</section>
+
+</main>
+</body>
+</html>
