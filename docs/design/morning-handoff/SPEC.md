@@ -1,6 +1,6 @@
 # Morning page that follows a day plan: specification
 
-Date: 25 November 2026. Audience: the agent that builds the new morning page, on the machine where the kit runs. Read it with `HANDOFF.md` and the two examples, `morning-example.html` and `morning-example-proposed.html`, beside this file: they give the look, which is to be reproduced as it is; this gives the behaviour.
+Date: 25 November 2026. Audience: the agent that builds the new morning page, on the machine where the kit runs. Read it with `HANDOFF.md` and the three example pages beside this file (`morning-example.html`, `morning-example-proposed.html`, `morning-example-cases.html`): they give the look, which is to be reproduced as it is; this gives the behaviour.
 
 **It is built on the work machine, not in the kit's repository.** This text was written against the kit as its repository stood on 24 November 2026. The kit installed on the work machine was hardened there and may differ: check each fact below against what is installed before building on it, and say what you found different.
 
@@ -20,7 +20,7 @@ The morning page follows a **day plan**. The day is one thread of blocks, in the
 
 The agent proposes the plan when it writes its notes for the page, before the PO is up. The page then says the plan is proposed. The briefing ends with one round on the plan; once the PO agrees, the page says so. During the day the page follows the clock: the past fades, the running block is marked.
 
-The PO chose the look and the organisation among three prototypes. The choice, with its example page and the list of what the PO decided, is this folder (`HANDOFF.md`, `morning-example.html`, `morning-example-proposed.html`). **That folder is the reference for everything this specification does not spell out about the look.**
+The PO chose the look and the organisation among three prototypes. The choice, with its example page and the list of what the PO decided, is this folder (`HANDOFF.md` and the three example pages). **That folder is the reference for everything this specification does not spell out about the look.**
 
 ## User Stories
 
@@ -99,7 +99,7 @@ The agent and the tool
 - **Not today**: the part of the day plan that lists what found no room, each with why.
 - **Do first** leaves the vocabulary. Its three actions become blocks that carry a priority, 1 to 3. Its rule stays: a commitment of the PO whose latest start is today or past and that is not started is planned today, unless the PO says otherwise at the briefing.
 - The **Morning page** now holds: the day with its blocks, Not today, then Waiting on you, You are waiting on, This week's load, Backlog alerts and To sort.
-- The kit keeps "task" out of its words. The example writes "Task" in the details of a block of work; the page says "Work".
+- The kit keeps "task" out of its words: on the page a block of work is "Work".
 
 **The day plan is part of the agent's notes for the page.** It replaces the list of actions to do first, which leaves the notes. The meetings are never in it: they come from the calendar snapshot. This shape comes from the prototype's data, trimmed to what the decisions need. It is a suggestion: the fields may be named and arranged otherwise, as long as the rules below hold.
 
@@ -139,7 +139,7 @@ A refused plan leaves the page with the meetings, the free time and the words th
 **What the tool computes, never the agent.**
 
 - Where each block is drawn and how long it is. A meeting that does not start on a quarter of an hour is drawn from the nearest one and keeps its true time in words. Two meetings that overlap share their rows side by side.
-- The pause between two ranges of the working hours, named "Break". The example names it "Lunch"; the tool cannot know, so the page says "Break".
+- The pause between two ranges of the working hours, named "Break": the tool cannot know what the PO does in it.
 - The flag of a block, from its record: late and by how many days, due today, latest start today or past for a commitment not started. A bundle says how many of its things are late. A meeting is flagged when its meeting brief lists a commitment of the PO that is late.
 - That a block is done: its record is done, taken or closed, or the notes say so for a block with no record.
 - The details of a block that names a record: who owes whom, the due date, the effort for a commitment of the PO, the subject, the client bank. The agent adds only the one sentence of why.
@@ -188,7 +188,7 @@ Light only, as the example. Every colour is named once, in the palette block.
 - How the page is written: the template, its placeholders, its script. The example is an output to reproduce, not a template to fill.
 - How the change survives a reinstall or an update of the kit on the work machine, whose own files an update replaces.
 - How it is tested there, beyond the scenarios below.
-- Anything the examples never drew: `HANDOFF.md` says how to draw the states they do not show, and what the page was checked to hold.
+- Anything the three example pages do not show: `HANDOFF.md` says what the page was checked to hold and what was never drawn.
 
 ## Proving it
 
@@ -229,7 +229,7 @@ What stays true from the page it replaces is checked too: the counts, the foldin
 
 ## Further Notes
 
-- `HANDOFF.md` lists what the examples were checked for, and says how to draw the states they do not show.
+- `HANDOFF.md` lists what the examples were checked for. The special states are drawn in `morning-example-cases.html`.
 - At 768 pixels of height the last hour and a half of the example's day is below the fold, and the panel stays in view. The PO knows.
-- Decided by the agent that wrote this specification, for the PO to overrule: the plan round comes last in the briefing; the pause is named "Break"; the sentence at the top is composed by the tool; the page says "Work" where the example says "Task"; a page of another day says so; a block shows as done.
+- Decided by the agent that wrote this specification, for the PO to overrule: the plan round comes last in the briefing; the pause is named "Break"; the sentence at the top is composed by the tool; a block of work is called "Work"; a page of another day says so; a block shows as done.
 - This specification is also issue 43 of the kit's repository.
