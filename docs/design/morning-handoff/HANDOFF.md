@@ -1,11 +1,12 @@
 # Morning page: the look and the organisation to reproduce
 
-Date: 24 November 2026. Audience: the agent that specifies and builds the new morning page. The PO chose this organisation among three prototypes (`docs/design/morning-prototypes/`, option A); this folder is the choice.
+Date: 24 November 2026. Audience: the agent that builds the new morning page, on the machine where the kit runs. The PO chose this organisation among three prototypes (`docs/design/morning-prototypes/`, option A); this folder is the choice.
 
 ## What is here
 
 | File | What it shows |
 |---|---|
+| `SPEC.md` | The behaviour to build: what the PO must be able to do, what is decided, what is yours, and the scenarios that prove it. |
 | `morning-example.html` | The target page on an ordinary day, once the plan is agreed: the day as an agenda, the details of a block beside it, the pending items behind a second tab. |
 
 It is a hand-built example with fictional content (Example Bank), self-contained: one file, no network, no font to download. It is an example of an output, not a template and not a renderer: nothing here reads the register. Open it in Edge. Opened on another day than its own, it shows a sample clock of 11:20.
@@ -31,7 +32,7 @@ Treat these as requirements. Changing one is a product decision, to take back to
 
 ## Yours to decide
 
-- How the agent builds the plan, what it writes for the register tool to draw, and how the briefing settles it. This is new behaviour of the morning routine and needs its own specification.
+- What `SPEC.md` leaves to you: the shape of the plan in the agent's notes, how the page is written, how the change survives a reinstall of the kit.
 - Where the agent's judgement ends and the tool's writing begins, beyond the list under "What the tool computes".
 - Whether the page keeps a dark mode. The page it replaces has one; this example is light only, and the PO has not said.
 - What a page left open overnight says. The example follows the clock only on its own day and shows no clock otherwise; it does not yet say "this page is yesterday's".
