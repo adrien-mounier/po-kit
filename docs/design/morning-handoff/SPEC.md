@@ -1,6 +1,6 @@
 # Morning page that follows a day plan: specification
 
-Date: 25 November 2026. Audience: the agent that builds the new morning page, on the machine where the kit runs. Read it with `HANDOFF.md` and `morning-example.html`, beside this file: they give the look; this gives the behaviour.
+Date: 25 November 2026. Audience: the agent that builds the new morning page, on the machine where the kit runs. Read it with `HANDOFF.md` and the two examples, `morning-example.html` and `morning-example-proposed.html`, beside this file: they give the look, which is to be reproduced as it is; this gives the behaviour.
 
 **It is built on the work machine, not in the kit's repository.** This text was written against the kit as its repository stood on 24 November 2026. The kit installed on the work machine was hardened there and may differ: check each fact below against what is installed before building on it, and say what you found different.
 
@@ -20,7 +20,7 @@ The morning page follows a **day plan**. The day is one thread of blocks, in the
 
 The agent proposes the plan when it writes its notes for the page, before the PO is up. The page then says the plan is proposed. The briefing ends with one round on the plan; once the PO agrees, the page says so. During the day the page follows the clock: the past fades, the running block is marked.
 
-The PO chose the look and the organisation among three prototypes. The choice, with its example page and the list of what the PO decided, is this folder (`HANDOFF.md`, `morning-example.html`). **That folder is the reference for everything this specification does not spell out about the look.**
+The PO chose the look and the organisation among three prototypes. The choice, with its example page and the list of what the PO decided, is this folder (`HANDOFF.md`, `morning-example.html`, `morning-example-proposed.html`). **That folder is the reference for everything this specification does not spell out about the look.**
 
 ## User Stories
 
@@ -157,7 +157,7 @@ Which work goes in which free time, what is bundled, what waits, the priorities 
 - The view "Pending": Waiting on you; You are waiting on; This week's load, which holds the lines of "Start soon", this week drawn in half-days, the next week in one sentence and the suggestion; Backlog alerts; To sort. Lines, folding, reminders, nudges, signs of progress and warnings of a source not read keep today's rules.
 - The stamp and the sentence that the page changes nothing.
 
-The script of the page marks the past, the running block and the place of the clock on the line, from the times the tool wrote and the date of the page. On another day than its own, the page shows no clock and says in the bar which day it is of. The script also selects a block, switches views and copies requests, as the example does. Without script, every block's details and both views show.
+The script of the page marks the past, the running block and the place of the clock on the line, from the times the tool wrote and the date of the page. The panel shows the running block, or the next one, marked "Next", when none runs, until the PO selects another. On another day than its own, the page shows no clock and says in the bar which day it is of. The script also selects a block, switches views and copies requests, as the example does. Without script, every block's details and both views show.
 
 Light only, as the example. Every colour is named once, in the palette block.
 
@@ -188,7 +188,7 @@ Light only, as the example. Every colour is named once, in the palette block.
 - How the page is written: the template, its placeholders, its script. The example is an output to reproduce, not a template to fill.
 - How the change survives a reinstall or an update of the kit on the work machine, whose own files an update replaces.
 - How it is tested there, beyond the scenarios below.
-- Anything the example never drew: see "What the page holds" in `HANDOFF.md`.
+- Anything the examples never drew: `HANDOFF.md` says how to draw the states they do not show, and what the page was checked to hold.
 
 ## Proving it
 
@@ -229,7 +229,7 @@ What stays true from the page it replaces is checked too: the counts, the foldin
 
 ## Further Notes
 
-- `HANDOFF.md` lists what the example was checked for and what was never drawn: a day of more than about fourteen blocks, a day with no meeting, the page before the briefing as a self-contained example. The page before the briefing is shown only by the prototype, option A opened with `?state=proposed`.
+- `HANDOFF.md` lists what the examples were checked for, and says how to draw the states they do not show.
 - At 768 pixels of height the last hour and a half of the example's day is below the fold, and the panel stays in view. The PO knows.
 - Decided by the agent that wrote this specification, for the PO to overrule: the plan round comes last in the briefing; the pause is named "Break"; the sentence at the top is composed by the tool; the page says "Work" where the example says "Task"; a page of another day says so; a block shows as done.
 - This specification is also issue 43 of the kit's repository.

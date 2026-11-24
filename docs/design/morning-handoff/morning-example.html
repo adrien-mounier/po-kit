@@ -250,8 +250,7 @@ kbd { font: 600 .75rem var(--font); padding: .0625rem .3125rem; border: 1px soli
   <div class="wrap">
     <div>
       <h1>Monday 16 November</h1>
-      <!-- Before the briefing this line reads: clock icon, "<b>Plan proposed</b> by the agent at 07:12, not agreed yet", then a
-           button that copies "Let's do the briefing"; and the blocks of work are drawn with a dashed outline. -->
+      <!-- Before the briefing this line says the plan is proposed and offers the briefing, and the blocks of work have a dashed outline: see morning-example-proposed.html. -->
       <p class="plan"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Plan agreed</b> at the briefing, 09:20</span></p>
     </div>
     <p class="sources"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg> Read: mail, calendar, tracker<span class="fail"><svg class="i" aria-hidden="true"><use href="#i-alert"/></svg> Not read: Chat, the connector failed</span></p>
@@ -572,8 +571,7 @@ kbd { font: 600 .75rem var(--font); padding: .0625rem .3125rem; border: 1px soli
     if (today === document.body.dataset.date) return d.getHours() * 60 + d.getMinutes();
     var s = document.body.dataset.sampleNow;
     if (!s) return null;
-    var m = d.getHours() * 60 + d.getMinutes();
-    return m >= dayStart && m < dayEnd ? m : +s.split(':')[0] * 60 + +s.split(':')[1];
+    return +s.split(':')[0] * 60 + +s.split(':')[1];
   }
   // Where a time falls on the line: inside its block, or between two blocks.
   function y(t) {
