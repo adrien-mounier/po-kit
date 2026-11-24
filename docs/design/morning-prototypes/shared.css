@@ -1,0 +1,195 @@
+/* PROTOTYPE. The look shared by the three options of the morning page: the family of the weekly
+   presentation (navy headings, one blue accent, red only for what is late). */
+
+/* ---------- The palette: every colour of the page is named here and nowhere else. An organisation
+   restyles the page by replacing this block. ---------- */
+:root {
+  --bg: #f3f7fb; --surface: #ffffff; --line: #cfe0f1; --line-strong: #9dbbd9;
+  --ink: #2a2a4e; --heading: #002060; --muted: #366092;
+  --accent: #0069a5; --accent-hover: #00527f; --on-accent: #ffffff;
+  --bar: #002060; --on-bar: #ffffff; --on-bar-soft: #bdd7ee;
+  --meet: #dfebf7; --tag: #e8f0f8; --hover: #edf4fb;
+  --late: #c0392b; --soon: #855200;
+  --shadow: 0 10px 28px rgba(0, 32, 96, .14), 0 1px 3px rgba(0, 32, 96, .1);
+  --display: Bahnschrift, "DIN Alternate", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scrollbar-color: var(--line-strong) var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 .9375rem/1.45 var(--font); font-variant-numeric: tabular-nums; accent-color: var(--accent); caret-color: var(--accent); }
+::selection { background: var(--heading); color: #ffffff; }
+h1, h2, h3, p, ol, ul, dl, dd { margin: 0; padding: 0; }
+ol, ul { list-style: none; }
+button { font: inherit; color: inherit; }
+a { color: inherit; text-underline-offset: .2em; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+[hidden] { display: none !important; }
+svg.i { width: 1rem; height: 1rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.16em; }
+.wrap { max-width: 84rem; margin: 0 auto; padding: 0 2rem; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Red is what is late, a contradiction or a week that does not fit. Amber is today. Nothing else is coloured. */
+.late { color: var(--late); font-weight: 600; }
+.soon { color: var(--soon); font-weight: 600; }
+.id { white-space: nowrap; }
+.bank { display: inline-block; flex: none; font-size: .8125rem; font-weight: 400; line-height: 1.5; padding: 0 .4375rem; border-radius: 4px; background: var(--tag); color: var(--muted); white-space: nowrap; }
+.pick { display: inline-grid; place-items: center; flex: none; width: 1.25rem; height: 1.25rem; margin-right: .4375rem; border-radius: 4px; background: var(--heading); color: #ffffff; font: 600 .8125rem/1 var(--display); vertical-align: .08em; }
+.nowpill { display: inline-block; flex: none; padding: .25rem .5rem .1875rem; border-radius: 1rem; background: var(--accent); color: var(--on-accent); font: 600 .75rem/1 var(--display); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.nowpill.quiet { background: var(--tag); color: var(--muted); }
+
+/* ---------- The top bar: the date, the state of the plan, what was read ---------- */
+.top { background: var(--bar); color: var(--on-bar); }
+.top .wrap { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: .25rem 2rem; padding-top: .875rem; padding-bottom: .875rem; }
+.top :focus-visible { outline-color: #ffffff; }
+h1 { font: 600 1.875rem/1.1 var(--display); font-stretch: 75%; text-transform: uppercase; letter-spacing: .01em; }
+.plan { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem .5rem; margin-top: .25rem; font-size: .875rem; color: var(--on-bar-soft); }
+.plan b { color: var(--on-bar); font-weight: 600; }
+.sources { font-size: .875rem; color: var(--on-bar-soft); text-align: right; }
+.sources .fail { display: block; color: var(--on-bar); font-weight: 600; }
+.lede { padding: 1.125rem 0 1rem; font-size: 1.1875rem; line-height: 1.4; color: var(--heading); text-wrap: balance; }
+.lede a { font-size: .875rem; font-weight: 600; color: var(--accent); margin-left: .75rem; white-space: nowrap; }
+
+/* ---------- Buttons: each copies a request for the agent ---------- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .375rem; min-height: 2rem; padding: .25rem .6875rem; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--heading); font-size: .8125rem; font-weight: 600; white-space: nowrap; cursor: pointer; transition: background-color .15s ease-out, border-color .15s ease-out, color .15s ease-out; }
+.btn:hover { background: var(--hover); border-color: var(--muted); }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn.copied, .btn.copied:hover { background: var(--heading); border-color: var(--heading); color: #ffffff; }
+.btn.onbar { background: transparent; border-color: var(--on-bar-soft); color: var(--on-bar); }
+.btn.onbar:hover { background: rgba(255, 255, 255, .12); border-color: #ffffff; }
+.btn.plain { border-color: transparent; background: transparent; color: var(--accent); padding-left: .375rem; padding-right: .375rem; }
+.btn.plain:hover { background: var(--hover); border-color: transparent; }
+
+/* ---------- A block of the day, whatever the option draws around it ---------- */
+.blk { appearance: none; display: flex; flex-direction: column; justify-content: flex-start; width: 100%; min-width: 0; text-align: left; padding: .4375rem .75rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; transition: background-color .15s ease-out, border-color .15s ease-out, box-shadow .15s ease-out; }
+.blk:hover { background: var(--hover); border-color: var(--line-strong); }
+.k-meeting > .blk, .blk.k-meeting { background: var(--meet); border-color: var(--meet); }
+.k-meeting > .blk:hover, .blk.k-meeting:hover { border-color: var(--line-strong); }
+/* A plan the PO has not agreed yet is drawn with a broken line. */
+.is-proposed .k-task > .blk, .is-proposed .k-bundle > .blk, .is-proposed .blk.k-task, .is-proposed .blk.k-bundle { border-style: dashed; border-color: var(--line-strong); }
+.b-title { font-weight: 600; color: var(--heading); }
+.b-title svg.i { margin-right: .375rem; color: var(--muted); }
+.b-key { display: block; font-size: .875rem; color: var(--ink); }
+.b-dur { font-size: .8125rem; color: var(--muted); white-space: nowrap; }
+.is-past > .blk, .blk.is-past { background: transparent; border-color: var(--line); }
+.is-past .b-title, .is-past .b-key, .is-past .b-key .late, .is-past .b-key .soon { color: var(--muted); font-weight: 400; }
+.is-past .pick { background: var(--muted); }
+.is-sel > .blk, .blk.is-sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+/* ---------- The thread: a time, a stop on the line, a block. The line is dark as far as the clock has gone. ---------- */
+.thread { position: relative; display: grid; grid-template-columns: 3.5rem 1.5rem minmax(0, 1fr); }
+.thread::before, .travel { content: ""; position: absolute; top: 1rem; left: calc(4.25rem - 1.5px); width: 3px; border-radius: 2px; }
+.thread::before { bottom: .75rem; background: var(--line); }
+.travel { background: var(--heading); transition: height .4s cubic-bezier(.16, 1, .3, 1); }
+.stop { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: start; padding: 2px 0; }
+.s-time { padding-top: .5625rem; font: 600 1.0625rem/1 var(--display); color: var(--heading); }
+.s-dot { position: relative; z-index: 1; justify-self: center; width: .75rem; height: .75rem; margin-top: .5625rem; border-radius: 50%; background: var(--surface); border: 2px solid var(--line-strong); }
+.is-past .s-time { color: var(--muted); }
+.is-past .s-dot { background: var(--heading); border-color: var(--heading); }
+.stop > .blk { align-self: stretch; }
+.b-line { display: flex; align-items: baseline; gap: .5rem; }
+.b-line .b-title { flex: 1 1 auto; min-width: 0; }
+.gap { align-self: center; padding: .4375rem .75rem; font-size: .875rem; color: var(--muted); }
+
+/* ---------- The details of a block ---------- */
+.d-title { font: 600 1.375rem/1.25 var(--font); color: var(--heading); text-wrap: balance; }
+.d-title .pick { width: 1.5rem; height: 1.5rem; font-size: .9375rem; vertical-align: .12em; }
+.d-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .625rem; margin-top: .375rem; font-size: .875rem; color: var(--muted); }
+.d-meta .when { font: 600 1rem/1.2 var(--display); color: var(--heading); }
+.d-key { margin-top: .875rem; font-size: 1rem; max-width: 62ch; }
+.facts { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: .375rem .75rem; margin-top: .875rem; padding-top: .875rem; border-top: 1px solid var(--line); font-size: .875rem; }
+.facts dt { color: var(--muted); }
+.facts li + li { margin-top: .1875rem; }
+.facts b { font-weight: 600; }
+.items { margin-top: .875rem; border-top: 1px solid var(--line); }
+.items li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .125rem 1rem; padding: .5rem 0; border-bottom: 1px solid var(--line); }
+.items .t { font-weight: 600; color: var(--heading); }
+.items .who { display: block; font-size: .875rem; color: var(--muted); }
+.items .who .late { font-size: .875rem; }
+.d-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.125rem; }
+
+/* ---------- What did not fit today ---------- */
+.nottoday { margin-top: 1.5rem; }
+.nottoday h2, .pg h2, .sec { font: 600 1.25rem/1.2 var(--display); font-stretch: 75%; text-transform: uppercase; letter-spacing: .02em; color: var(--heading); }
+.nottoday > p { margin-top: .125rem; font-size: .875rem; color: var(--muted); }
+.nottoday ul { margin-top: .5rem; border-top: 1px solid var(--line); }
+.nottoday li { padding: .4375rem 0; border-bottom: 1px solid var(--line); }
+.nottoday .t { display: block; font-weight: 600; color: var(--heading); }
+.nottoday .why { display: block; font-size: .875rem; color: var(--muted); }
+
+/* ---------- The second plan: what is pending ---------- */
+.pend { container-type: inline-size; }
+.pg + .pg { margin-top: 2rem; }
+.pg h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: .125rem .75rem; }
+.count { font: 400 .875rem/1.4 var(--font); font-stretch: 100%; text-transform: none; letter-spacing: 0; color: var(--muted); }
+.count .late, .count .soon { font-weight: 600; }
+.rows { margin-top: .5rem; border-top: 1px solid var(--line); }
+.prow { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) auto; align-items: center; gap: .125rem 1rem; min-height: 2.75rem; padding: .375rem 0; border-bottom: 1px solid var(--line); }
+.when { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 .375rem; font: 600 1rem/1.25 var(--display); color: var(--heading); }
+.when svg.i { align-self: center; }
+.when .lag { flex-basis: 100%; font: 600 .8125rem/1.3 var(--font); }
+.prow.is-late .when { color: var(--late); }
+.prow.is-soon .when { color: var(--soon); }
+.what { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 .5rem; min-width: 0; }
+.what .t { font-weight: 600; color: var(--heading); }
+.what .kind { font-weight: 400; color: var(--muted); }
+.what .sub { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 0 .75rem; font-size: .875rem; color: var(--muted); }
+.what .ref { white-space: nowrap; }
+.act { justify-self: end; }
+.planned { display: inline-flex; align-items: center; gap: .375rem; min-height: 2rem; font-size: .8125rem; font-weight: 600; color: var(--accent); white-space: nowrap; text-decoration: underline; text-decoration-thickness: 1px; }
+.planned:hover { text-decoration-thickness: 2px; }
+.note { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; padding: .5rem 0; border-bottom: 1px solid var(--line); font-size: .875rem; }
+.note > span { flex: 1 1 18rem; }
+.note b { font-weight: 600; color: var(--heading); }
+@container (max-width: 31rem) {
+  .prow { grid-template-columns: minmax(0, 1fr) auto; }
+  .prow .when { grid-column: 1 / -1; font-size: .875rem; }
+  .prow .when .lag { flex-basis: auto; }
+}
+
+/* The week's load: one square is half a day free of meetings */
+.week-cap { margin-top: .5rem; font-size: .875rem; }
+.week-cap b { font-weight: 600; color: var(--heading); }
+.days { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(0, 1.7fr); gap: 0 .5rem; margin-top: .625rem; padding: .5rem 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.days li { display: grid; gap: .25rem; align-content: start; font-size: .8125rem; color: var(--muted); }
+.days .is-today .d { font-weight: 700; color: var(--heading); }
+.days .over .d { color: var(--late); font-weight: 600; }
+.sq { display: flex; align-items: center; gap: 3px; min-height: 1rem; }
+.sq i { display: inline-block; flex: none; width: 1rem; height: 1rem; border-radius: 3px; }
+.sq .p { background: var(--muted); }
+.sq .x { background: repeating-linear-gradient(135deg, var(--late) 0 2px, transparent 2px 5px); box-shadow: inset 0 0 0 1.5px var(--late); }
+.suggest { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; padding: .625rem 0; font-size: .875rem; }
+.suggest > span { flex: 1 1 18rem; }
+.suggest b { font-weight: 600; color: var(--heading); }
+.suggest .btns { display: flex; gap: .5rem; }
+.pg h3 { margin-top: .75rem; font-size: .8125rem; font-weight: 600; color: var(--muted); }
+
+/* A group that opens and closes */
+details.pg > summary { display: flex; align-items: baseline; gap: .5rem; cursor: pointer; list-style: none; border-radius: 4px; }
+details.pg > summary::-webkit-details-marker { display: none; }
+details.pg > summary h2 { flex: 1; }
+details.pg > summary .chev { align-self: center; color: var(--muted); transition: transform .16s ease-out; }
+details.pg[open] > summary .chev { transform: rotate(90deg); }
+details.pg:not([open]) { padding-bottom: .75rem; border-bottom: 1px solid var(--line); }
+
+footer.wrap { padding-top: 2.5rem; padding-bottom: 2rem; font-size: .8125rem; color: var(--muted); }
+footer p { padding-top: .875rem; border-top: 1px solid var(--line); max-width: none; }
+
+.toast { position: fixed; left: 50%; bottom: 1.25rem; z-index: 50; transform: translate(-50%, 1rem); max-width: min(46rem, calc(100vw - 2rem)); padding: .625rem 1rem; border-radius: 8px; background: var(--heading); color: #ffffff; font-size: .875rem; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: opacity .18s ease-out, transform .18s cubic-bezier(.16, 1, .3, 1); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast q { font-weight: 600; }
+.toast.stay { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; pointer-events: auto; }
+.toast input { flex: 1 1 22rem; min-width: 0; font: inherit; padding: .25rem .5rem; border: 1px solid var(--line-strong); border-radius: 4px; background: #ffffff; color: var(--ink); }
+.toast button { font-weight: 600; padding: .25rem .625rem; border: 1px solid currentColor; border-radius: 6px; background: transparent; cursor: pointer; }
+.toast :focus-visible { outline-color: #ffffff; }
+
+@media (max-width: 760px) {
+  .wrap { padding: 0 1rem; }
+  .top .wrap { grid-template-columns: 1fr; }
+  .sources { text-align: left; }
+  .facts { grid-template-columns: 1fr; gap: 0; }
+  .facts dt { margin-top: .5rem; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }

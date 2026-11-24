@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morning brief, Mon 16 Nov (option C)</title>
+<!-- PROTOTYPE, option C: the whole day as one ribbon across the page, the block of the moment in large
+     under it, the pending items further down the page. Fictional content (Example Bank). -->
+<link rel="stylesheet" href="shared.css">
+<style>
+.ribbon { position: relative; padding-top: 1.875rem; }
+.bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--heading); transition: width .4s cubic-bezier(.16, 1, .3, 1); }
+.track { position: relative; height: 4.125rem; margin-top: .375rem; }
+.track .blk, .track .gap { position: absolute; top: 0; bottom: 0; width: auto; padding: .4375rem .4375rem; container-type: inline-size; overflow: hidden; }
+.track .gap { display: grid; place-items: center; border: 1px dashed var(--line-strong); border-radius: 8px; }
+.r-top { display: flex; align-items: center; gap: .375rem; min-height: 1.25rem; font: 600 .875rem/1.2 var(--display); color: var(--muted); }
+.r-top .pick { margin: 0; }
+.r-title { display: block; margin-top: .1875rem; font-size: .875rem; font-weight: 600; line-height: 1.25; color: var(--heading); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.blk.is-past .r-title { color: var(--muted); font-weight: 400; }
+.blk.is-now { border-color: var(--accent); }
+/* A quarter of an hour is too narrow for words: its mark alone stays, its title is in the list beside. */
+@container (max-width: 2.75rem) {
+  .r-time, .r-title { display: none; }
+  .r-top { justify-content: center; height: 100%; }
+}
+.nowmark { position: absolute; z-index: 2; top: 1.5rem; height: .875rem; width: 2px; margin-left: -1px; background: var(--accent); pointer-events: none; transition: left .4s cubic-bezier(.16, 1, .3, 1); }
+.nowmark .nowpill { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); }
+.hours { position: relative; height: 1.25rem; margin-top: .375rem; font: 600 .8125rem/1.25rem var(--display); color: var(--muted); }
+.hours li { position: absolute; transform: translateX(-50%); }
+.hours li:first-child { transform: none; }
+.hours li:last-child { transform: translateX(-100%); }
+
+.focus { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 2.5rem; align-items: start; margin-top: 1.5rem; }
+.card { padding: 1.5rem 1.75rem 1.5rem; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 6px 18px rgba(0, 32, 96, .08), 0 1px 2px rgba(0, 32, 96, .06); }
+.card .d-title { font-size: 1.625rem; outline: 0; }
+.card .d-title .pick { width: 1.75rem; height: 1.75rem; font-size: 1.0625rem; }
+.card .back { margin: -.5rem 0 .625rem -.375rem; }
+#then { margin-top: .5rem; border-top: 1px solid var(--line); }
+#then li { border-bottom: 1px solid var(--line); }
+#then li > button, #then li > span { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr) auto; align-items: baseline; gap: .5rem; width: 100%; padding: .5rem .375rem; border: 0; border-radius: 4px; background: none; text-align: left; }
+#then li > button { cursor: pointer; transition: background-color .15s ease-out; }
+#then li > button:hover { background: var(--hover); }
+#then .t { font: 600 1.0625rem/1.2 var(--display); color: var(--heading); }
+#then .is-sel > button { background: var(--tag); }
+#then .none { padding: .5rem 0; color: var(--muted); }
+
+.board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem 2.5rem; align-items: start; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--line-strong); scroll-margin-top: 1rem; }
+
+@media (max-width: 1100px) { .board { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 980px) { .focus, .board { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="top" id="top"></header>
+
+<main class="wrap">
+  <p class="lede" id="lede"></p>
+
+  <section class="ribbon" aria-label="The day at a glance">
+    <div class="bar" aria-hidden="true"><i id="bar"></i></div>
+    <div class="track" id="track"></div>
+    <ol class="hours" id="hours" aria-hidden="true"></ol>
+    <div class="nowmark" id="nowmark" aria-hidden="true"><span class="nowpill"></span></div>
+  </section>
+
+  <div class="focus">
+    <article class="card" id="card" aria-live="polite"></article>
+    <aside class="then">
+      <h2 class="sec" id="h-then">Rest of the day</h2>
+      <ol id="then" aria-labelledby="h-then"></ol>
+      <div id="not"></div>
+    </aside>
+  </div>
+
+  <div class="board" id="pending"></div>
+</main>
+
+<div id="foot"></div>
+
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+(function () {
+  const D = DAY, $ = id => document.getElementById(id);
+  const pct = m => (m - D.start) / (D.end - D.start) * 100;
+
+  PK.header();
+  $('lede').innerHTML = D.lede + `<a href="#pending">Pending: ${D.pending.you.rows.length} waiting on you, ${D.pending.them.rows.length} you are waiting on</a>`;
+  $('foot').innerHTML = PK.footer();
+  $('not').innerHTML = PK.notToday();
+  $('pending').innerHTML = `<div class="pend">${PK.group('you')}</div><div class="pend">${PK.group('them')}</div><div class="pend">${PK.group('week')}${PK.group('backlog', true)}${PK.group('sort', true)}</div>`;
+
+  $('track').innerHTML = D.blocks.map(b => {
+    const pos = `left:calc(${pct(b.start)}% + 2px);width:calc(${pct(b.end) - pct(b.start)}% - 4px)`;
+    if (b.kind === 'break') return `<div class="gap" style="${pos}">${b.title}</div>`;
+    return `<button class="blk k-${b.kind}" type="button" id="${b.id}" style="${pos}" aria-controls="card" title="${PK.fmt(b.start)} ${b.title.replace(/"/g, '&quot;')}">
+      <span class="r-top"><span class="r-time">${PK.fmt(b.start)}</span>${PK.kindIcon(b)}${PK.pick(b.pick)}</span><span class="r-title">${b.short}</span></button>`;
+  }).join('');
+  let hours = `<li style="left:0">${PK.fmt(D.start)}</li>`;
+  for (let h = Math.ceil(D.start / 60) * 60; h <= D.end; h += 60) hours += `<li style="left:${pct(h)}%">${PK.fmt(h)}</li>`;
+  $('hours').innerHTML = hours;
+
+  let now = PK.now(), sel = PK.current(now).id, follow = true, shown = '';
+
+  function paint() {
+    const cur = PK.current(now);
+    document.querySelectorAll('.track .blk').forEach(el => {
+      const st = PK.stateOf(PK.block(el.id), now);
+      el.classList.toggle('is-past', st === 'past');
+      el.classList.toggle('is-now', st === 'now');
+      el.classList.toggle('is-sel', el.id === sel);
+      el.setAttribute('aria-pressed', el.id === sel);
+    });
+    $('bar').style.width = pct(now) + '%';
+    $('nowmark').style.left = pct(now) + '%';
+    $('nowmark').firstChild.textContent = 'Now ' + PK.fmt(now);
+
+    const rest = D.blocks.filter(b => b.start > now);
+    $('then').innerHTML = rest.length ? rest.map(b => {
+      const inner = `<span class="t">${PK.fmt(b.start)}</span><span class="b-title">${PK.kindIcon(b)}${PK.pick(b.pick)}${b.title}</span><span class="b-dur">${PK.dur(b.end - b.start)}</span>`;
+      return b.kind === 'break' ? `<li><span>${inner}</span></li>` : `<li class="${b.id === sel ? 'is-sel' : ''}"><button type="button" data-id="${b.id}">${inner}</button></li>`;
+    }).join('') : '<li class="none">Nothing more today.</li>';
+
+    const b = PK.block(sel), key = sel + PK.stateOf(b, now) + (sel === cur.id);
+    if (key === shown) return; // leave the card alone while nothing in it changed
+    shown = key;
+    $('card').innerHTML = (sel === cur.id ? '' : `<p class="back"><button class="btn plain" type="button" id="back">Back to now</button></p>`)
+      + PK.detail(b, now);
+  }
+
+  function select(id, focus) {
+    sel = id; follow = id === PK.current(now).id; paint();
+    if (focus) $(id).focus();
+  }
+  $('track').addEventListener('click', e => { const b = e.target.closest('.blk'); if (b) select(b.id); });
+  $('track').addEventListener('keydown', e => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const b = PK.selectable[PK.selectable.findIndex(x => x.id === sel) + (e.key === 'ArrowRight' ? 1 : -1)];
+    if (b) { e.preventDefault(); select(b.id, true); }
+  });
+  $('then').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (b) select(b.dataset.id); });
+  $('card').addEventListener('click', e => { if (e.target.closest('#back')) select(PK.current(now).id, true); });
+  PK.onGoto = id => { select(id); $('card').scrollIntoView({ block: 'center', behavior: 'smooth' }); };
+
+  PK.tick(t => { now = t; if (follow) sel = PK.current(now).id; paint(); });
+})();
+</script>
+</body>
+</html>

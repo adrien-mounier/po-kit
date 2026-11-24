@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morning brief, Mon 16 Nov (option B)</title>
+<!-- PROTOTYPE, option B: the day as a list on the left, the pending items always in view on the right,
+     the details of a block in a pop-up beside its line. Fictional content (Example Bank). -->
+<link rel="stylesheet" href="shared.css">
+<style>
+.split { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 3.5rem; align-items: start; }
+.list { margin-top: .625rem; }
+.list .stop { padding: 3px 0; }
+.list .is-now .s-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 3px var(--bg); }
+.list .is-now > .blk { border-color: var(--accent); }
+.list .nowpill { align-self: center; }
+.list .bank { align-self: center; }
+
+.pop { position: absolute; inset: auto; margin: 0; width: min(31rem, calc(100vw - 2rem)); max-height: calc(100vh - 1.5rem); overflow: auto; padding: 1.375rem 1.5rem 1.375rem; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.pop:popover-open { animation: pop .18s cubic-bezier(.16, 1, .3, 1); }
+@keyframes pop { from { opacity: 0; transform: translateX(-6px); } }
+.pop .d-title { padding-right: 2.5rem; outline: 0; }
+.close { position: absolute; top: .75rem; right: .75rem; display: grid; place-items: center; width: 2rem; height: 2rem; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+.close:hover { background: var(--hover); color: var(--heading); }
+
+@media (max-width: 980px) { .split { grid-template-columns: 1fr; gap: 2.5rem; } }
+@media (prefers-reduced-motion: reduce) { .pop:popover-open { animation: none; } }
+</style>
+</head>
+<body>
+
+<header class="top" id="top"></header>
+
+<main class="wrap">
+  <p class="lede" id="lede"></p>
+  <div class="split">
+    <section aria-labelledby="h-day">
+      <h2 class="sec" id="h-day">Today <span class="count" id="day-count"></span></h2>
+      <ol class="thread list" id="list"></ol>
+      <div id="not"></div>
+    </section>
+    <aside class="pend" id="pend" aria-label="Pending"></aside>
+  </div>
+</main>
+
+<div class="pop" id="pop" popover role="dialog" aria-labelledby="d-title"></div>
+<div id="foot"></div>
+
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+(function () {
+  const D = DAY, $ = id => document.getElementById(id);
+  const sum = k => D.blocks.filter(b => k(b)).reduce((n, b) => n + b.end - b.start, 0);
+  const meetings = D.blocks.filter(b => b.kind === 'meeting').length;
+  const work = D.blocks.filter(b => b.kind === 'task' || b.kind === 'bundle').length;
+
+  PK.header();
+  $('lede').innerHTML = D.lede;
+  $('foot').innerHTML = PK.footer();
+  $('not').innerHTML = PK.notToday();
+  $('day-count').textContent = `${meetings} meetings, ${PK.dur(sum(b => b.kind === 'meeting'))}. ${work} blocks of work, ${PK.dur(sum(b => b.kind === 'task' || b.kind === 'bundle'))}. Open a line for its details.`;
+  $('pend').innerHTML = PK.group('you', true, true) + PK.group('them', true, true) + PK.group('week', true) + PK.group('backlog', true) + PK.group('sort', true);
+
+  $('list').innerHTML = D.blocks.map(b => {
+    const len = b.end - b.start;
+    return `<li class="stop k-${b.kind}" data-id="${b.id}">
+      <span class="s-time">${PK.fmt(b.start)}</span><span class="s-dot"></span>
+      ${b.kind === 'break' ? `<span class="gap">${b.title}, ${PK.dur(len)}</span>`
+        : `<button class="blk" type="button" id="${b.id}" aria-haspopup="dialog"><span class="b-line"><span class="b-title">${PK.kindIcon(b)}${PK.pick(b.pick)}${b.title}</span>${b.bank ? `<span class="bank">${b.bank}</span>` : ''}<span class="b-dur">${PK.dur(len)}</span></span><span class="b-key">${b.key}</span></button>`}
+    </li>`;
+  }).join('') + `<li class="stop"><span class="s-time">${PK.fmt(D.end)}</span><span class="s-dot"></span></li><li class="travel" aria-hidden="true"></li>`;
+
+  const list = $('list'), pop = $('pop'), travel = list.querySelector('.travel');
+  let now = PK.now(), openId = null, closedId = null, closedAt = 0;
+
+  function paint() {
+    let top = 0;
+    list.querySelectorAll('.stop[data-id]').forEach(li => {
+      const b = PK.block(li.dataset.id), st = PK.stateOf(b, now);
+      li.classList.toggle('is-past', st === 'past');
+      li.classList.toggle('is-now', st === 'now' && b.kind !== 'break');
+      const line = li.querySelector('.b-line'), pill = li.querySelector('.nowpill');
+      if (line && st === 'now' && !pill) line.insertAdjacentHTML('beforeend', '<span class="nowpill">Now</span>');
+      if (pill && st !== 'now') pill.remove();
+      // the line is dark down to the stop of the block the clock is in, and a share of the way to the next
+      if (now >= b.start) top = li.offsetTop + 17 + (st === 'now' ? (now - b.start) / (b.end - b.start) * li.offsetHeight : li.offsetHeight);
+    });
+    travel.style.height = Math.max(0, Math.min(top, list.offsetHeight - 12) - 16) + 'px';
+  }
+
+  function open(id) {
+    const b = PK.block(id), el = $(id);
+    pop.innerHTML = `<button class="close" type="button" aria-label="Close">${PK.icon('x')}</button>` + PK.detail(b, now);
+    pop.showPopover();
+    openId = id;
+    el.parentNode.classList.add('is-sel');
+    // beside its line, over the pending column, and wholly on the screen
+    const r = el.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+    pop.style.left = Math.max(16, Math.min(r.right - 20, innerWidth - w - 16)) + scrollX + 'px';
+    pop.style.top = Math.max(12, Math.min(r.top - 10, innerHeight - h - 12)) + scrollY + 'px';
+    pop.querySelector('.d-title').focus();
+  }
+  pop.addEventListener('toggle', e => {
+    if (e.newState !== 'closed') return;
+    const li = list.querySelector('.is-sel'); if (li) li.classList.remove('is-sel');
+    closedId = openId; closedAt = Date.now(); openId = null;
+  });
+  pop.addEventListener('click', e => { if (e.target.closest('.close')) { const id = openId; pop.hidePopover(); $(id).focus(); } });
+  list.addEventListener('click', e => {
+    const b = e.target.closest('.blk'); if (!b) return;
+    if (b.id === closedId && Date.now() - closedAt < 300) return; // the same line again: it just closed
+    open(b.id);
+  });
+  list.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    const i = PK.selectable.findIndex(b => b.id === document.activeElement.id), b = PK.selectable[i + (e.key === 'ArrowDown' ? 1 : -1)];
+    if (i > -1 && b) { e.preventDefault(); $(b.id).focus(); }
+  });
+  PK.onGoto = id => { $(id).scrollIntoView({ block: 'center' }); open(id); };
+
+  PK.tick(t => { now = t; paint(); });
+  window.addEventListener('resize', paint);
+})();
+</script>
+</body>
+</html>

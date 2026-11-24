@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Morning brief: three options</title>
+<!-- PROTOTYPE. A page to compare the three organisations of the morning page side by side. -->
+<link rel="stylesheet" href="shared.css">
+<style>
+body { padding: 2rem; }
+h1 { color: var(--heading); }
+.intro { max-width: 70ch; margin: .5rem 0 2rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(26rem, 1fr)); gap: 2rem; align-items: start; }
+.frame { display: block; position: relative; aspect-ratio: 1366 / 768; overflow: hidden; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); container-type: inline-size; }
+.frame iframe { position: absolute; left: 0; top: 0; width: 1366px; height: 768px; border: 0; transform-origin: 0 0; transform: scale(calc(100cqw / 1366px)); pointer-events: none; }
+.frame:hover, .frame:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+h2 { margin-top: .875rem; font: 600 1.375rem/1.2 var(--display); font-stretch: 75%; text-transform: uppercase; letter-spacing: .02em; color: var(--heading); }
+.opt p { margin-top: .25rem; max-width: 52ch; }
+.opt dl { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: .25rem .75rem; margin-top: .75rem; padding-top: .75rem; border-top: 1px solid var(--line); font-size: .875rem; }
+.opt dt { color: var(--muted); }
+.opt .more { margin-top: .75rem; font-size: .875rem; }
+.opt .more a { font-weight: 600; color: var(--accent); }
+.how { max-width: 70ch; margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: .875rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Morning brief: three options</h1>
+<p class="intro"><b>The PO chose option A on 24 November 2026.</b> Its final form is <a href="../morning-handoff/morning-example.html">the example of the handoff</a>; these three pages stay as a record.</p>
+<p class="intro">The same fictional day (Example Bank), the same look, three ways to organise the page. Each shows the day as one thread from the first hour to the last, the details of a block on a click, and the pending items as a second plan. Click a picture to open the option.</p>
+
+<div class="grid">
+  <div class="opt">
+    <a class="frame" href="a-agenda-panel.html"><iframe src="a-agenda-panel.html?now=11:20" title="Option A" tabindex="-1"></iframe></a>
+    <h2>A &middot; Agenda and side panel</h2>
+    <p>The day is drawn to scale, like a calendar: a two-hour block is tall, a reminder is thin. The details of the selected block stay open beside it.</p>
+    <dl><dt>Details</dt><dd>A panel on the right, always open</dd><dt>Pending</dt><dd>A second tab</dd><dt>Best at</dt><dd>Walking the day block by block</dd><dt>Weak at</dt><dd>The pending items are one click away, out of sight</dd></dl>
+    <p class="more"><a href="a-agenda-panel.html?state=proposed&now=09:05">Before the briefing</a> &middot; <a href="a-agenda-panel.html?now=11:20#pending">Its pending tab</a></p>
+  </div>
+  <div class="opt">
+    <a class="frame" href="b-side-by-side.html"><iframe src="b-side-by-side.html?now=11:20" title="Option B" tabindex="-1"></iframe></a>
+    <h2>B &middot; Day and pending side by side</h2>
+    <p>The day is a list on the left, one line per block. The pending items never leave the screen, on the right. A click on a line opens its details in a pop-up beside it.</p>
+    <dl><dt>Details</dt><dd>A pop-up beside the line</dd><dt>Pending</dt><dd>A column always in view</dd><dt>Best at</dt><dd>Seeing everything without a click</dd><dt>Weak at</dt><dd>The densest of the three; the length of a block is a number, not a size</dd></dl>
+    <p class="more"><a href="b-side-by-side.html?state=proposed&now=09:05">Before the briefing</a></p>
+  </div>
+  <div class="opt">
+    <a class="frame" href="c-ribbon-focus.html"><iframe src="c-ribbon-focus.html?now=11:20" title="Option C" tabindex="-1"></iframe></a>
+    <h2>C &middot; Day ribbon and focus</h2>
+    <p>The whole day is one ribbon across the page. Under it, the block of the moment in large, with the rest of the day beside it. The pending items are further down.</p>
+    <dl><dt>Details</dt><dd>In place, in large, under the ribbon</dd><dt>Pending</dt><dd>Down the page, by scrolling</dd><dt>Best at</dt><dd>Answering &ldquo;what am I doing now?&rdquo; at a glance</dd><dt>Weak at</dt><dd>A short block has no room for its title on the ribbon</dd></dl>
+    <p class="more"><a href="c-ribbon-focus.html?state=proposed&now=09:05">Before the briefing</a></p>
+  </div>
+</div>
+
+<p class="how">Opened from here, each option follows the real clock during the day and shows 11:20 outside it. Add <b>?now=15:10</b> to an address to see another hour. Nothing on these pages is saved: each button copies a request for the agent.</p>
+</body>
+</html>
