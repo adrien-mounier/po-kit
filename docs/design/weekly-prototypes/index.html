@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly · huit directions</title>
+<!-- PROTOTYPE. A page to compare the visual directions of the weekly presentation side by side. -->
+<style>
+* { box-sizing: border-box; margin: 0; }
+body { padding: 32px; background: #17181c; color: #f1f1f3; font: 15px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+h1 { font-size: 24px; font-weight: 600; }
+.intro { max-width: 70em; margin: 6px 0 28px; color: #a9abb5; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(580px, 1fr)); gap: 28px; }
+a { display: block; color: inherit; text-decoration: none; }
+.frame { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 10px; outline: 1px solid #33353d; container-type: inline-size; }
+.frame iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; border: 0; transform-origin: 0 0; transform: scale(calc(100cqw / 1280px)); pointer-events: none; }
+a:hover .frame, a:focus-visible .frame { outline: 2px solid #f1f1f3; }
+h2 { margin-top: 12px; font-size: 18px; font-weight: 600; }
+p { color: #a9abb5; }
+</style>
+</head>
+<body>
+<h1>Weekly : huit directions visuelles</h1>
+<p class="intro">Le même contenu fictif (Example Bank), huit habillages. G et H reprennent la mise en page de C (Scène) avec d'autres couleurs ; E et F, celle de B (Produit). Cliquer sur une vignette l'ouvre en grand : F11 pour le plein écran, puis la molette, les flèches ou la barre d'espace pour passer d'un écran au suivant.</p>
+<div class="grid">
+  <a href="weekly-g-scene-papier.html"><div class="frame"><iframe src="weekly-g-scene-papier.html" title="G, Scène sur papier" tabindex="-1"></iframe></div><h2>G · Scène sur papier</h2><p>La mise en page de C (Scène) avec les couleurs de A : papier, encre et un seul rouge.</p></a>
+  <a href="weekly-h-scene-bleu.html"><div class="frame"><iframe src="weekly-h-scene-bleu.html" title="H, Scène en bleu" tabindex="-1"></iframe></div><h2>H · Scène en bleu</h2><p>La mise en page de C (Scène) avec les bleus de la présentation d'atelier : titres marine, accent bleu, fonds bleu pâle.</p></a>
+  <a href="weekly-e-papier.html"><div class="frame"><iframe src="weekly-e-papier.html" title="E, Cartes sur papier" tabindex="-1"></iframe></div><h2>E · Cartes sur papier</h2><p>La mise en page de B avec les couleurs de A : papier, encre et un seul rouge.</p></a>
+  <a href="weekly-f-bleu.html"><div class="frame"><iframe src="weekly-f-bleu.html" title="F, Cartes en bleu" tabindex="-1"></iframe></div><h2>F · Cartes en bleu</h2><p>La mise en page de B avec les bleus de la présentation d'atelier : titres marine, accent bleu, fonds bleu pâle.</p></a>
+  <a href="weekly-a-editorial.html"><div class="frame"><iframe src="weekly-a-editorial.html" title="A, Éditorial" tabindex="-1"></iframe></div><h2>A · Éditorial</h2><p>Papier, encre et un seul rouge. Une grande typographie à empattements, des filets fins, l'esprit d'un journal.</p></a>
+  <a href="weekly-b-produit.html"><div class="frame"><iframe src="weekly-b-produit.html" title="B, Produit" tabindex="-1"></iframe></div><h2>B · Produit</h2><p>Clair, des cartes blanches, des pastilles de couleur qui disent le statut. L'esprit d'une application moderne.</p></a>
+  <a href="weekly-c-scene.html"><div class="frame"><iframe src="weekly-c-scene.html" title="C, Scène" tabindex="-1"></iframe></div><h2>C · Scène</h2><p>Fond sombre, titres hauts et serrés, chiffres lumineux. L'esprit d'une keynote.</p></a>
+  <a href="weekly-d-chaleureux.html"><div class="frame"><iframe src="weekly-d-chaleureux.html" title="D, Chaleureux" tabindex="-1"></iframe></div><h2>D · Chaleureux</h2><p>Sable, terracotta et vert, des formes rondes. Moins institutionnel, plus humain.</p></a>
+</div>
+</body>
+</html>
