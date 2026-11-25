@@ -43,7 +43,7 @@ Nothing reaches the register without the PO's yes, and no page changes anything:
 
 - `docs/design/morning.html`: the morning page as designed before the redesign, with its fictional day.
 - `docs/design/morning-handoff/`: the morning page the PO chose on 24 November 2026 (an agenda drawn to scale, a details panel beside it, the pending items in a second tab), not built yet.
-- `docs/design/weekly-handoff/`: the chosen weekly look.
+- `docs/design/weekly-handoff/`: the weekly presentation the PO chose on 25 November 2026 (a dashboard of the subjects opened one at a time, in the look chosen on 23 November) and its private notes, not built yet.
 - `routines/morning/SKILL.md`: what the morning routine does and what the page holds.
 
 ## Product Principles

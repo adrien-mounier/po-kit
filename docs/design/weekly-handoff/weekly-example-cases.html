@@ -1,11 +1,15 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" class="js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Point hebdomadaire · cas particuliers</title>
-<!-- EXAMPLE of the weekly presentation: a catalogue of special cases (a busy week, a quiet week), not one real deck. Fictional content (Example Bank). No script, no network. -->
+<!-- EXAMPLE, special cases of the weekly presentation: a catalogue, one case per screen, not one real deck.
+     1 a week where nothing was recorded; 2 more subjects than the screen holds; 3 a subject with no stage
+     list, a value with no objective and a value never measured; 4 nothing to decide and nothing blocked;
+     5 nothing planned. No script here: each screen is drawn in the state it shows. Fictional content. -->
 <style>
+/* ---------- The look: the one the PO chose on 23 November 2026, unchanged ---------- */
 /* ---------- Shared mechanics: every direction keeps these ----------
    One screen is one slide. The whole page scales as a slide does: 1rem is a fixed share of the
    screen, so a 16:9 window is about 77rem wide and 43.5rem high whatever its size.
@@ -205,184 +209,855 @@ h2 small { font-size: .5em; letter-spacing: .06em; color: var(--muted); margin-l
 .now b { font: 600 2rem/1 var(--display); font-stretch: 75%; color: var(--accent); }
 .now .nothing { font-size: .82rem; text-align: right; }
 .capacity:has(.nothing) { align-self: start; }
+
+/* ---------- The dashboard, the detail of a subject and the screens that follow ---------- */
+/* ---------- Screen 1: one row per subject, and a row is a button ---------- */
+.lede .n-block { color: var(--late); }
+.sign::before { content: ""; display: inline-block; width: 1em; height: 1em; margin-right: .35em; vertical-align: -.16em; background: currentColor; -webkit-mask: var(--g) center / contain no-repeat; mask: var(--g) center / contain no-repeat; }
+.sign.alert { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5l9.5 16.5h-19z'/%3E%3Cpath d='M12 10v4.5M12 17.5v.01'/%3E%3C/svg%3E"); }
+.dash { display: grid; align-content: start; gap: .4rem; }
+.cols.dcols, .subject.row { grid-template-columns: 12.5rem 6.5rem 10.5rem 1fr 5rem 6rem 1.2rem; gap: 0 1.2rem; }
+.subject.row { width: 100%; font: inherit; color: inherit; text-align: left; text-decoration: none; cursor: pointer; transition: border-color .15s ease-out, box-shadow .15s ease-out; }
+.subject.row:hover { border-color: var(--accent); }
+.subject.row:focus-visible, .rail a:focus-visible, .walk button:focus-visible, .back:focus-visible, .more summary:focus-visible { outline: .16rem solid var(--accent); outline-offset: .14rem; }
+.who { display: grid; }
+.nm { font-size: 1.1rem; font-weight: 600; line-height: 1.15; color: var(--heading); }
+.flag { font-size: .8rem; font-weight: 600; color: var(--late); white-space: nowrap; }
+.nextd { font: 600 1.05rem/1 var(--display); color: var(--heading); text-align: right; white-space: nowrap; }
+.chev { width: .6rem; height: .6rem; border-right: .14rem solid var(--muted); border-bottom: .14rem solid var(--muted); transform: rotate(-45deg); justify-self: end; transition: transform .18s ease-out; }
+.is-quiet .nm, .is-quiet .chg { font-weight: 400; color: var(--muted); }
+.later { margin-top: .5rem; padding: .7rem 1.3rem; border: 1px dashed var(--muted); border-radius: .7rem; font-size: .88rem; color: var(--muted); }
+
+/* ---------- The detail of one subject: what changed and what is open now, never the history ---------- */
+.detail { display: grid; grid-template-columns: 1.15fr 1fr; gap: 0 3rem; align-items: start; }
+.d-col { display: grid; gap: 1.5rem; align-content: start; }
+.d-sec ul { display: grid; gap: .55rem; margin-top: .5rem; }
+.d-sec li { font-size: 1rem; line-height: 1.3; }
+.d-sec .sub { display: block; margin-top: .1rem; font-size: .78rem; color: var(--muted); font-weight: 400; }
+.d-sec.s-blocks .label, .d-sec.s-blocks li { color: var(--late); }
+.d-sec.s-blocks li { font-weight: 600; }
+.d-sec.s-blocks .sub { color: var(--muted); }
+.d-sec.s-week li { padding-left: 1rem; position: relative; }
+.d-sec.s-week li::before { content: ""; position: absolute; left: 0; top: .5em; width: .35rem; height: .35rem; border-radius: 50%; background: var(--accent); }
+.d-sec .none { margin-top: .5rem; font-size: 1rem; color: var(--muted); }
+/* A long list shows its first lines; the rest opens on a click. */
+.more summary { display: inline-block; margin-top: .6rem; font-size: .82rem; font-weight: 600; color: var(--accent); cursor: pointer; list-style: none; border-radius: .3rem; }
+.more summary::-webkit-details-marker { display: none; }
+.more[open] summary { display: none; }
+.more ul { margin-top: .55rem; }
+.d-title { font: 600 2.2rem/1.05 var(--display); font-stretch: 75%; text-transform: uppercase; letter-spacing: .005em; color: var(--heading); }
+.d-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.2rem; }
+.d-head .bank { font-size: .8rem; }
+.walk { display: flex; align-items: center; gap: .6rem; font: 600 .68rem var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.walk button, .back { font: inherit; letter-spacing: inherit; text-transform: inherit; padding: .5rem .9rem .42rem; border: 1px solid var(--line); border-radius: 2rem; background: var(--surface); color: var(--heading); cursor: pointer; transition: border-color .15s ease-out; }
+.walk button:hover, .back:hover { border-color: var(--accent); }
+.walk button:disabled { color: var(--muted); opacity: .5; cursor: default; }
+.walk kbd { font: inherit; padding: .1rem .35rem; border: 1px solid var(--line); border-radius: .25rem; }
+
+/* ---------- Screen 2: decisions to take and what blocks ---------- */
+.decide.neutral .decisions { gap: .6rem; align-content: start; }
+.decide.neutral .decisions li { padding: .7rem 1.6rem .8rem; }
+.decide.neutral .decisions h3 { font-size: 1.35rem; margin: .25rem 0 .35rem; }
+.deps .due { font-size: .8rem; }
+
+/* ---------- Screen 3: the plan until the next weekly ---------- */
+.side { display: grid; gap: 1.3rem; padding: .3rem 0 0 1.5rem; border-left: 1px solid var(--line); }
+.side ul { margin-top: .5rem; display: grid; gap: .45rem; }
+.miles li { display: grid; grid-template-columns: 4.2rem 1fr; gap: 0 .8rem; align-items: baseline; font-size: .9rem; }
+.miles b { font: 600 1.05rem/1 var(--display); color: var(--accent); }
+.side .q { font-size: .95rem; margin-top: .4rem; }
+.side cite { display: block; margin-top: .3rem; color: var(--muted); }
+
+.cols .r { text-align: right; }
+/* The first screen keeps its height for the subjects: its title on one line, the period under it. */
+.dash-slide .head { display: block; padding-bottom: 1.1rem; }
+.dash-slide .lede { padding-bottom: 0; margin-top: .35rem; }
+.subject.row { min-height: 3.5rem; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.nil { font: 400 .8rem var(--font); color: var(--muted); }
+
+/* How far a subject is: the share of its stages that are passed. One bar on its row, the stages by name in its detail. */
+.prog { display: flex; align-items: center; gap: .5rem; }
+.prog .bar { flex: 1; height: .4rem; border-radius: 1rem; background: var(--line); overflow: hidden; }
+.prog .bar i { display: block; height: 100%; border-radius: 1rem; background: var(--accent); }
+.p { font: 600 .95rem/1 var(--display); color: var(--heading); white-space: nowrap; }
+.advance { margin-bottom: 1.6rem; padding-bottom: 1.4rem; border-bottom: 1px solid var(--line); }
+.advance .label b { margin-left: .6rem; font-size: 1.5rem; letter-spacing: 0; color: var(--accent); vertical-align: -.12em; }
+.stages { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: .35rem; margin-top: .6rem; font: 600 .62rem var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.stages li::before { content: ""; display: block; height: .45rem; margin-bottom: .4rem; border-radius: 1rem; background: var(--line); }
+.stages .done { color: var(--ink); }
+.stages .done::before { background: var(--accent); }
+.stages .cur { color: var(--accent); }
+.stages .cur::before { background: transparent; box-shadow: inset 0 0 0 .12rem var(--accent); }
+
+/* A value is said in two numbers, each with its unit: where it stands today, and the objective. */
+.vals { display: grid; gap: .9rem; margin-top: .5rem; }
+.val { display: grid; grid-template-columns: 9rem 9rem; gap: .45rem 1.5rem; align-items: start; }
+.val .v-name { grid-column: 1 / -1; }
+.v-name { font-size: 1rem; line-height: 1.3; }
+.v-now, .v-goal { display: grid; gap: .15rem; }
+.v-now .k, .v-goal .k { font: 600 .6rem var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.v-now b, .v-goal b { font: 600 1.45rem/1 var(--display); font-stretch: 75%; white-space: nowrap; }
+.v-now b { color: var(--accent); }
+.v-goal b { color: var(--heading); }
+.cols.vcols, .value { grid-template-columns: 13rem 1fr 11rem 11rem; }
+.value .metric .sub { display: block; font-size: .74rem; color: var(--muted); }
+.value .v-now b, .value .v-goal b { font-size: 2rem; }
+
+/* ---------- One subject at a time: the list becomes a column, the subject takes the screen ---------- */
+.dashbody { display: grid; grid-template-rows: minmax(0, 1fr); min-height: 0; }
+.decide.neutral .deps { grid-area: 1 / 2 / 3 / 3; }
+.overview[hidden], .split[hidden] { display: none; }
+.rail { display: grid; align-content: start; gap: .4rem; }
+.rail a { display: grid; gap: .25rem; padding: .6rem 1rem .55rem; border: 1px solid var(--line); border-radius: .7rem; background: var(--surface); color: inherit; text-decoration: none; transition: border-color .15s ease-out; }
+.rail a:hover { border-color: var(--accent); }
+.rail .nm { font-size: 1rem; }
+.r-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .6rem; }
+.r-meta .p { font-size: .8rem; color: var(--accent); }
+.rail .mv { padding: 0; border: 0; box-shadow: none; font-size: .58rem; }
+.rail .flag { font: 600 .58rem var(--display); letter-spacing: .14em; text-transform: uppercase; }
+.rail a[aria-current="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.pane { background: var(--surface); border: 1px solid var(--line); border-radius: .9rem; scroll-margin-top: 1rem; }
+.pane > header, .pane > footer { display: flex; align-items: center; justify-content: space-between; gap: 2rem; padding: 1.2rem 1.9rem 1.05rem; }
+.pane > header { border-bottom: 1px solid var(--line); }
+.pane > footer { padding: .75rem 1.9rem; border-top: 1px solid var(--line); }
+.pane .scroll { padding: 1.5rem 1.9rem 1.7rem; }
+.back { text-decoration: none; white-space: nowrap; }
+
+/* Without script the page is whole: the list, then every subject under it, and a row leads to its subject. */
+html:not(.js) #s1 { height: auto; min-height: 100vh; overflow: visible; }
+html:not(.js) .rail, html:not(.js) .pane > footer { display: none; }
+html:not(.js) .pane { margin-top: 1.2rem; }
+/* With script, one subject shows at a time, in the height of the screen. */
+.js .overview { min-height: 0; overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+.js .split { display: grid; grid-template-columns: 16.5rem minmax(0, 1fr); gap: 1.6rem; min-height: 0; }
+.js .split[hidden] { display: none; }
+.js .panes { display: grid; min-height: 0; }
+.js .pane { display: none; }
+.js .pane.is-on { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; overflow: hidden; }
+.js .pane .scroll { overflow: auto; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+
+/* What is sent after the meeting is this page printed: the list of subjects, the decisions and the plan.
+   The detail of the subjects and the annex stay out of it. */
+@media print {
+  .overview { display: block !important; overflow: visible !important; }
+  .split, #s4, .chev { display: none !important; }
+  #s1 { height: 100vh !important; }
+}
 </style>
 </head>
 <body>
 <nav class="dots" aria-label="Écrans">
-  <a href="#s1" title="L'essentiel de la semaine"></a>
-  <a href="#s2" title="Avancement par sujet 1/2"></a>
-  <a href="#s3" title="Avancement par sujet 2/2"></a>
-  <a href="#s4" title="Décisions et dépendances"></a>
-  <a href="#s5" title="Semaine prochaine"></a>
+  <a href="#c1-s1" title="Une semaine sans changement"></a>
+  <a href="#c2-s1" title="Plus de sujets que l'écran n'en tient"></a>
+  <a href="#c3-s1" title="Un sujet sans étapes, des valeurs incomplètes"></a>
+  <a href="#c4-s2" title="Rien à décider, rien de bloqué"></a>
+  <a href="#c5-s3" title="Rien de prévu"></a>
 </nav>
 
 <main>
 
-<!-- Case: a week with no confirmed movement. The figures stay, a zero is said as a zero, and the coverage limit is said where an absence could be misread. -->
-<section class="slide" id="s1">
-  <header class="head">
-    <h1>L'essentiel de la semaine</h1>
-    <p class="lede">Du 17 au 23 novembre 2026</p>
-  </header>
-  <div class="body essentials">
-    <div class="empty hl">
-      <p class="t">Aucun fait marquant cette semaine</p>
-      <p class="d">Aucun changement n'a été enregistré depuis le 17 novembre. Le chat n'a été lu qu'en partie : un changement a pu échapper à la collecte.</p>
+<section class="slide dash-slide" id="c1-s1">
+  <header class="head"><h1>Avancement de la semaine</h1><p class="lede">Du mardi 17 au lundi 23 novembre 2026 · 6 sujets</p></header>
+  <div class="body dashbody">
+    <div class="overview">
+      <ol class="dash">
+        <li class="cols dcols" aria-hidden="true"><span>Sujet</span><span>Avancement</span><span>Cette semaine</span><span>Ce qui a changé</span><span></span><span class="r">Prochain jalon</span><span></span></li>
+        <li><a class="subject row is-quiet" href="#c1-sujet-onboarding">
+          <span class="who"><span class="nm">Onboarding mobile</span><span class="bank">Toutes les banques</span></span>
+          <span class="prog"><span class="bar"><i style="width:50%"></i></span><span class="p">50 %</span></span>
+          <span class="mv none">Sans changement</span>
+          <span class="chg">Rien d'enregistré cette semaine</span>
+          <span></span>
+          <span class="nextd"></span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row is-quiet" href="#c1-sujet-memo">
+          <span class="who"><span class="nm">Mémo de crédit</span><span class="bank">Harbour Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:67%"></i></span><span class="p">67 %</span></span>
+          <span class="mv none">Sans changement</span>
+          <span class="chg">Rien d'enregistré cette semaine</span>
+          <span></span>
+          <span class="nextd"></span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row is-quiet" href="#c1-sujet-litiges">
+          <span class="who"><span class="nm">Litiges carte</span><span class="bank">North Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:0%"></i></span><span class="p">0 %</span></span>
+          <span class="mv none">Sans changement</span>
+          <span class="chg">Rien d'enregistré cette semaine</span>
+          <span></span>
+          <span class="nextd"></span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row is-quiet" href="#c1-sujet-agence">
+          <span class="who"><span class="nm">Recherche d'agence</span><span class="bank">Toutes les banques</span></span>
+          <span class="prog"><span class="bar"><i style="width:17%"></i></span><span class="p">17 %</span></span>
+          <span class="mv none">Sans changement</span>
+          <span class="chg">Rien d'enregistré cette semaine</span>
+          <span></span>
+          <span class="nextd"></span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row is-quiet" href="#c1-sujet-conseiller">
+          <span class="who"><span class="nm">Assistant conseiller</span><span class="bank">Harbour Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:33%"></i></span><span class="p">33 %</span></span>
+          <span class="mv none">Sans changement</span>
+          <span class="chg">Rien d'enregistré cette semaine</span>
+          <span></span>
+          <span class="nextd"></span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row is-quiet" href="#c1-sujet-qualite">
+          <span class="who"><span class="nm">Tableau de bord qualité</span><span class="bank">North Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:83%"></i></span><span class="p">83 %</span></span>
+          <span class="mv none">Sans changement</span>
+          <span class="chg">Rien d'enregistré cette semaine</span>
+          <span></span>
+          <span class="nextd"></span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+      </ol>
+      <p class="later">3 sujets prévus pour plus tard : Signature électronique, Aide à la conformité, Résumé d'appels.</p>
     </div>
-    <ul class="counts">
-      <li><b>6</b><span>sujets suivis</span></li>
-      <li class="zero"><b>0</b><span>ont bougé</span></li>
-      <li class="zero"><b>0</b><span>décision attendue</span></li>
-      <li class="zero"><b>0</b><span>engagement en retard</span></li>
-    </ul>
-  </div>
-  <footer class="foot"><span>Semaine du 17 au 23 nov. 2026 · registre au 23 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Cas particuliers · Example Bank</span><span class="pg">1 / 5</span></footer>
-</section>
-
-<!-- Case: more subjects moved than one slide holds. The table goes on over the next slide, under the same title marked 1/2, 2/2. -->
-<section class="slide" id="s2">
-  <header class="head">
-    <h2>Avancement par sujet <small>1/2</small></h2>
-    <p class="lede">9 sujets sur 15 ont bougé</p>
-  </header>
-  <div class="body progress">
-    <ol class="subjects">
-      <li class="cols" aria-hidden="true"><span>Sujet</span><span>Mouvement</span><span>Ce qui a changé</span><span>Ensuite</span><span>Attendu</span></li>
-      <li class="subject">
-        <div class="who"><h3>Onboarding mobile</h3><span class="bank">Toutes les banques</span></div>
-        <span class="mv done">Terminé</span>
-        <p class="chg">Le scan de pièce d'identité est livré en recette. <span class="id">C-2026-003</span></p>
-        <p class="nxt">Test en agence pilote</p>
-        <p class="need ask">Le choix des agences pilotes</p>
-      </li>
-      <li class="subject">
-        <div class="who"><h3>Mémo de crédit</h3><span class="bank">Harbour Bank</span></div>
-        <span class="mv adv">Avancé</span>
-        <p class="chg">Périmètre du pilote arrêté : deux équipes crédit. <span class="id">D-2026-004</span></p>
-        <p class="nxt">Ouvrir les comptes de test</p>
-        <p class="need dep">Le tech lead, en retard</p>
-      </li>
-      <li class="subject">
-        <div class="who"><h3>Litiges carte</h3><span class="bank">North Bank</span></div>
-        <span class="mv new">Nouveau</span>
-        <p class="chg">Demande reçue, fiche d'entrée rédigée. <span class="id">card-disputes</span></p>
-        <p class="nxt">Revue d'entrée le 26 nov.</p>
-        <p class="need ask">Un arbitrage de priorité</p>
-      </li>
-      <li class="subject">
-        <div class="who"><h3>Recherche d'agence</h3><span class="bank">Toutes les banques</span></div>
-        <span class="mv adv">Avancé</span>
-        <p class="chg">Maquettes validées, selon le tech lead. <span class="id">C-2026-007</span></p>
-        <p class="nxt">Découpage en tickets</p>
-        <p class="need nil">Rien cette semaine</p>
-      </li>
-      <li class="subject">
-        <div class="who"><h3>Assistant conseiller</h3><span class="bank">Harbour Bank</span></div>
-        <span class="mv def">Reporté</span>
-        <p class="chg">Revue sécurité reportée au 4 décembre. <span class="id">C-2026-006</span></p>
-        <p class="nxt">Préparer le dossier sécurité</p>
-        <p class="need dep">L'architecte</p>
-      </li>
-      <li class="subject">
-        <div class="who"><h3>Relances d'impayés</h3><span class="bank">North Bank</span></div>
-        <span class="mv adv">Avancé</span>
-        <p class="chg">Modèle de courrier validé, selon le sponsor. <span class="id">C-2026-011</span></p>
-        <p class="nxt">Test sur cinquante dossiers</p>
-        <p class="need nil">Rien cette semaine</p>
-      </li>
-    </ol>
-  </div>
-  <footer class="foot"><span>Semaine du 17 au 23 nov. 2026 · registre au 23 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Cas particuliers · Example Bank</span><span class="pg">2 / 5</span></footer>
-</section>
-
-<!-- The last slide of the table ends with the subjects that did not move, in one line: nothing is left out, nothing takes a row for saying nothing. -->
-<section class="slide" id="s3">
-  <header class="head">
-    <h2>Avancement par sujet <small>2/2</small></h2>
-    <p class="lede">9 sujets sur 15 ont bougé</p>
-  </header>
-  <div class="body progress">
-    <ol class="subjects">
-      <li class="cols" aria-hidden="true"><span>Sujet</span><span>Mouvement</span><span>Ce qui a changé</span><span>Ensuite</span><span>Attendu</span></li>
-      <li class="subject">
-        <div class="who"><h3>Synthèse de réunion client</h3><span class="bank">Harbour Bank</span></div>
-        <span class="mv new">Nouveau</span>
-        <p class="chg">Demande reçue de Harbour Bank. <span class="id">meeting-notes</span></p>
-        <p class="nxt">Rédiger la fiche d'entrée</p>
-        <p class="need nil">Rien cette semaine</p>
-      </li>
-      <li class="subject">
-        <div class="who"><h3>Contrôle des pièces</h3><span class="bank">Toutes les banques</span></div>
-        <span class="mv done">Terminé</span>
-        <p class="chg">Recette signée le 20 novembre. <span class="id">C-2026-012</span></p>
-        <p class="nxt">Mise en production</p>
-        <p class="need dep">Le tech lead</p>
-      </li>
-      <li class="subject">
-        <div class="who"><h3>Traduction des courriers</h3><span class="bank">North Bank</span></div>
-        <span class="mv def">Reporté</span>
-        <p class="chg">Démarrage reporté à janvier. <span class="id">D-2026-006</span></p>
-        <p class="nxt">Reprise en janvier</p>
-        <p class="need nil">Rien cette semaine</p>
-      </li>
-    </ol>
-    <p class="unchanged"><span class="label">Sans changement confirmé · 6</span> Tableau de bord qualité · Signature électronique · Aide à la saisie des virements · Classement des pièces jointes · FAQ interne · Détection de doublons</p>
-    <div class="measure">
-      <p class="label">Valeur mesurée cette semaine</p>
-      <p class="m-t">Délai d'ouverture de compte <span class="id">B-2026-001</span></p>
-      <div class="scale">
-        <span class="from">Départ <b>9 jours</b></span>
-        <span class="track"><i style="width:71%"></i></span>
-        <span class="to">Cible <b>2 jours</b></span>
+    <div class="split" hidden>
+      <ol class="rail">
+        <li><a href="#c1-sujet-onboarding"><span class="nm">Onboarding mobile</span><span class="r-meta"><span class="p">50 %</span><span class="mv none">Sans changement</span></span></a></li>
+        <li><a href="#c1-sujet-memo"><span class="nm">Mémo de crédit</span><span class="r-meta"><span class="p">67 %</span><span class="mv none">Sans changement</span></span></a></li>
+        <li><a href="#c1-sujet-litiges"><span class="nm">Litiges carte</span><span class="r-meta"><span class="p">0 %</span><span class="mv none">Sans changement</span></span></a></li>
+        <li><a href="#c1-sujet-agence"><span class="nm">Recherche d'agence</span><span class="r-meta"><span class="p">17 %</span><span class="mv none">Sans changement</span></span></a></li>
+        <li><a href="#c1-sujet-conseiller"><span class="nm">Assistant conseiller</span><span class="r-meta"><span class="p">33 %</span><span class="mv none">Sans changement</span></span></a></li>
+        <li><a href="#c1-sujet-qualite"><span class="nm">Tableau de bord qualité</span><span class="r-meta"><span class="p">83 %</span><span class="mv none">Sans changement</span></span></a></li>
+      </ol>
+      <div class="panes">
+        <article class="pane" id="c1-sujet-onboarding" aria-labelledby="c1-t-onboarding">
+          <header><div class="d-head"><h2 class="d-title" id="c1-t-onboarding">Onboarding mobile</h2><span class="mv none">Sans changement</span><span class="bank">Toutes les banques</span></div><a class="back" href="#c1-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>50 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="done">Développement<span class="sr"> : franchie</span></li><li class="cur">Tests<span class="sr"> : en cours</span></li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Scan de pièce d'identité livré en recette. <span class="id">C-2026-003</span></li><li>Recette démarrée avec deux conseillers, selon le tech lead. <span class="id">C-2026-018</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Test en agence pilote<span class="sub">À partir du 27 novembre, une fois les agences choisies</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              <section class="d-sec s-decisions"><p class="label">Décisions à prendre</p><ul><li>Choisir les agences pilotes <span class="id">D-2026-002</span><span class="sub">Pour le 27 nov. · Sans décision : le test en agence glisse à janvier.</span></li></ul></section>
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Parcours de signature<span class="sub">Le tech lead · 3 déc.</span></li></ul></section>
+              <section class="d-sec"><p class="label">Valeur mesurée</p><ul class="vals"><li class="val"><span class="v-name">Délai d'ouverture de compte <span class="id">B-2026-001</span><span class="sub">Mesuré le 18 nov.</span></span><span class="v-now"><span class="k">Aujourd'hui</span><b>4 jours</b></span><span class="v-goal"><span class="k">Objectif</span><b>2 jours</b></span></li></ul></section>
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1" disabled>Précédent</button><span>1 / 6</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c1-sujet-memo" aria-labelledby="c1-t-memo">
+          <header><div class="d-head"><h2 class="d-title" id="c1-t-memo">Mémo de crédit</h2><span class="mv none">Sans changement</span><span class="bank">Harbour Bank</span></div><a class="back" href="#c1-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>67 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="done">Développement<span class="sr"> : franchie</span></li><li class="done">Tests<span class="sr"> : franchie</span></li><li class="cur">Pilote<span class="sr"> : en cours</span></li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Périmètre du pilote arrêté : deux équipes crédit, prêts aux entreprises seulement. <span class="id">D-2026-004</span></li><li>Relance du tech lead pour les comptes de test, faite le 24. <span class="id">C-2026-005</span></li><li>Vingt mémos anonymisés reçus de Harbour Bank. <span class="id">C-2026-010</span></li><li>Calendrier du pilote envoyé au responsable risque crédit. <span class="id">C-2026-012</span></li></ul><details class="more"><summary>+ 3 autres</summary><ul><li>Risque de résidence des données rouvert, selon le responsable conformité. <span class="id">R-2026-003</span></li><li>Modèle de mémo validé par les deux équipes. <span class="id">C-2026-015</span></li><li>Classement AI Act proposé : risque limité. <span class="id">D-2026-007</span></li></ul></details></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Ouvrir les comptes de test, puis lancer le pilote<span class="sub">À partir du 1er décembre, avec les deux équipes crédit</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              <section class="d-sec s-blocks"><p class="label">Ce qui bloque</p><ul><li>Comptes de test : 3 jours de retard <span class="id">C-2026-005</span><span class="sub">Le tech lead · dus le 20 nov.</span></li><li>Avis sur la résidence des données <span class="id">R-2026-003</span><span class="sub">Le responsable conformité · sans date</span></li></ul></section>
+              <section class="d-sec s-decisions"><p class="label">Décisions à prendre</p><ul><li>Valider le classement AI Act du mémo de crédit <span class="id">D-2026-007</span><span class="sub">Pour le 28 nov. · Sans décision : le pilote n'ouvre pas aux équipes.</span></li><li>Retenir l'hébergement : sur site ou cloud du groupe <span class="id">D-2026-005</span><span class="sub">Sans date fixée · Sans décision : le coût du pilote reste inconnu.</span></li></ul></section>
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Revue sécurité <span class="id">C-2026-006</span><span class="sub">L'architecte · 4 déc.</span></li><li>Estimation du coût d'hébergement <span class="id">C-2026-019</span><span class="sub">L'architecte · 27 nov.</span></li><li>Formation des deux équipes crédit<span class="sub">Le responsable risque crédit · 2 déc.</span></li></ul><details class="more"><summary>+ 2 autres</summary><ul><li>Jeu de test élargi à cinquante mémos<span class="sub">Le tech lead · 5 déc.</span></li><li>Note de cadrage pour le comité de pilotage<span class="sub">Le PO · 9 déc.</span></li></ul></details></section>
+              <section class="d-sec"><p class="label">Valeur mesurée</p><ul class="vals"><li class="val"><span class="v-name">Mémos relus sans correction <span class="id">B-2026-004</span><span class="sub">Mesuré le 20 nov.</span></span><span class="v-now"><span class="k">Aujourd'hui</span><b>55 %</b></span><span class="v-goal"><span class="k">Objectif</span><b>80 %</b></span></li><li class="val"><span class="v-name">Temps de rédaction d'un mémo <span class="id">B-2026-003</span><span class="sub">Valeur de départ, pas encore remesurée</span></span><span class="v-now"><span class="k">Aujourd'hui</span><b>3 heures</b></span><span class="v-goal"><span class="k">Objectif</span><b>1 heure</b></span></li></ul></section>
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>2 / 6</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c1-sujet-litiges" aria-labelledby="c1-t-litiges">
+          <header><div class="d-head"><h2 class="d-title" id="c1-t-litiges">Litiges carte</h2><span class="mv none">Sans changement</span><span class="bank">North Bank</span></div><a class="back" href="#c1-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>0 %</b></p><ol class="stages"><li class="cur">Cadrage<span class="sr"> : en cours</span></li><li class="todo">Conception</li><li class="todo">Développement</li><li class="todo">Tests</li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Demande d'un assistant pour les litiges carte reçue de North Bank. <span class="id">card-disputes</span></li><li>Fiche d'entrée rédigée, en attente de revue.</li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Revue d'entrée<span class="sub">Jeudi 26 novembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              <section class="d-sec s-decisions"><p class="label">Décisions à prendre</p><ul><li>Arbitrer la priorité entre Litiges carte et Assistant conseiller <span class="id">D-2026-008</span><span class="sub">Sans date fixée · Sans décision : les deux sujets se partagent la même équipe en décembre.</span></li></ul></section>
+              
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>3 / 6</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c1-sujet-agence" aria-labelledby="c1-t-agence">
+          <header><div class="d-head"><h2 class="d-title" id="c1-t-agence">Recherche d'agence</h2><span class="mv none">Sans changement</span><span class="bank">Toutes les banques</span></div><a class="back" href="#c1-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>17 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="cur">Conception<span class="sr"> : en cours</span></li><li class="todo">Développement</li><li class="todo">Tests</li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Maquettes présentées aux deux banques, en cours de validation, selon le tech lead. <span class="id">C-2026-007</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Découpage en tickets<span class="sub">À partir du 2 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Validation des maquettes <span class="id">C-2026-007</span><span class="sub">Le tech lead · 28 nov.</span></li></ul></section>
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>4 / 6</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c1-sujet-conseiller" aria-labelledby="c1-t-conseiller">
+          <header><div class="d-head"><h2 class="d-title" id="c1-t-conseiller">Assistant conseiller</h2><span class="mv none">Sans changement</span><span class="bank">Harbour Bank</span></div><a class="back" href="#c1-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>33 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="cur">Développement<span class="sr"> : en cours</span></li><li class="todo">Tests</li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Revue sécurité reportée du 25 novembre au 4 décembre : dossier incomplet. <span class="id">C-2026-006</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Revue sécurité<span class="sub">Vendredi 4 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Dossier de la revue sécurité <span class="id">C-2026-006</span><span class="sub">L'architecte · 3 déc.</span></li></ul></section>
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>5 / 6</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c1-sujet-qualite" aria-labelledby="c1-t-qualite">
+          <header><div class="d-head"><h2 class="d-title" id="c1-t-qualite">Tableau de bord qualité</h2><span class="mv none">Sans changement</span><span class="bank">North Bank</span></div><a class="back" href="#c1-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>83 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="done">Développement<span class="sr"> : franchie</span></li><li class="done">Tests<span class="sr"> : franchie</span></li><li class="done">Pilote<span class="sr"> : franchie</span></li><li class="cur">Mise en service<span class="sr"> : en cours</span></li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec"><p class="label">Cette semaine</p><p class="none">Rien d'enregistré sur la période.</p></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Sans prochaine étape connue</li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>6 / 6</span><button type="button" data-step="1" disabled>Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
       </div>
-      <p class="m-v"><b>4 jours</b> mesuré le 18 nov.</p>
     </div>
   </div>
-  <footer class="foot"><span>Semaine du 17 au 23 nov. 2026 · registre au 23 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Cas particuliers · Example Bank</span><span class="pg">3 / 5</span></footer>
+  <footer class="foot"><span>Semaine du mar. 17 au lun. 23 nov. 2026 · registre au 24 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Cas particuliers · une semaine sans changement</span><span class="pg">1 / 5</span></footer>
 </section>
 
-<!-- Case: nothing to decide, nothing blocked, and the PO said nothing of the team's capacity. The slide stays. -->
-<section class="slide" id="s4">
-  <header class="head">
-    <h2>Décisions et dépendances</h2>
-    <p class="lede">Aucune décision attendue du sponsor</p>
-  </header>
-  <div class="body decide">
-    <div class="empty dec">
-      <p class="t">Aucune décision n'est attendue du sponsor</p>
-      <p class="d">Aucune décision en attente n'est enregistrée au 23 novembre.</p>
+<section class="slide dash-slide" id="c2-s1">
+  <header class="head"><h1>Avancement de la semaine</h1><p class="lede">Du mardi 17 au lundi 23 novembre 2026 · 12 sujets · <span class="n-block sign alert">1 point bloquant</span></p></header>
+  <div class="body dashbody">
+    <div class="overview">
+      <ol class="dash">
+        <li class="cols dcols" aria-hidden="true"><span>Sujet</span><span>Avancement</span><span>Cette semaine</span><span>Ce qui a changé</span><span></span><span class="r">Prochain jalon</span><span></span></li>
+        <li><a class="subject row" href="#c2-sujet-onboarding">
+          <span class="who"><span class="nm">Onboarding mobile</span><span class="bank">Toutes les banques</span></span>
+          <span class="prog"><span class="bar"><i style="width:50%"></i></span><span class="p">50 %</span></span>
+          <span class="mv done">Étape franchie</span>
+          <span class="chg">Le scan de pièce d'identité est livré en recette</span>
+          <span></span>
+          <span class="nextd">27 nov.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c2-sujet-memo">
+          <span class="who"><span class="nm">Mémo de crédit</span><span class="bank">Harbour Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:67%"></i></span><span class="p">67 %</span></span>
+          <span class="mv done">Étape franchie</span>
+          <span class="chg">Périmètre du pilote arrêté : deux équipes crédit</span>
+          <span><span class="flag sign alert">Bloqué</span></span>
+          <span class="nextd">1 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c2-sujet-litiges">
+          <span class="who"><span class="nm">Litiges carte</span><span class="bank">North Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:0%"></i></span><span class="p">0 %</span></span>
+          <span class="mv new">Nouveau</span>
+          <span class="chg">Demande reçue, fiche d'entrée rédigée</span>
+          <span></span>
+          <span class="nextd">26 nov.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c2-sujet-agence">
+          <span class="who"><span class="nm">Recherche d'agence</span><span class="bank">Toutes les banques</span></span>
+          <span class="prog"><span class="bar"><i style="width:17%"></i></span><span class="p">17 %</span></span>
+          <span class="mv adv">En cours</span>
+          <span class="chg">Maquettes en cours de validation, selon le tech lead</span>
+          <span></span>
+          <span class="nextd">2 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c2-sujet-conseiller">
+          <span class="who"><span class="nm">Assistant conseiller</span><span class="bank">Harbour Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:33%"></i></span><span class="p">33 %</span></span>
+          <span class="mv def">Reporté</span>
+          <span class="chg">Revue sécurité reportée au 4 décembre</span>
+          <span></span>
+          <span class="nextd">4 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row is-quiet" href="#c2-sujet-qualite">
+          <span class="who"><span class="nm">Tableau de bord qualité</span><span class="bank">North Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:83%"></i></span><span class="p">83 %</span></span>
+          <span class="mv none">Sans changement</span>
+          <span class="chg">Rien d'enregistré cette semaine</span>
+          <span></span>
+          <span class="nextd"></span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c2-sujet-x0">
+          <span class="who"><span class="nm">Signature électronique</span><span class="bank">Harbour Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:17%"></i></span><span class="p">17 %</span></span>
+          <span class="mv adv">En cours</span>
+          <span class="chg">Maquettes en cours de validation, selon le tech lead</span>
+          <span></span>
+          <span class="nextd">2 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c2-sujet-x1">
+          <span class="who"><span class="nm">Aide à la conformité</span><span class="bank">North Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:33%"></i></span><span class="p">33 %</span></span>
+          <span class="mv adv">En cours</span>
+          <span class="chg">Maquettes en cours de validation, selon le tech lead</span>
+          <span></span>
+          <span class="nextd">2 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c2-sujet-x2">
+          <span class="who"><span class="nm">Résumé d'appels</span><span class="bank">Harbour Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:50%"></i></span><span class="p">50 %</span></span>
+          <span class="mv adv">En cours</span>
+          <span class="chg">Maquettes en cours de validation, selon le tech lead</span>
+          <span></span>
+          <span class="nextd">2 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c2-sujet-x3">
+          <span class="who"><span class="nm">Tri des courriers</span><span class="bank">North Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:67%"></i></span><span class="p">67 %</span></span>
+          <span class="mv adv">En cours</span>
+          <span class="chg">Maquettes en cours de validation, selon le tech lead</span>
+          <span></span>
+          <span class="nextd">2 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c2-sujet-x4">
+          <span class="who"><span class="nm">Lecteur de pièces KYC</span><span class="bank">Harbour Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:83%"></i></span><span class="p">83 %</span></span>
+          <span class="mv adv">En cours</span>
+          <span class="chg">Maquettes en cours de validation, selon le tech lead</span>
+          <span></span>
+          <span class="nextd">2 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c2-sujet-x5">
+          <span class="who"><span class="nm">Scoring des demandes</span><span class="bank">North Bank</span></span>
+          <span class="prog"><span class="bar"><i style="width:0%"></i></span><span class="p">0 %</span></span>
+          <span class="mv adv">En cours</span>
+          <span class="chg">Maquettes en cours de validation, selon le tech lead</span>
+          <span></span>
+          <span class="nextd">2 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+      </ol>
+      
     </div>
-    <div class="deps">
-      <p class="label">Dépendances</p>
-      <p class="nothing">Aucun blocage n'est enregistré.</p>
+    <div class="split" hidden>
+      <ol class="rail">
+        <li><a href="#c2-sujet-onboarding"><span class="nm">Onboarding mobile</span><span class="r-meta"><span class="p">50 %</span><span class="mv done">Étape franchie</span></span></a></li>
+        <li><a href="#c2-sujet-memo"><span class="nm">Mémo de crédit</span><span class="r-meta"><span class="p">67 %</span><span class="mv done">Étape franchie</span> <span class="flag sign alert">Bloqué</span></span></a></li>
+        <li><a href="#c2-sujet-litiges"><span class="nm">Litiges carte</span><span class="r-meta"><span class="p">0 %</span><span class="mv new">Nouveau</span></span></a></li>
+        <li><a href="#c2-sujet-agence"><span class="nm">Recherche d'agence</span><span class="r-meta"><span class="p">17 %</span><span class="mv adv">En cours</span></span></a></li>
+        <li><a href="#c2-sujet-conseiller"><span class="nm">Assistant conseiller</span><span class="r-meta"><span class="p">33 %</span><span class="mv def">Reporté</span></span></a></li>
+        <li><a href="#c2-sujet-qualite"><span class="nm">Tableau de bord qualité</span><span class="r-meta"><span class="p">83 %</span><span class="mv none">Sans changement</span></span></a></li>
+        <li><a href="#c2-sujet-x0"><span class="nm">Signature électronique</span><span class="r-meta"><span class="p">17 %</span><span class="mv adv">En cours</span></span></a></li>
+        <li><a href="#c2-sujet-x1"><span class="nm">Aide à la conformité</span><span class="r-meta"><span class="p">33 %</span><span class="mv adv">En cours</span></span></a></li>
+        <li><a href="#c2-sujet-x2"><span class="nm">Résumé d'appels</span><span class="r-meta"><span class="p">50 %</span><span class="mv adv">En cours</span></span></a></li>
+        <li><a href="#c2-sujet-x3"><span class="nm">Tri des courriers</span><span class="r-meta"><span class="p">67 %</span><span class="mv adv">En cours</span></span></a></li>
+        <li><a href="#c2-sujet-x4"><span class="nm">Lecteur de pièces KYC</span><span class="r-meta"><span class="p">83 %</span><span class="mv adv">En cours</span></span></a></li>
+        <li><a href="#c2-sujet-x5"><span class="nm">Scoring des demandes</span><span class="r-meta"><span class="p">0 %</span><span class="mv adv">En cours</span></span></a></li>
+      </ol>
+      <div class="panes">
+        <article class="pane" id="c2-sujet-onboarding" aria-labelledby="c2-t-onboarding">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-onboarding">Onboarding mobile</h2><span class="mv done">Étape franchie</span><span class="bank">Toutes les banques</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>50 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="done">Développement<span class="sr"> : franchie</span></li><li class="cur">Tests<span class="sr"> : en cours</span></li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Scan de pièce d'identité livré en recette. <span class="id">C-2026-003</span></li><li>Recette démarrée avec deux conseillers, selon le tech lead. <span class="id">C-2026-018</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Test en agence pilote<span class="sub">À partir du 27 novembre, une fois les agences choisies</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              <section class="d-sec s-decisions"><p class="label">Décisions à prendre</p><ul><li>Choisir les agences pilotes <span class="id">D-2026-002</span><span class="sub">Pour le 27 nov. · Sans décision : le test en agence glisse à janvier.</span></li></ul></section>
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Parcours de signature<span class="sub">Le tech lead · 3 déc.</span></li></ul></section>
+              <section class="d-sec"><p class="label">Valeur mesurée</p><ul class="vals"><li class="val"><span class="v-name">Délai d'ouverture de compte <span class="id">B-2026-001</span><span class="sub">Mesuré le 18 nov.</span></span><span class="v-now"><span class="k">Aujourd'hui</span><b>4 jours</b></span><span class="v-goal"><span class="k">Objectif</span><b>2 jours</b></span></li></ul></section>
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1" disabled>Précédent</button><span>1 / 12</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c2-sujet-memo" aria-labelledby="c2-t-memo">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-memo">Mémo de crédit</h2><span class="mv done">Étape franchie</span><span class="flag sign alert">Bloqué</span><span class="bank">Harbour Bank</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>67 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="done">Développement<span class="sr"> : franchie</span></li><li class="done">Tests<span class="sr"> : franchie</span></li><li class="cur">Pilote<span class="sr"> : en cours</span></li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Périmètre du pilote arrêté : deux équipes crédit, prêts aux entreprises seulement. <span class="id">D-2026-004</span></li><li>Relance du tech lead pour les comptes de test, faite le 24. <span class="id">C-2026-005</span></li><li>Vingt mémos anonymisés reçus de Harbour Bank. <span class="id">C-2026-010</span></li><li>Calendrier du pilote envoyé au responsable risque crédit. <span class="id">C-2026-012</span></li></ul><details class="more"><summary>+ 3 autres</summary><ul><li>Risque de résidence des données rouvert, selon le responsable conformité. <span class="id">R-2026-003</span></li><li>Modèle de mémo validé par les deux équipes. <span class="id">C-2026-015</span></li><li>Classement AI Act proposé : risque limité. <span class="id">D-2026-007</span></li></ul></details></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Ouvrir les comptes de test, puis lancer le pilote<span class="sub">À partir du 1er décembre, avec les deux équipes crédit</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              <section class="d-sec s-blocks"><p class="label">Ce qui bloque</p><ul><li>Comptes de test : 3 jours de retard <span class="id">C-2026-005</span><span class="sub">Le tech lead · dus le 20 nov.</span></li><li>Avis sur la résidence des données <span class="id">R-2026-003</span><span class="sub">Le responsable conformité · sans date</span></li></ul></section>
+              <section class="d-sec s-decisions"><p class="label">Décisions à prendre</p><ul><li>Valider le classement AI Act du mémo de crédit <span class="id">D-2026-007</span><span class="sub">Pour le 28 nov. · Sans décision : le pilote n'ouvre pas aux équipes.</span></li><li>Retenir l'hébergement : sur site ou cloud du groupe <span class="id">D-2026-005</span><span class="sub">Sans date fixée · Sans décision : le coût du pilote reste inconnu.</span></li></ul></section>
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Revue sécurité <span class="id">C-2026-006</span><span class="sub">L'architecte · 4 déc.</span></li><li>Estimation du coût d'hébergement <span class="id">C-2026-019</span><span class="sub">L'architecte · 27 nov.</span></li><li>Formation des deux équipes crédit<span class="sub">Le responsable risque crédit · 2 déc.</span></li></ul><details class="more"><summary>+ 2 autres</summary><ul><li>Jeu de test élargi à cinquante mémos<span class="sub">Le tech lead · 5 déc.</span></li><li>Note de cadrage pour le comité de pilotage<span class="sub">Le PO · 9 déc.</span></li></ul></details></section>
+              <section class="d-sec"><p class="label">Valeur mesurée</p><ul class="vals"><li class="val"><span class="v-name">Mémos relus sans correction <span class="id">B-2026-004</span><span class="sub">Mesuré le 20 nov.</span></span><span class="v-now"><span class="k">Aujourd'hui</span><b>55 %</b></span><span class="v-goal"><span class="k">Objectif</span><b>80 %</b></span></li><li class="val"><span class="v-name">Temps de rédaction d'un mémo <span class="id">B-2026-003</span><span class="sub">Valeur de départ, pas encore remesurée</span></span><span class="v-now"><span class="k">Aujourd'hui</span><b>3 heures</b></span><span class="v-goal"><span class="k">Objectif</span><b>1 heure</b></span></li></ul></section>
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>2 / 12</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c2-sujet-litiges" aria-labelledby="c2-t-litiges">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-litiges">Litiges carte</h2><span class="mv new">Nouveau</span><span class="bank">North Bank</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>0 %</b></p><ol class="stages"><li class="cur">Cadrage<span class="sr"> : en cours</span></li><li class="todo">Conception</li><li class="todo">Développement</li><li class="todo">Tests</li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Demande d'un assistant pour les litiges carte reçue de North Bank. <span class="id">card-disputes</span></li><li>Fiche d'entrée rédigée, en attente de revue.</li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Revue d'entrée<span class="sub">Jeudi 26 novembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              <section class="d-sec s-decisions"><p class="label">Décisions à prendre</p><ul><li>Arbitrer la priorité entre Litiges carte et Assistant conseiller <span class="id">D-2026-008</span><span class="sub">Sans date fixée · Sans décision : les deux sujets se partagent la même équipe en décembre.</span></li></ul></section>
+              
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>3 / 12</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c2-sujet-agence" aria-labelledby="c2-t-agence">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-agence">Recherche d'agence</h2><span class="mv adv">En cours</span><span class="bank">Toutes les banques</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>17 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="cur">Conception<span class="sr"> : en cours</span></li><li class="todo">Développement</li><li class="todo">Tests</li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Maquettes présentées aux deux banques, en cours de validation, selon le tech lead. <span class="id">C-2026-007</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Découpage en tickets<span class="sub">À partir du 2 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Validation des maquettes <span class="id">C-2026-007</span><span class="sub">Le tech lead · 28 nov.</span></li></ul></section>
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>4 / 12</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c2-sujet-conseiller" aria-labelledby="c2-t-conseiller">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-conseiller">Assistant conseiller</h2><span class="mv def">Reporté</span><span class="bank">Harbour Bank</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>33 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="cur">Développement<span class="sr"> : en cours</span></li><li class="todo">Tests</li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Revue sécurité reportée du 25 novembre au 4 décembre : dossier incomplet. <span class="id">C-2026-006</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Revue sécurité<span class="sub">Vendredi 4 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Dossier de la revue sécurité <span class="id">C-2026-006</span><span class="sub">L'architecte · 3 déc.</span></li></ul></section>
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>5 / 12</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c2-sujet-qualite" aria-labelledby="c2-t-qualite">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-qualite">Tableau de bord qualité</h2><span class="mv none">Sans changement</span><span class="bank">North Bank</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>83 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="done">Développement<span class="sr"> : franchie</span></li><li class="done">Tests<span class="sr"> : franchie</span></li><li class="done">Pilote<span class="sr"> : franchie</span></li><li class="cur">Mise en service<span class="sr"> : en cours</span></li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec"><p class="label">Cette semaine</p><p class="none">Rien d'enregistré sur la période.</p></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Sans prochaine étape connue</li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>6 / 12</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c2-sujet-x0" aria-labelledby="c2-t-x0">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-x0">Signature électronique</h2><span class="mv adv">En cours</span><span class="bank">Harbour Bank</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>17 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="cur">Conception<span class="sr"> : en cours</span></li><li class="todo">Développement</li><li class="todo">Tests</li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Maquettes présentées aux deux banques, en cours de validation, selon le tech lead. <span class="id">C-2026-007</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Découpage en tickets<span class="sub">À partir du 2 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Validation des maquettes <span class="id">C-2026-007</span><span class="sub">Le tech lead · 28 nov.</span></li></ul></section>
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>7 / 12</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c2-sujet-x1" aria-labelledby="c2-t-x1">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-x1">Aide à la conformité</h2><span class="mv adv">En cours</span><span class="bank">North Bank</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>33 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="cur">Développement<span class="sr"> : en cours</span></li><li class="todo">Tests</li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Maquettes présentées aux deux banques, en cours de validation, selon le tech lead. <span class="id">C-2026-007</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Découpage en tickets<span class="sub">À partir du 2 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Validation des maquettes <span class="id">C-2026-007</span><span class="sub">Le tech lead · 28 nov.</span></li></ul></section>
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>8 / 12</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c2-sujet-x2" aria-labelledby="c2-t-x2">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-x2">Résumé d'appels</h2><span class="mv adv">En cours</span><span class="bank">Harbour Bank</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>50 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="done">Développement<span class="sr"> : franchie</span></li><li class="cur">Tests<span class="sr"> : en cours</span></li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Maquettes présentées aux deux banques, en cours de validation, selon le tech lead. <span class="id">C-2026-007</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Découpage en tickets<span class="sub">À partir du 2 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Validation des maquettes <span class="id">C-2026-007</span><span class="sub">Le tech lead · 28 nov.</span></li></ul></section>
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>9 / 12</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c2-sujet-x3" aria-labelledby="c2-t-x3">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-x3">Tri des courriers</h2><span class="mv adv">En cours</span><span class="bank">North Bank</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>67 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="done">Développement<span class="sr"> : franchie</span></li><li class="done">Tests<span class="sr"> : franchie</span></li><li class="cur">Pilote<span class="sr"> : en cours</span></li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Maquettes présentées aux deux banques, en cours de validation, selon le tech lead. <span class="id">C-2026-007</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Découpage en tickets<span class="sub">À partir du 2 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Validation des maquettes <span class="id">C-2026-007</span><span class="sub">Le tech lead · 28 nov.</span></li></ul></section>
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>10 / 12</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c2-sujet-x4" aria-labelledby="c2-t-x4">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-x4">Lecteur de pièces KYC</h2><span class="mv adv">En cours</span><span class="bank">Harbour Bank</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>83 %</b></p><ol class="stages"><li class="done">Cadrage<span class="sr"> : franchie</span></li><li class="done">Conception<span class="sr"> : franchie</span></li><li class="done">Développement<span class="sr"> : franchie</span></li><li class="done">Tests<span class="sr"> : franchie</span></li><li class="done">Pilote<span class="sr"> : franchie</span></li><li class="cur">Mise en service<span class="sr"> : en cours</span></li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Maquettes présentées aux deux banques, en cours de validation, selon le tech lead. <span class="id">C-2026-007</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Découpage en tickets<span class="sub">À partir du 2 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Validation des maquettes <span class="id">C-2026-007</span><span class="sub">Le tech lead · 28 nov.</span></li></ul></section>
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>11 / 12</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c2-sujet-x5" aria-labelledby="c2-t-x5">
+          <header><div class="d-head"><h2 class="d-title" id="c2-t-x5">Scoring des demandes</h2><span class="mv adv">En cours</span><span class="bank">North Bank</span></div><a class="back" href="#c2-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="advance"><p class="label">Avancement <b>0 %</b></p><ol class="stages"><li class="cur">Cadrage<span class="sr"> : en cours</span></li><li class="todo">Conception</li><li class="todo">Développement</li><li class="todo">Tests</li><li class="todo">Pilote</li><li class="todo">Mise en service</li></ol></div><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Maquettes présentées aux deux banques, en cours de validation, selon le tech lead. <span class="id">C-2026-007</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Découpage en tickets<span class="sub">À partir du 2 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Validation des maquettes <span class="id">C-2026-007</span><span class="sub">Le tech lead · 28 nov.</span></li></ul></section>
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>12 / 12</span><button type="button" data-step="1" disabled>Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+      </div>
     </div>
-    <blockquote class="capacity">
-      <p class="label">Capacité de l'équipe</p>
-      <p class="nothing">Le PO n'a rien indiqué sur la capacité de l'équipe.</p>
-    </blockquote>
   </div>
-  <footer class="foot"><span>Semaine du 17 au 23 nov. 2026 · registre au 23 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Cas particuliers · Example Bank</span><span class="pg">4 / 5</span></footer>
+  <footer class="foot"><span>Semaine du mar. 17 au lun. 23 nov. 2026 · registre au 24 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Cas particuliers · la liste défile au-delà de l'écran</span><span class="pg">2 / 5</span></footer>
 </section>
 
-<!-- Case: nothing to propose for next week. -->
-<section class="slide" id="s5">
-  <header class="head">
-    <h2>Semaine prochaine</h2>
-    <p class="lede">Rien à valider cette semaine</p>
-  </header>
+<section class="slide dash-slide" id="c3-s1">
+  <header class="head"><h1>Avancement de la semaine</h1><p class="lede">Du mardi 17 au lundi 23 novembre 2026 · 6 sujets · <span class="n-block sign alert">1 point bloquant</span></p></header>
+  <div class="body dashbody">
+    <div class="overview" hidden>
+      <ol class="dash">
+        <li class="cols dcols" aria-hidden="true"><span>Sujet</span><span></span><span>Cette semaine</span><span>Ce qui a changé</span><span></span><span class="r">Prochain jalon</span><span></span></li>
+        <li><a class="subject row" href="#c3-sujet-onboarding">
+          <span class="who"><span class="nm">Onboarding mobile</span><span class="bank">Toutes les banques</span></span>
+          <span></span>
+          <span class="mv done">Étape franchie</span>
+          <span class="chg">Le scan de pièce d'identité est livré en recette</span>
+          <span></span>
+          <span class="nextd">27 nov.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c3-sujet-memo">
+          <span class="who"><span class="nm">Mémo de crédit</span><span class="bank">Harbour Bank</span></span>
+          <span></span>
+          <span class="mv done">Étape franchie</span>
+          <span class="chg">Périmètre du pilote arrêté : deux équipes crédit</span>
+          <span><span class="flag sign alert">Bloqué</span></span>
+          <span class="nextd">1 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c3-sujet-litiges">
+          <span class="who"><span class="nm">Litiges carte</span><span class="bank">North Bank</span></span>
+          <span></span>
+          <span class="mv new">Nouveau</span>
+          <span class="chg">Demande reçue, fiche d'entrée rédigée</span>
+          <span></span>
+          <span class="nextd">26 nov.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c3-sujet-agence">
+          <span class="who"><span class="nm">Recherche d'agence</span><span class="bank">Toutes les banques</span></span>
+          <span></span>
+          <span class="mv adv">En cours</span>
+          <span class="chg">Maquettes en cours de validation, selon le tech lead</span>
+          <span></span>
+          <span class="nextd">2 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row" href="#c3-sujet-conseiller">
+          <span class="who"><span class="nm">Assistant conseiller</span><span class="bank">Harbour Bank</span></span>
+          <span></span>
+          <span class="mv def">Reporté</span>
+          <span class="chg">Revue sécurité reportée au 4 décembre</span>
+          <span></span>
+          <span class="nextd">4 déc.</span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+        <li><a class="subject row is-quiet" href="#c3-sujet-qualite">
+          <span class="who"><span class="nm">Tableau de bord qualité</span><span class="bank">North Bank</span></span>
+          <span></span>
+          <span class="mv none">Sans changement</span>
+          <span class="chg">Rien d'enregistré cette semaine</span>
+          <span></span>
+          <span class="nextd"></span>
+          <span class="chev" aria-hidden="true"></span>
+        </a></li>
+      </ol>
+      <p class="later">3 sujets prévus pour plus tard : Signature électronique, Aide à la conformité, Résumé d'appels.</p>
+    </div>
+    <div class="split">
+      <ol class="rail">
+        <li><a href="#c3-sujet-onboarding"><span class="nm">Onboarding mobile</span><span class="r-meta"><span class="mv done">Étape franchie</span></span></a></li>
+        <li><a href="#c3-sujet-memo"><span class="nm">Mémo de crédit</span><span class="r-meta"><span class="mv done">Étape franchie</span> <span class="flag sign alert">Bloqué</span></span></a></li>
+        <li><a href="#c3-sujet-litiges"><span class="nm">Litiges carte</span><span class="r-meta"><span class="mv new">Nouveau</span></span></a></li>
+        <li><a href="#c3-sujet-agence" aria-current="true"><span class="nm">Recherche d'agence</span><span class="r-meta"><span class="mv adv">En cours</span></span></a></li>
+        <li><a href="#c3-sujet-conseiller"><span class="nm">Assistant conseiller</span><span class="r-meta"><span class="mv def">Reporté</span></span></a></li>
+        <li><a href="#c3-sujet-qualite"><span class="nm">Tableau de bord qualité</span><span class="r-meta"><span class="mv none">Sans changement</span></span></a></li>
+      </ol>
+      <div class="panes">
+        <article class="pane" id="c3-sujet-onboarding" aria-labelledby="c3-t-onboarding">
+          <header><div class="d-head"><h2 class="d-title" id="c3-t-onboarding">Onboarding mobile</h2><span class="mv done">Étape franchie</span><span class="bank">Toutes les banques</span></div><a class="back" href="#c3-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Scan de pièce d'identité livré en recette. <span class="id">C-2026-003</span></li><li>Recette démarrée avec deux conseillers, selon le tech lead. <span class="id">C-2026-018</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Test en agence pilote<span class="sub">À partir du 27 novembre, une fois les agences choisies</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              <section class="d-sec s-decisions"><p class="label">Décisions à prendre</p><ul><li>Choisir les agences pilotes <span class="id">D-2026-002</span><span class="sub">Pour le 27 nov. · Sans décision : le test en agence glisse à janvier.</span></li></ul></section>
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Parcours de signature<span class="sub">Le tech lead · 3 déc.</span></li></ul></section>
+              <section class="d-sec"><p class="label">Valeur mesurée</p><ul class="vals"><li class="val"><span class="v-name">Délai d'ouverture de compte <span class="id">B-2026-001</span><span class="sub">Mesuré le 18 nov.</span></span><span class="v-now"><span class="k">Aujourd'hui</span><b>4 jours</b></span><span class="v-goal"><span class="k">Objectif</span><b>2 jours</b></span></li></ul></section>
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1" disabled>Précédent</button><span>1 / 6</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c3-sujet-memo" aria-labelledby="c3-t-memo">
+          <header><div class="d-head"><h2 class="d-title" id="c3-t-memo">Mémo de crédit</h2><span class="mv done">Étape franchie</span><span class="flag sign alert">Bloqué</span><span class="bank">Harbour Bank</span></div><a class="back" href="#c3-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Périmètre du pilote arrêté : deux équipes crédit, prêts aux entreprises seulement. <span class="id">D-2026-004</span></li><li>Relance du tech lead pour les comptes de test, faite le 24. <span class="id">C-2026-005</span></li><li>Vingt mémos anonymisés reçus de Harbour Bank. <span class="id">C-2026-010</span></li><li>Calendrier du pilote envoyé au responsable risque crédit. <span class="id">C-2026-012</span></li></ul><details class="more"><summary>+ 3 autres</summary><ul><li>Risque de résidence des données rouvert, selon le responsable conformité. <span class="id">R-2026-003</span></li><li>Modèle de mémo validé par les deux équipes. <span class="id">C-2026-015</span></li><li>Classement AI Act proposé : risque limité. <span class="id">D-2026-007</span></li></ul></details></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Ouvrir les comptes de test, puis lancer le pilote<span class="sub">À partir du 1er décembre, avec les deux équipes crédit</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              <section class="d-sec s-blocks"><p class="label">Ce qui bloque</p><ul><li>Comptes de test : 3 jours de retard <span class="id">C-2026-005</span><span class="sub">Le tech lead · dus le 20 nov.</span></li><li>Avis sur la résidence des données <span class="id">R-2026-003</span><span class="sub">Le responsable conformité · sans date</span></li></ul></section>
+              <section class="d-sec s-decisions"><p class="label">Décisions à prendre</p><ul><li>Valider le classement AI Act du mémo de crédit <span class="id">D-2026-007</span><span class="sub">Pour le 28 nov. · Sans décision : le pilote n'ouvre pas aux équipes.</span></li><li>Retenir l'hébergement : sur site ou cloud du groupe <span class="id">D-2026-005</span><span class="sub">Sans date fixée · Sans décision : le coût du pilote reste inconnu.</span></li></ul></section>
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Revue sécurité <span class="id">C-2026-006</span><span class="sub">L'architecte · 4 déc.</span></li><li>Estimation du coût d'hébergement <span class="id">C-2026-019</span><span class="sub">L'architecte · 27 nov.</span></li><li>Formation des deux équipes crédit<span class="sub">Le responsable risque crédit · 2 déc.</span></li></ul><details class="more"><summary>+ 2 autres</summary><ul><li>Jeu de test élargi à cinquante mémos<span class="sub">Le tech lead · 5 déc.</span></li><li>Note de cadrage pour le comité de pilotage<span class="sub">Le PO · 9 déc.</span></li></ul></details></section>
+              <section class="d-sec"><p class="label">Valeur mesurée</p><ul class="vals"><li class="val"><span class="v-name">Mémos relus sans correction <span class="id">B-2026-004</span><span class="sub">Mesuré le 20 nov.</span></span><span class="v-now"><span class="k">Aujourd'hui</span><b>55 %</b></span><span class="v-goal"><span class="k">Objectif</span><b>80 %</b></span></li><li class="val"><span class="v-name">Temps de rédaction d'un mémo <span class="id">B-2026-003</span><span class="sub">Valeur de départ, pas encore remesurée</span></span><span class="v-now"><span class="k">Aujourd'hui</span><b>3 heures</b></span><span class="v-goal"><span class="k">Objectif</span><b>1 heure</b></span></li></ul></section>
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>2 / 6</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c3-sujet-litiges" aria-labelledby="c3-t-litiges">
+          <header><div class="d-head"><h2 class="d-title" id="c3-t-litiges">Litiges carte</h2><span class="mv new">Nouveau</span><span class="bank">North Bank</span></div><a class="back" href="#c3-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Demande d'un assistant pour les litiges carte reçue de North Bank. <span class="id">card-disputes</span></li><li>Fiche d'entrée rédigée, en attente de revue.</li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Revue d'entrée<span class="sub">Jeudi 26 novembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              <section class="d-sec s-decisions"><p class="label">Décisions à prendre</p><ul><li>Arbitrer la priorité entre Litiges carte et Assistant conseiller <span class="id">D-2026-008</span><span class="sub">Sans date fixée · Sans décision : les deux sujets se partagent la même équipe en décembre.</span></li></ul></section>
+              
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>3 / 6</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane is-on" id="c3-sujet-agence" aria-labelledby="c3-t-agence">
+          <header><div class="d-head"><h2 class="d-title" id="c3-t-agence">Recherche d'agence</h2><span class="mv adv">En cours</span><span class="bank">Toutes les banques</span></div><a class="back" href="#c3-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Maquettes présentées aux deux banques, en cours de validation, selon le tech lead. <span class="id">C-2026-007</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Découpage en tickets<span class="sub">À partir du 2 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Validation des maquettes <span class="id">C-2026-007</span><span class="sub">Le tech lead · 28 nov.</span></li></ul></section>
+              <section class="d-sec"><p class="label">Valeur mesurée</p><ul class="vals"><li class="val"><span class="v-name">Satisfaction des conseillers <span class="id">B-2026-006</span><span class="sub">Mesuré le 12 nov.</span></span><span class="v-now"><span class="k">Aujourd'hui</span><b>6,8 sur 10</b></span><span class="v-goal"><span class="k">Objectif</span><b><i class="nil">Non fixé</i></b></span></li><li class="val"><span class="v-name">Recherches abouties du premier coup <span class="id">B-2026-007</span><span class="sub">Aucune valeur de départ, aucune mesure</span></span><span class="v-now"><span class="k">Aujourd'hui</span><b><i class="nil">Non mesuré</i></b></span><span class="v-goal"><span class="k">Objectif</span><b>70 %</b></span></li></ul></section>
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>4 / 6</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c3-sujet-conseiller" aria-labelledby="c3-t-conseiller">
+          <header><div class="d-head"><h2 class="d-title" id="c3-t-conseiller">Assistant conseiller</h2><span class="mv def">Reporté</span><span class="bank">Harbour Bank</span></div><a class="back" href="#c3-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="detail">
+            <div class="d-col">
+              <section class="d-sec s-week"><p class="label">Cette semaine</p><ul><li>Revue sécurité reportée du 25 novembre au 4 décembre : dossier incomplet. <span class="id">C-2026-006</span></li></ul></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Revue sécurité<span class="sub">Vendredi 4 décembre</span></li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              <section class="d-sec s-progress"><p class="label">En cours</p><ul><li>Dossier de la revue sécurité <span class="id">C-2026-006</span><span class="sub">L'architecte · 3 déc.</span></li></ul></section>
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>5 / 6</span><button type="button" data-step="1">Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+        <article class="pane" id="c3-sujet-qualite" aria-labelledby="c3-t-qualite">
+          <header><div class="d-head"><h2 class="d-title" id="c3-t-qualite">Tableau de bord qualité</h2><span class="mv none">Sans changement</span><span class="bank">North Bank</span></div><a class="back" href="#c3-s1">Tous les sujets</a></header>
+          <div class="scroll"><div class="detail">
+            <div class="d-col">
+              <section class="d-sec"><p class="label">Cette semaine</p><p class="none">Rien d'enregistré sur la période.</p></section>
+              <section class="d-sec s-next"><p class="label">Ensuite</p><ul><li>Sans prochaine étape connue</li></ul></section>
+            </div>
+            <div class="d-col">
+              
+              
+              
+              
+            </div>
+          </div></div>
+          <footer><p class="walk"><button type="button" data-step="-1">Précédent</button><span>6 / 6</span><button type="button" data-step="1" disabled>Suivant</button></p><p class="walk"><kbd>&uarr;</kbd> <kbd>&darr;</kbd> pour changer de sujet · <kbd>Échap</kbd> pour revenir à la liste</p></footer>
+        </article>
+      </div>
+    </div>
+  </div>
+  <footer class="foot"><span>Semaine du mar. 17 au lun. 23 nov. 2026 · registre au 24 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Cas particuliers · sans liste d'étapes, valeurs incomplètes</span><span class="pg">3 / 5</span></footer>
+</section>
+
+<section class="slide" id="c4-s2">
+  <header class="head"><h2>Décisions à prendre et points bloquants</h2><p class="lede">0 décision · 0 point bloquant</p></header>
+  <div class="body decide neutral">
+    <div class="empty dec"><p class="t">Aucune décision à prendre cette semaine</p><p class="d">Le registre ne tient aucune décision en attente sur les sujets suivis.</p></div>
+    <div class="deps"><p class="label">Points bloquants</p><p class="nothing">Aucun point bloquant.</p></div>
+  </div>
+  <footer class="foot"><span>Semaine du mar. 17 au lun. 23 nov. 2026 · registre au 24 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Cas particuliers · rien à décider, rien de bloqué</span><span class="pg">4 / 5</span></footer>
+</section>
+
+<section class="slide" id="c5-s3">
+  <header class="head"><h2>Plan jusqu'à mardi prochain</h2><p class="lede">Du mardi 24 au lundi 30 novembre</p></header>
   <div class="body nextweek">
-    <div class="empty">
-      <p class="t">Rien à proposer cette semaine</p>
-      <p class="d">Aucun engagement n'arrive à échéance et aucun sujet en cours n'a de prochain pas enregistré.</p>
+    <div class="empty"><p class="t">Aucune étape proposée pour la semaine</p><p class="d">Rien n'est dû ni prévu d'ici mardi prochain sur les sujets suivis.</p></div>
+    <div class="side">
+      <div class="miles"><p class="label">Jalons des quatre prochaines semaines</p><p class="nothing">Aucun jalon daté d'ici quatre semaines.</p></div>
+      <div><p class="label">Capacité de l'équipe</p><p class="nothing">Le PO n'a rien signalé.</p></div>
+      
     </div>
-    <aside class="coverage">
-      <p class="label">Non couvert cette semaine</p>
-      <p>Le chat n'a été lu qu'en partie : la collecte s'est arrêtée à son plafond.</p>
-      <p class="label">Pour le détail</p>
-      <p>La synthèse complète et vérifiée : <b>views/weekly/2026-11-23.md</b></p>
-    </aside>
   </div>
-  <footer class="foot"><span>Semaine du 17 au 23 nov. 2026 · registre au 23 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Cas particuliers · Example Bank</span><span class="pg">5 / 5</span></footer>
+  <footer class="foot"><span>Semaine du mar. 17 au lun. 23 nov. 2026 · registre au 24 nov. 2026, 08:40 · chat lu en partie</span><span class="deck">Cas particuliers · rien de prévu</span><span class="pg">5 / 5</span></footer>
 </section>
 
 </main>

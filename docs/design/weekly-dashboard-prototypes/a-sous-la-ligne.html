@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Point hebdomadaire · option A, sous la ligne</title>
+<!-- PROTOTYPE, option A : le détail d'un sujet s'ouvre sous sa ligne, la liste reste autour.
+     Contenu fictif (Example Bank). -->
+<link rel="stylesheet" href="look.css">
+<link rel="stylesheet" href="dashboard.css">
+<style>
+/* The first screen grows with the subject that is open. */
+#s1 { height: auto; min-height: 100vh; overflow: visible; }
+.item { border: 1px solid transparent; border-radius: .8rem; transition: border-color .15s ease-out, background-color .15s ease-out; }
+.item.is-open { background: var(--surface); border-color: var(--accent); }
+.item.is-open > .row { border-color: transparent; background: transparent; }
+.item.is-open .chev { transform: rotate(45deg); }
+.fold { padding: 1.3rem 1.3rem 1.4rem; border-top: 1px solid var(--line); }
+.fold .walk { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<nav class="dots" aria-label="Écrans">
+  <a href="#s1" title="Avancement de la semaine"></a><a href="#s2" title="Décisions à prendre et points bloquants"></a><a href="#s3" title="Plan jusqu'à mardi prochain"></a><a href="#s4" title="Valeur apportée"></a>
+</nav>
+<main id="main">
+<section class="slide" id="s1">
+  <header class="head"><h1>Avancement de la semaine</h1><p class="lede" id="lede"></p></header>
+  <div class="body"><ol class="dash" id="list"></ol><div id="later"></div></div>
+  <div id="foot"></div>
+</section>
+</main>
+<script src="data.js"></script>
+<script src="shared.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id), S = WK.subjects;
+  $('lede').innerHTML = WK.lede;
+  $('later').innerHTML = WK.later;
+  $('foot').outerHTML = WK.foot(1);
+  $('main').insertAdjacentHTML('beforeend', WK.rest());
+  $('list').innerHTML = WK.cols + S.map((s, i) => `<li class="item">${WK.row(s, i)}<div class="fold" hidden></div></li>`).join('');
+  const items = [].slice.call(document.querySelectorAll('.item'));
+  let cur = -1;
+
+  function close() {
+    if (cur < 0) return;
+    const li = items[cur];
+    li.classList.remove('is-open');
+    li.querySelector('.fold').hidden = true;
+    li.querySelector('.row').setAttribute('aria-expanded', 'false');
+    cur = -1;
+  }
+  function open(i) {
+    close();
+    cur = i;
+    const li = items[i], fold = li.querySelector('.fold'), row = li.querySelector('.row');
+    fold.innerHTML = WK.detail(S[i]) + WK.walk(i);
+    fold.hidden = false;
+    li.classList.add('is-open');
+    row.setAttribute('aria-expanded', 'true');
+    row.focus({ preventScroll: true });
+    li.scrollIntoView({ block: 'nearest' });
+  }
+  $('list').addEventListener('click', e => {
+    const step = e.target.closest('[data-step]');
+    if (step) { open(cur + +step.dataset.step); return; }
+    const row = e.target.closest('.row');
+    if (row) { const i = +row.dataset.i; if (i === cur) close(); else open(i); }
+  });
+  WK.keys({ current: () => cur, open, close });
+})();
+</script>
+</body>
+</html>

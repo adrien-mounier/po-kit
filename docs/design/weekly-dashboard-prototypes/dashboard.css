@@ -1,0 +1,63 @@
+/* PROTOTYPE. What the dashboard adds to the chosen look (look.css): the list of subjects, the
+   detail of one subject, and the three screens that follow. Every colour comes from the palette. */
+
+/* ---------- Screen 1: one row per subject, and a row is a button ---------- */
+.lede .n-block { color: var(--late); }
+.sign::before { content: ""; display: inline-block; width: 1em; height: 1em; margin-right: .35em; vertical-align: -.16em; background: currentColor; -webkit-mask: var(--g) center / contain no-repeat; mask: var(--g) center / contain no-repeat; }
+.sign.alert { --g: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5l9.5 16.5h-19z'/%3E%3Cpath d='M12 10v4.5M12 17.5v.01'/%3E%3C/svg%3E"); }
+.dash { display: grid; align-content: start; gap: .4rem; }
+.cols.dcols, .subject.row { grid-template-columns: 14rem 11.5rem 1fr 7rem 6.5rem 1.2rem; }
+.subject.row { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; transition: border-color .15s ease-out, box-shadow .15s ease-out; }
+.subject.row:hover { border-color: var(--accent); }
+.subject.row:focus-visible, .rail button:focus-visible, .pop button:focus-visible, .back:focus-visible, .more summary:focus-visible { outline: .16rem solid var(--accent); outline-offset: .14rem; }
+.who { display: grid; }
+.nm { font-size: 1.1rem; font-weight: 600; line-height: 1.15; color: var(--heading); }
+.flag { font-size: .8rem; font-weight: 600; color: var(--late); white-space: nowrap; }
+.nextd { font: 600 1.05rem/1 var(--display); color: var(--heading); text-align: right; white-space: nowrap; }
+.chev { width: .6rem; height: .6rem; border-right: .14rem solid var(--muted); border-bottom: .14rem solid var(--muted); transform: rotate(-45deg); justify-self: end; transition: transform .18s ease-out; }
+.is-quiet .nm, .is-quiet .chg { font-weight: 400; color: var(--muted); }
+.later { margin-top: .5rem; padding: .7rem 1.3rem; border: 1px dashed var(--muted); border-radius: .7rem; font-size: .88rem; color: var(--muted); }
+
+/* ---------- The detail of one subject: what changed and what is open now, never the history ---------- */
+.detail { display: grid; grid-template-columns: 1.15fr 1fr; gap: 0 3rem; align-items: start; }
+.d-col { display: grid; gap: 1.5rem; align-content: start; }
+.d-sec ul { display: grid; gap: .55rem; margin-top: .5rem; }
+.d-sec li { font-size: 1rem; line-height: 1.3; }
+.d-sec .sub { display: block; margin-top: .1rem; font-size: .78rem; color: var(--muted); font-weight: 400; }
+.d-sec.s-blocks .label, .d-sec.s-blocks li { color: var(--late); }
+.d-sec.s-blocks li { font-weight: 600; }
+.d-sec.s-blocks .sub { color: var(--muted); }
+.d-sec.s-week li { padding-left: 1rem; position: relative; }
+.d-sec.s-week li::before { content: ""; position: absolute; left: 0; top: .5em; width: .35rem; height: .35rem; border-radius: 50%; background: var(--accent); }
+.d-sec .none { margin-top: .5rem; font-size: 1rem; color: var(--muted); }
+/* A long list shows its first lines; the rest opens on a click. */
+.more summary { display: inline-block; margin-top: .6rem; font-size: .82rem; font-weight: 600; color: var(--accent); cursor: pointer; list-style: none; border-radius: .3rem; }
+.more summary::-webkit-details-marker { display: none; }
+.more[open] summary { display: none; }
+.more ul { margin-top: .55rem; }
+.d-sec .measure { display: grid; gap: .3rem; margin-top: .5rem; padding: 0; }
+.d-sec .measure + .measure { margin-top: 1rem; }
+.d-sec .m-t { font-size: 1rem; }
+.d-sec .m-v b { font-size: 1.7rem; }
+.d-title { font: 600 2.2rem/1.05 var(--display); font-stretch: 75%; text-transform: uppercase; letter-spacing: .005em; color: var(--heading); }
+.d-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.2rem; }
+.d-head .bank { font-size: .8rem; }
+.walk { display: flex; align-items: center; gap: .6rem; font: 600 .68rem var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.walk button, .back { font: inherit; letter-spacing: inherit; text-transform: inherit; padding: .5rem .9rem .42rem; border: 1px solid var(--line); border-radius: 2rem; background: var(--surface); color: var(--heading); cursor: pointer; transition: border-color .15s ease-out; }
+.walk button:hover, .back:hover { border-color: var(--accent); }
+.walk button:disabled { color: var(--muted); opacity: .5; cursor: default; }
+.walk kbd { font: inherit; padding: .1rem .35rem; border: 1px solid var(--line); border-radius: .25rem; }
+
+/* ---------- Screen 2: decisions to take and what blocks ---------- */
+.decide.neutral .decisions { gap: .6rem; align-content: start; }
+.decide.neutral .decisions li { padding: .7rem 1.6rem .8rem; }
+.decide.neutral .decisions h3 { font-size: 1.35rem; margin: .25rem 0 .35rem; }
+.deps .due { font-size: .8rem; }
+
+/* ---------- Screen 3: the plan until the next weekly ---------- */
+.side { display: grid; gap: 1.3rem; padding: .3rem 0 0 1.5rem; border-left: 1px solid var(--line); }
+.side ul { margin-top: .5rem; display: grid; gap: .45rem; }
+.miles li { display: grid; grid-template-columns: 4.2rem 1fr; gap: 0 .8rem; align-items: baseline; font-size: .9rem; }
+.miles b { font: 600 1.05rem/1 var(--display); color: var(--accent); }
+.side .q { font-size: .95rem; margin-top: .4rem; }
+.side cite { display: block; margin-top: .3rem; color: var(--muted); }

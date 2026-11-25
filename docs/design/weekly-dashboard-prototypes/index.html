@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Point hebdomadaire · trois façons d'ouvrir un sujet</title>
+<!-- PROTOTYPE. Une page pour comparer les trois façons d'ouvrir le détail d'un sujet. -->
+<style>
+* { box-sizing: border-box; margin: 0; }
+body { padding: 32px; background: #f3f7fb; color: #2a2a4e; font: 15px/1.45 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+h1 { font: 600 28px/1.1 Bahnschrift, "Segoe UI", sans-serif; font-stretch: 75%; text-transform: uppercase; color: #002060; }
+.intro { max-width: 72ch; margin: 8px 0 28px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 28px; align-items: start; }
+.frame { display: block; position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 10px; border: 1px solid #9dbbd9; container-type: inline-size; }
+.frame iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; border: 0; transform-origin: 0 0; transform: scale(calc(100cqw / 1280px)); pointer-events: none; }
+.frame:hover, .frame:focus-visible { border-color: #0069a5; box-shadow: 0 0 0 1px #0069a5; }
+h2 { margin-top: 14px; font: 600 20px/1.2 Bahnschrift, "Segoe UI", sans-serif; font-stretch: 75%; text-transform: uppercase; color: #002060; }
+.opt p { margin-top: 4px; max-width: 54ch; }
+dl { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 4px 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #cfe0f1; font-size: 14px; }
+dt { color: #366092; }
+.how { max-width: 72ch; margin-top: 36px; padding-top: 14px; border-top: 1px solid #cfe0f1; font-size: 14px; color: #366092; }
+a { color: #0069a5; }
+</style>
+</head>
+<body>
+<h1>Point hebdomadaire : trois façons d'ouvrir un sujet</h1>
+<p class="intro"><b>Le PO a retenu l'option C le 25 novembre 2026.</b> Sa forme finale est <a href="../weekly-handoff/weekly-example.html">l'exemple de la passation</a>, où la valeur mesurée et l'avancement ont été revus ; ces trois pages restent comme trace.</p>
+<p class="intro">La même semaine fictive (Example Bank), le même style, les mêmes quatre écrans. Seule change la façon dont le détail d'un sujet s'ouvre depuis le premier écran. Cliquer une image ouvre l'option : F11 pour le plein écran, puis cliquer un sujet. « Mémo de crédit » est chargé exprès, « Tableau de bord qualité » presque vide.</p>
+
+<div class="grid">
+  <div class="opt">
+    <a class="frame" href="a-sous-la-ligne.html"><iframe src="a-sous-la-ligne.html" title="Option A" tabindex="-1"></iframe></a>
+    <h2>A · Sous la ligne</h2>
+    <p>Le détail se déplie sous la ligne du sujet. Les autres sujets restent visibles autour.</p>
+    <dl><dt>Point fort</dt><dd>On ne quitte jamais la liste ; on voit où l'on en est</dd><dt>Point faible</dt><dd>Un sujet chargé pousse le reste hors de l'écran : il faut faire défiler</dd></dl>
+  </div>
+  <div class="opt">
+    <a class="frame" href="b-fenetre.html"><iframe src="b-fenetre.html" title="Option B" tabindex="-1"></iframe></a>
+    <h2>B · En fenêtre</h2>
+    <p>Le détail s'ouvre dans une fenêtre au-dessus de la liste, qui s'assombrit derrière.</p>
+    <dl><dt>Point fort</dt><dd>Toute l'attention sur un sujet, sans rien déplacer</dd><dt>Point faible</dt><dd>La liste est cachée pendant qu'on parle du sujet</dd></dl>
+  </div>
+  <div class="opt">
+    <a class="frame" href="c-vue-pleine.html"><iframe src="c-vue-pleine.html" title="Option C" tabindex="-1"></iframe></a>
+    <h2>C · Vue pleine</h2>
+    <p>Le sujet prend l'écran. La liste se réduit à une colonne à gauche, où l'on passe d'un sujet à l'autre.</p>
+    <dl><dt>Point fort</dt><dd>Fait pour parcourir les sujets un par un, avec le plus de place pour le détail</dd><dt>Point faible</dt><dd>La ligne d'aperçu de chaque sujet disparaît pendant le parcours</dd></dl>
+  </div>
+</div>
+
+<p class="how">Dans chaque option : cliquer un sujet l'ouvre ; les flèches haut et bas passent d'un sujet à l'autre ; Échap referme. La molette ou la touche Page suivante passe à l'écran suivant. Rien n'est enregistré : ce sont des maquettes.</p>
+</body>
+</html>
